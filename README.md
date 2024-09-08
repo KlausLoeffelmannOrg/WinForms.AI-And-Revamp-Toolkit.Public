@@ -1,2 +1,2 @@
-# CommunityToolkit.WinForms.Public
-Public staging of the Community.Toolkit until we find a good place for it.
+# CommunityToolkit.WinForms
+Temp Repo for a planned approach to centralize WinForms Samples/Templates/Components.
