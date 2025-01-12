@@ -28,11 +28,6 @@
 	</Target>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\..\src\CommunityToolkit.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />
-	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
@@ -49,6 +44,13 @@
 
 	<ItemGroup>
 	  <Folder Include="Controls\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.AI\CommunityToolkit.WinForms.AI.csproj" />
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj" />
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.FluentUI\CommunityToolkit.WinForms.FluentUI.csproj" />
 	</ItemGroup>
 
 </Project>

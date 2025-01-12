@@ -40,19 +40,19 @@ namespace Chatty
             _tslInfo = new ToolStripStatusLabel();
             _toolStrip = new ToolStrip();
             newToolStripButton = new ToolStripButton();
-            openToolStripButton = new ToolStripButton();
-            saveToolStripButton = new ToolStripButton();
-            printToolStripButton = new ToolStripButton();
             toolStripSeparator = new ToolStripSeparator();
-            cutToolStripButton = new ToolStripButton();
             copyToolStripButton = new ToolStripButton();
-            pasteToolStripButton = new ToolStripButton();
             toolStripSeparator1 = new ToolStripSeparator();
-            helpToolStripButton = new ToolStripButton();
+            toolStripLabel1 = new ToolStripLabel();
+            _tscPersonalities = new ToolStripComboBox();
+            toolStripSeparator2 = new ToolStripSeparator();
             _splitContainer = new SplitContainer();
             treeView1 = new TreeView();
             splitContainer1 = new SplitContainer();
-            conversationView1 = new ConversationView();
+            _conversationView = new ConversationView();
+            _decoratorPanel = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _promptControl = new SemanticKernelDemo.Controls.AsyncPromptControl();
+            _semanticKernelCommunicator = new CommunityToolkit.WinForms.AI.SemanticKernelComponent();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -62,18 +62,20 @@ namespace Chatty
             _splitContainer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
+            _decoratorPanel.SuspendLayout();
             SuspendLayout();
             // 
             // _menuStrip
             // 
-            _menuStrip.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            _menuStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _menuStrip.ImageScalingSize = new Size(24, 24);
             _menuStrip.Items.AddRange(new ToolStripItem[] { _tsmFile, helpToolStripMenuItem });
             _menuStrip.Location = new Point(0, 0);
             _menuStrip.Name = "_menuStrip";
             _menuStrip.Padding = new Padding(7, 2, 0, 2);
-            _menuStrip.Size = new Size(1230, 36);
+            _menuStrip.Size = new Size(1230, 38);
             _menuStrip.TabIndex = 0;
             _menuStrip.Text = "menuStrip1";
             // 
@@ -81,26 +83,26 @@ namespace Chatty
             // 
             _tsmFile.DropDownItems.AddRange(new ToolStripItem[] { _tsmQuit });
             _tsmFile.Name = "_tsmFile";
-            _tsmFile.Size = new Size(58, 32);
+            _tsmFile.Size = new Size(62, 34);
             _tsmFile.Text = "&File";
             // 
             // _tsmQuit
             // 
             _tsmQuit.Name = "_tsmQuit";
-            _tsmQuit.Size = new Size(152, 36);
+            _tsmQuit.Size = new Size(157, 38);
             _tsmQuit.Text = "Quit";
             // 
             // helpToolStripMenuItem
             // 
             helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _tsmAbout });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            helpToolStripMenuItem.Size = new Size(69, 32);
+            helpToolStripMenuItem.Size = new Size(75, 34);
             helpToolStripMenuItem.Text = "&Help";
             // 
             // _tsmAbout
             // 
             _tsmAbout.Name = "_tsmAbout";
-            _tsmAbout.Size = new Size(181, 36);
+            _tsmAbout.Size = new Size(190, 38);
             _tsmAbout.Text = "About...";
             _tsmAbout.Click += About_Click;
             // 
@@ -122,14 +124,17 @@ namespace Chatty
             _tslInfo.Size = new Size(1212, 30);
             _tslInfo.Spring = true;
             _tslInfo.Text = "#info";
+            _tslInfo.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // _toolStrip
             // 
-            _toolStrip.ImageScalingSize = new Size(24, 24);
-            _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, openToolStripButton, saveToolStripButton, printToolStripButton, toolStripSeparator, cutToolStripButton, copyToolStripButton, pasteToolStripButton, toolStripSeparator1, helpToolStripButton });
-            _toolStrip.Location = new Point(0, 36);
+            _toolStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            _toolStrip.ImageScalingSize = new Size(32, 32);
+            _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, toolStripSeparator, copyToolStripButton, toolStripSeparator1, toolStripLabel1, _tscPersonalities, toolStripSeparator2 });
+            _toolStrip.Location = new Point(0, 38);
             _toolStrip.Name = "_toolStrip";
-            _toolStrip.Size = new Size(1230, 33);
+            _toolStrip.Padding = new Padding(5);
+            _toolStrip.Size = new Size(1230, 55);
             _toolStrip.TabIndex = 2;
             _toolStrip.Text = "toolStrip1";
             // 
@@ -138,87 +143,54 @@ namespace Chatty
             newToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
             newToolStripButton.Image = (Image)resources.GetObject("newToolStripButton.Image");
             newToolStripButton.ImageTransparentColor = Color.Magenta;
+            newToolStripButton.Margin = new Padding(0, 4, 0, 5);
             newToolStripButton.Name = "newToolStripButton";
-            newToolStripButton.Size = new Size(34, 28);
+            newToolStripButton.Size = new Size(36, 36);
             newToolStripButton.Text = "&New";
-            // 
-            // openToolStripButton
-            // 
-            openToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            openToolStripButton.Image = (Image)resources.GetObject("openToolStripButton.Image");
-            openToolStripButton.ImageTransparentColor = Color.Magenta;
-            openToolStripButton.Name = "openToolStripButton";
-            openToolStripButton.Size = new Size(34, 28);
-            openToolStripButton.Text = "&Open";
-            // 
-            // saveToolStripButton
-            // 
-            saveToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            saveToolStripButton.Image = (Image)resources.GetObject("saveToolStripButton.Image");
-            saveToolStripButton.ImageTransparentColor = Color.Magenta;
-            saveToolStripButton.Name = "saveToolStripButton";
-            saveToolStripButton.Size = new Size(34, 28);
-            saveToolStripButton.Text = "&Save";
-            // 
-            // printToolStripButton
-            // 
-            printToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            printToolStripButton.Image = (Image)resources.GetObject("printToolStripButton.Image");
-            printToolStripButton.ImageTransparentColor = Color.Magenta;
-            printToolStripButton.Name = "printToolStripButton";
-            printToolStripButton.Size = new Size(34, 28);
-            printToolStripButton.Text = "&Print";
             // 
             // toolStripSeparator
             // 
             toolStripSeparator.Name = "toolStripSeparator";
-            toolStripSeparator.Size = new Size(6, 33);
-            // 
-            // cutToolStripButton
-            // 
-            cutToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            cutToolStripButton.Image = (Image)resources.GetObject("cutToolStripButton.Image");
-            cutToolStripButton.ImageTransparentColor = Color.Magenta;
-            cutToolStripButton.Name = "cutToolStripButton";
-            cutToolStripButton.Size = new Size(34, 28);
-            cutToolStripButton.Text = "C&ut";
+            toolStripSeparator.Size = new Size(6, 45);
             // 
             // copyToolStripButton
             // 
             copyToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
             copyToolStripButton.Image = (Image)resources.GetObject("copyToolStripButton.Image");
             copyToolStripButton.ImageTransparentColor = Color.Magenta;
+            copyToolStripButton.Margin = new Padding(4, 0, 5, 0);
             copyToolStripButton.Name = "copyToolStripButton";
-            copyToolStripButton.Size = new Size(34, 28);
+            copyToolStripButton.Size = new Size(36, 45);
             copyToolStripButton.Text = "&Copy";
-            // 
-            // pasteToolStripButton
-            // 
-            pasteToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            pasteToolStripButton.Image = (Image)resources.GetObject("pasteToolStripButton.Image");
-            pasteToolStripButton.ImageTransparentColor = Color.Magenta;
-            pasteToolStripButton.Name = "pasteToolStripButton";
-            pasteToolStripButton.Size = new Size(34, 28);
-            pasteToolStripButton.Text = "&Paste";
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(6, 33);
+            toolStripSeparator1.Size = new Size(6, 45);
             // 
-            // helpToolStripButton
+            // toolStripLabel1
             // 
-            helpToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            helpToolStripButton.Image = (Image)resources.GetObject("helpToolStripButton.Image");
-            helpToolStripButton.ImageTransparentColor = Color.Magenta;
-            helpToolStripButton.Name = "helpToolStripButton";
-            helpToolStripButton.Size = new Size(34, 28);
-            helpToolStripButton.Text = "He&lp";
+            toolStripLabel1.Margin = new Padding(4, 0, 5, 0);
+            toolStripLabel1.Name = "toolStripLabel1";
+            toolStripLabel1.Size = new Size(122, 45);
+            toolStripLabel1.Text = "Personality:";
+            // 
+            // _tscPersonalities
+            // 
+            _tscPersonalities.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            _tscPersonalities.Margin = new Padding(4, 0, 5, 0);
+            _tscPersonalities.Name = "_tscPersonalities";
+            _tscPersonalities.Size = new Size(250, 45);
+            // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(6, 45);
             // 
             // _splitContainer
             // 
             _splitContainer.Dock = DockStyle.Fill;
-            _splitContainer.Location = new Point(0, 69);
+            _splitContainer.Location = new Point(0, 93);
             _splitContainer.Name = "_splitContainer";
             // 
             // _splitContainer.Panel1
@@ -230,8 +202,8 @@ namespace Chatty
             // 
             _splitContainer.Panel2.Controls.Add(splitContainer1);
             _splitContainer.Panel2.Padding = new Padding(10);
-            _splitContainer.Size = new Size(1230, 626);
-            _splitContainer.SplitterDistance = 408;
+            _splitContainer.Size = new Size(1230, 602);
+            _splitContainer.SplitterDistance = 356;
             _splitContainer.TabIndex = 3;
             // 
             // treeView1
@@ -239,7 +211,7 @@ namespace Chatty
             treeView1.Dock = DockStyle.Fill;
             treeView1.Location = new Point(10, 10);
             treeView1.Name = "treeView1";
-            treeView1.Size = new Size(388, 606);
+            treeView1.Size = new Size(336, 582);
             treeView1.TabIndex = 0;
             // 
             // splitContainer1
@@ -251,20 +223,50 @@ namespace Chatty
             // 
             // splitContainer1.Panel1
             // 
-            splitContainer1.Panel1.Controls.Add(conversationView1);
-            splitContainer1.Size = new Size(798, 606);
-            splitContainer1.SplitterDistance = 457;
+            splitContainer1.Panel1.Controls.Add(_conversationView);
+            // 
+            // splitContainer1.Panel2
+            // 
+            splitContainer1.Panel2.Controls.Add(_decoratorPanel);
+            splitContainer1.Size = new Size(850, 582);
+            splitContainer1.SplitterDistance = 438;
             splitContainer1.TabIndex = 0;
             // 
-            // conversationView1
+            // _conversationView
             // 
-            conversationView1.Dock = DockStyle.Fill;
-            conversationView1.HostPage = "wwwroot/index.html";
-            conversationView1.Location = new Point(0, 0);
-            conversationView1.Name = "conversationView1";
-            conversationView1.Size = new Size(798, 457);
-            conversationView1.TabIndex = 0;
-            conversationView1.Text = "conversationView1";
+            _conversationView.Dock = DockStyle.Fill;
+            _conversationView.HostPage = "wwwroot/index.html";
+            _conversationView.Location = new Point(0, 0);
+            _conversationView.Name = "_conversationView";
+            _conversationView.Size = new Size(850, 438);
+            _conversationView.TabIndex = 0;
+            _conversationView.Text = "conversationView1";
+            // 
+            // _decoratorPanel
+            // 
+            _decoratorPanel.BorderThickness = 1;
+            _decoratorPanel.Controls.Add(_promptControl);
+            _decoratorPanel.Dock = DockStyle.Fill;
+            _decoratorPanel.Location = new Point(0, 0);
+            _decoratorPanel.Name = "_decoratorPanel";
+            _decoratorPanel.Padding = new Padding(5);
+            _decoratorPanel.Size = new Size(850, 140);
+            _decoratorPanel.TabIndex = 0;
+            // 
+            // _promptControl
+            // 
+            _promptControl.BorderStyle = BorderStyle.None;
+            _promptControl.Dock = DockStyle.Fill;
+            _promptControl.Location = new Point(6, 5);
+            _promptControl.Multiline = true;
+            _promptControl.Name = "_promptControl";
+            _promptControl.Size = new Size(838, 130);
+            _promptControl.TabIndex = 0;
+            _promptControl.AsyncSendPrompt += PromptControl_AsyncSendPrompt;
+            // 
+            // _semanticKernelCommunicator
+            // 
+            _semanticKernelCommunicator.TopP = null;
             // 
             // FrmMain
             // 
@@ -291,8 +293,11 @@ namespace Chatty
             ((System.ComponentModel.ISupportInitialize)_splitContainer).EndInit();
             _splitContainer.ResumeLayout(false);
             splitContainer1.Panel1.ResumeLayout(false);
+            splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
+            _decoratorPanel.ResumeLayout(false);
+            _decoratorPanel.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -305,21 +310,21 @@ namespace Chatty
         private StatusStrip _statusStrip;
         private ToolStrip _toolStrip;
         private ToolStripButton newToolStripButton;
-        private ToolStripButton openToolStripButton;
-        private ToolStripButton saveToolStripButton;
-        private ToolStripButton printToolStripButton;
         private ToolStripSeparator toolStripSeparator;
-        private ToolStripButton cutToolStripButton;
         private ToolStripButton copyToolStripButton;
-        private ToolStripButton pasteToolStripButton;
         private ToolStripSeparator toolStripSeparator1;
-        private ToolStripButton helpToolStripButton;
         private ToolStripStatusLabel _tslInfo;
         private SplitContainer _splitContainer;
         private TreeView treeView1;
         private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem _tsmAbout;
         private SplitContainer splitContainer1;
-        private ConversationView conversationView1;
+        private ConversationView _conversationView;
+        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _decoratorPanel;
+        private CommunityToolkit.WinForms.AI.SemanticKernelComponent _semanticKernelCommunicator;
+        private ToolStripComboBox _tscPersonalities;
+        private ToolStripLabel toolStripLabel1;
+        private ToolStripSeparator toolStripSeparator2;
+        private SemanticKernelDemo.Controls.AsyncPromptControl _promptControl;
     }
 }
