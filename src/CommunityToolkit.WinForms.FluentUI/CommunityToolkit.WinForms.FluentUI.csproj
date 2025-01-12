@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<OutputType>Library</OutputType>
+    <TargetFramework>net9.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CommunityToolkit.WinForms.FormAndControlExtensions\CommunityToolkit.WinForms.Extensions.FormAndControlExtensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Controls\FluentCommandButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\SpinnerControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="GridView\GridView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="GridView\GridView_ShadowingBaseProperties.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net9.0-windows10.0.22000.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\CustomControl.bmp">
+      <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.CustomControl.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\MvvmView.bmp">
+      <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.MvvmView.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\TypedInputExtender.bmp">
+      <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.TypedInputExtender.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\FormattedDateEntry.bmp">
+      <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.FormattedDateEntry.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\FormattedDecimalEntry.bmp">
+      <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.FormattedDecimalEntry.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\FormattedTextEntry.bmp">
+        <LogicalName>CommunityToolkit.WinForms.TypedInputExtenders.FormattedTextEntry.bmp</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CommunityToolkit.WinForms.FluentUI\CommunityToolkit.WinForms.FluentUI.csproj" />
+  </ItemGroup>
+</Project>

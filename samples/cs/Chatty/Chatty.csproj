@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.22000.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -28,6 +28,11 @@
 	</Target>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />
+	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
@@ -40,6 +45,10 @@
 	    <Generator>ResXFileCodeGenerator</Generator>
 	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Controls\" />
 	</ItemGroup>
 
 </Project>
