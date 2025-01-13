@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Reflection;
 
-namespace CommunityToolkit.WinForms.ConversationView;
+namespace CommunityToolkit.WinForms.Controls.Blazor;
 
 internal static class BlazorWebViewExtensions
 {

@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Forms" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="9.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="52.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="9.0.22" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />

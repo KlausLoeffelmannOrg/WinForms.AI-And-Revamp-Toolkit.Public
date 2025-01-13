@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 
-namespace CommunityToolkit.WinForms.ConversationView.Mvvm;
+namespace CommunityToolkit.WinForms.Controls.Blazor;
 
 public partial class ConversationViewModel(string headline, string backColor, string foreColor, string newItemsBackColor) 
     : ObservableObject

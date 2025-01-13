@@ -5,12 +5,11 @@ using Microsoft.Web.WebView2.Core;
 using System.Diagnostics;
 using System.Text;
 
-namespace CommunityToolkit.WinForms.ConversationView.Mvvm;
-
+namespace CommunityToolkit.WinForms.Controls.Blazor;
 
 /// <summary>
-/// Represents a custom conversation view control that extends 
-/// the BlazorWebView class.
+///  Represents a custom conversation view control that extends 
+///  the BlazorWebView class.
 /// </summary>
 public class ConversationView : BlazorWebView
 {
@@ -24,7 +23,7 @@ public class ConversationView : BlazorWebView
     }
 
     /// <summary>
-    /// Initializes a new instance of the ConversationView class.
+    ///  Initializes a new instance of the ConversationView class.
     /// </summary>
     public ConversationView()
     {
@@ -37,6 +36,35 @@ public class ConversationView : BlazorWebView
 
         WebView.CoreWebView2InitializationCompleted += WebView_CoreWebView2InitializationCompleted;
         WebView.NavigationCompleted += WebView_NavigationCompleted;
+        WebView.NavigationStarting += WebView_NavigationStarting;
+    }
+
+    private void WebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
+    {
+        Debug.Print($"Navigation starting - URI:{e.Uri}");
+    }
+
+    private void CoreWebView2_DOMContentLoaded(object? sender, CoreWebView2DOMContentLoadedEventArgs e)
+        => Debug.Print($"DOM content loaded - ID:{e.NavigationId}");
+
+    private void WebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        => Debug.Print($"Navigation completed - success:{e.IsSuccess}");
+
+    private void WebView_CoreWebView2InitializationCompleted(object? sender, CoreWebView2InitializationCompletedEventArgs e)
+    {
+        WebView.CoreWebView2.DOMContentLoaded += CoreWebView2_DOMContentLoaded;
+        WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
+        WebView.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
+    }
+
+    private void CoreWebView2_WebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
+    {
+        Debug.Print($"Web resource requested: {e.Request.Uri}");
+    }
+
+    private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        Debug.Print($"Web message received: {e.TryGetWebMessageAsString()}");
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -68,7 +96,7 @@ public class ConversationView : BlazorWebView
     }
 
     /// <summary>
-    /// Adds a conversation item to the conversation view.
+    ///  Adds a conversation item to the conversation view.
     /// </summary>
     /// <param name="text">The text of the conversation item.</param>
     /// <param name="isResponse">A flag indicating whether the conversation item is a response.</param>
@@ -84,15 +112,6 @@ public class ConversationView : BlazorWebView
 
         _viewModel?.ConversationItems.Add(item);
     }
-
-    private void CoreWebView2_DOMContentLoaded(object? sender, CoreWebView2DOMContentLoadedEventArgs e) 
-        => Debug.Print($"DOM content loaded - ID:{e.NavigationId}");
-
-    private void WebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e) 
-        => Debug.Print($"Navigation completed - success:{e.IsSuccess}");
-
-    private void WebView_CoreWebView2InitializationCompleted(object? sender, CoreWebView2InitializationCompletedEventArgs e) 
-        => WebView.CoreWebView2.DOMContentLoaded += CoreWebView2_DOMContentLoaded;
 
     /// <summary>
     ///  Updates the current response asynchronously.

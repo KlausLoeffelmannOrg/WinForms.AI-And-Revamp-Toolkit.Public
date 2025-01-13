@@ -1,12 +1,17 @@
+using CommunityToolkit.WinForms.ComponentModel;
+using CommunityToolkit.WinForms.Extensions;
+
 namespace Chatty;
 
 public partial class FrmMain : Form
 {
     private static readonly string ApiKeyEnvironmentVarLookup = "AI:OpenAI:ApiKey";
+    private readonly IUserSettingsService _settingsService;
 
     public FrmMain()
     {
         InitializeComponent();
+        _settingsService = WinFormsUserSettingsService.CreateAndLoad();
 
         // Wiring the delegate which provides the Open AI ApiKey when we need it:
         _semanticKernelCommunicator.ApiKeyGetter =
@@ -15,9 +20,6 @@ public partial class FrmMain : Form
 
         // Setting up the "personality" ComboBox:
         _tscPersonalities.Items.AddRange([.. s_personalities.Keys]);
-
-        // Preselect the first personality once the form has completely loaded:
-        Load += (s, e) => _tscPersonalities.SelectedIndex = 0;
 
         // Handle changing the personalities:
         _tscPersonalities.SelectedIndexChanged += (s, e) =>
@@ -28,6 +30,30 @@ public partial class FrmMain : Form
 
             _semanticKernelCommunicator.SystemPrompt = s_personalities[selectedPersonality];
         };
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        // Preselect the first personality once the form has completely loaded:
+        _tscPersonalities.SelectedIndex = 0;
+
+        var bounds = _settingsService.GetInstance(
+            "bounds",
+            this.CenterOnScreen(
+                horizontalFillGrade: 80,
+                verticalFillGrade: 80));
+
+        Bounds = bounds;
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        base.OnFormClosed(e);
+
+        _settingsService.SetInstance("bounds", this.GetRestorableBounds());
+        _settingsService.Save();
     }
 
     private async Task PromptControl_AsyncSendPrompt(object sender, EventArgs e)

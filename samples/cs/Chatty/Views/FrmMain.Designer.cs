@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.WinForms.ConversationView.Mvvm;
+﻿using CommunityToolkit.WinForms.Controls.Blazor;
+using CommunityToolkit.WinForms.ConversationView;
 
 namespace Chatty
 {

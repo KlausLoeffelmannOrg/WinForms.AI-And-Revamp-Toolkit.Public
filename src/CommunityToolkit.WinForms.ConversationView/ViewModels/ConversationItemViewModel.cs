@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace CommunityToolkit.WinForms.ConversationView.Mvvm;
+namespace CommunityToolkit.WinForms.Controls.Blazor;
 
 public partial class ConversationItemViewModel : ObservableObject
 {
