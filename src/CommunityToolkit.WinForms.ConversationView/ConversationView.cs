@@ -3,6 +3,7 @@ using Markdig;
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
 using Microsoft.Web.WebView2.Core;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -14,13 +15,10 @@ namespace CommunityToolkit.WinForms.Controls.Blazor;
 public class ConversationView : BlazorWebView
 {
     private readonly IServiceProvider? _serviceProvider;
-    private ConversationViewModel? _viewModel;
 
-    protected override void OnPaintBackground(PaintEventArgs e)
-    {
-        base.OnPaintBackground(e);
-        e.Graphics.Clear(SystemColors.ControlLightLight);
-    }
+    [AllowNull]
+    private ConversationViewModel _viewModel;
+    private readonly Conversation _conversation = new();
 
     /// <summary>
     ///  Initializes a new instance of the ConversationView class.
@@ -67,33 +65,10 @@ public class ConversationView : BlazorWebView
         Debug.Print($"Web message received: {e.TryGetWebMessageAsString()}");
     }
 
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-
-        _viewModel = new ConversationViewModel(
-            headline: $"Conversation on {DateTime.Now:f}",
-            backColor: SystemColors.ControlLightLight.ToWebColor(),
-            foreColor: SystemColors.ControlText.ToWebColor(),
-            newItemsBackColor: SystemColors.ControlLightLight.ToWebColor());
-
-        // Create new dictionary of parameters for the component
-        Dictionary<string, object?> parameters = new()
-            {
-                { nameof(ConversationRenderer.ViewModel), _viewModel },
-                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
-            };
-
-        var component = new RootComponent(
-            selector: "#app",
-            componentType: typeof(ConversationRenderer),
-            parameters: parameters);
-
-        RootComponents.Add(component);
-
-        // Define a null-host page to avoid loading a default page from the webview.
-        HostPage = "wwwroot/index.html";
-    }
+    /// <summary>
+    ///  Gets the conversation associated with the view.
+    /// </summary>
+    public Conversation Conversation => _conversation;
 
     /// <summary>
     ///  Adds a conversation item to the conversation view.
@@ -161,6 +136,73 @@ public class ConversationView : BlazorWebView
         _viewModel.ResponseInProgress = string.Empty;
     }
 
-    public void ClearHistory() 
+    /// <summary>
+    ///  Clears the conversation history.
+    /// </summary>
+    public void ClearHistory()
         => _viewModel?.ConversationItems.Clear();
+
+    /// <summary>
+    ///  Updates the title of the conversation.
+    /// </summary>
+    /// <param name="title">The new title of the conversation.</param>
+    public void UpdateConversationTitle(string title)
+    {
+        _conversation.Title = title;
+        _viewModel.Headline = title;
+    }
+
+    /// <summary>
+    ///  Paints the background of the control.
+    /// </summary>
+    /// <param name="e">A PaintEventArgs that contains the event data.</param>
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        base.OnPaintBackground(e);
+        e.Graphics.Clear(SystemColors.ControlLightLight);
+    }
+
+    /// <summary>
+    ///  Raises the HandleCreated event.
+    /// </summary>
+    /// <param name="e">An EventArgs that contains the event data.</param>
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+
+        _viewModel = new ConversationViewModel(
+            headline: $"Conversation on {DateTime.Now:f}",
+            backColor: SystemColors.ControlLightLight.ToWebColor(),
+            foreColor: SystemColors.ControlText.ToWebColor(),
+            newItemsBackColor: SystemColors.ControlLightLight.ToWebColor());
+
+        // Create new dictionary of parameters for the component
+        Dictionary<string, object?> parameters = new()
+            {
+                { nameof(ConversationRenderer.ViewModel), _viewModel },
+                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
+            };
+
+        var component = new RootComponent(
+            selector: "#app",
+            componentType: typeof(ConversationRenderer),
+            parameters: parameters);
+
+        RootComponents.Add(component);
+
+        // Let's pass the system theme to the Blazor component:
+        string systemMode = Application.IsDarkModeEnabled ? "dark" : "light";
+        HostPage = $"wwwroot/index.html";
+    }
+}
+
+/// <summary>
+///  Represents a conversation.
+/// </summary>
+public class Conversation
+{
+    /// <summary>
+    ///  Gets or sets the title of the conversation.
+    /// </summary>
+    public string? Title { get; set; }
 }

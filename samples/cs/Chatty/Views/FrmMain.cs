@@ -1,4 +1,5 @@
 using Chatty.ViewModels;
+using Chatty.Views;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Extensions;
 
@@ -17,9 +18,19 @@ public partial class FrmMain : Form
         _settingsService = WinFormsUserSettingsService.CreateAndLoad();
 
         // Wiring the delegate which provides the Open AI ApiKey when we need it:
-        _semanticKernelCommunicator.ApiKeyGetter =
+        _skCommunicator.ApiKeyGetter =
             () => Environment.GetEnvironmentVariable(ApiKeyEnvironmentVarLookup)
                 ?? throw new NullReferenceException("Could not retrieve Open AI ApiKey.");
+
+        // We are wiring up the second on exactly like that.
+        _skMetaDataProcessor.ApiKeyGetter = _skCommunicator.ApiKeyGetter;
+
+        // The system-prompt for getting the Meta-Info is kind of an easy one.
+        _skMetaDataProcessor.SystemPrompt = "You are an assistant in an LLM Chat-Bot client software. " +
+            "You're main task is to provide a good title for an ongoing conversation " +
+            "with maximal 40 characters based on the initial discussions." +
+            "If the provided conversation string would result in a result too generic or meaningless, " +
+            "please return '***TOO GENERIC***'.";
 
         // Setting up the "personality" ComboBox:
         _tscPersonalities.Items.AddRange([.. s_personalities.Keys]);
@@ -31,7 +42,7 @@ public partial class FrmMain : Form
             string selectedPersonality = _tscPersonalities.SelectedItem as string
                 ?? throw new NullReferenceException("Personality disorder exception!");
 
-            _semanticKernelCommunicator.SystemPrompt = s_personalities[selectedPersonality];
+            _skCommunicator.SystemPrompt = s_personalities[selectedPersonality];
         };
     }
 
@@ -68,11 +79,18 @@ public partial class FrmMain : Form
     {
         string textToSend = _promptControl.Text;
         _promptControl.Clear();
+        
+        if (_conversationView.Conversation.Title is null)
+        {
+            // We use the second component to get a second session,
+            // to get a good title from the AI:
+            await TryUpdateTitleFromConversationAsync(textToSend);
+        }
 
         _conversationView.AddConversationItem(textToSend, isResponse: false);
 
         var responses = _conversationView.UpdateCurrentResponseAsync(
-            asyncEnumerable: _semanticKernelCommunicator.RequestPromptResponseStreamAsync(textToSend, true));
+            asyncEnumerable: _skCommunicator.RequestPromptResponseStreamAsync(textToSend, true));
 
         // If you wanted to examine the responses one by one, here's how you could do it:
         await foreach (var response in responses)
@@ -81,6 +99,17 @@ public partial class FrmMain : Form
             {
                 continue;
             }
+        }
+
+        async Task TryUpdateTitleFromConversationAsync(string conversationFragments)
+        {
+            var title = await _skMetaDataProcessor.RequestTextPromptResponseAsync(textToSend, false);
+            if (title=="***TOO GENERIC***")
+            {
+                return;
+            }
+
+            _conversationView.Conversation.Title = title;
         }
     }
 
@@ -97,7 +126,16 @@ public partial class FrmMain : Form
     private void BtnClearHistory_Click(object sender, EventArgs e)
     {
         _conversationView.ClearHistory();
-        _semanticKernelCommunicator?.ChatHistory?.Clear();
+        _skCommunicator?.ChatHistory?.Clear();
+    }
+
+    private void TsmOptions_Click(object sender, EventArgs e)
+    {
+        using FrmOptions frmOptions = new(_options!);
+        if (frmOptions.ShowDialog() == DialogResult.OK)
+        {
+            _options = frmOptions.Options;
+        }
     }
 
     private void About_Click(object sender, EventArgs e)
@@ -124,7 +162,7 @@ public partial class FrmMain : Form
             + "politely decline or redirect any non-C#/VB topics. Take into account, that the questions you will be asked, are not necessarily only from the view of the user, "
             + "but also from the view of team members, who are working here at Microsoft. That means, it's not always preferable to"
             + "look for established best practices, but may for ways to come up with new and improved ways for existing"
-            + "winforms features to ultimately establish new best practices."
+            + "WinForms features to ultimately establish new best practices."
         },
         {
             "Shakespearean",

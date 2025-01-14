@@ -3,10 +3,34 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WinFormsBlazor</title>
+    <title>WinForms Blazor</title>
     <base href="/" />
     <link href="css/app.css" rel="stylesheet" />
-    <link href="WinFormsBlazor.styles.css" rel="stylesheet" />
+    <style>
+        :root {
+            --background-color: white;
+            --text-color: black;
+        }
+
+        .dark-mode {
+            --background-color: #1e1e1e;
+            --text-color: white;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+    </style>
+
+    <!-- Early script to apply theme from query params -->
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') ?? 'light';
+        if (theme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
 </head>
 
 <body>
@@ -20,18 +44,24 @@
     </div>
 
     <script src="_framework/blazor.webview.js"></script>
+    <script>
+        function scrollToBottom() {
+            const element = document.querySelector('.fullScreen-box');
+            element.scrollTop = element.scrollHeight - element.clientHeight;
+        }
+
+        function setTheme(mode) {
+            if (mode === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        function setRootBackgroundColor(color) {
+            document.documentElement.style.setProperty('--background-color', color);
+        }
+    </script>
+
 </body>
 </html>
-
-<script>
-    function scrollToBottom()
-    {
-        const element = document.querySelector('.fullScreen-box');
-        element.scrollTop = element.scrollHeight - element.clientHeight;
-    }
-
-    function setRootBackgroundColor(color)
-    {
-        document.documentElement.style.setProperty('bgColor', color);
-    }
-</script>

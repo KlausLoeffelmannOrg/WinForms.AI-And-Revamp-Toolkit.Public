@@ -28,38 +28,39 @@
         /// </summary>
         private void InitializeComponent()
         {
-            checkBox1 = new CheckBox();
+            _chkArchiveChats = new CheckBox();
             groupBox1 = new GroupBox();
             fluentDecoratorPanel1 = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
-            textBox1 = new TextBox();
-            button1 = new Button();
+            _txtAppDataPath = new TextBox();
+            _btnPickPath = new Button();
             _btnOK = new Button();
             _btnCancel = new Button();
             groupBox1.SuspendLayout();
             fluentDecoratorPanel1.SuspendLayout();
             SuspendLayout();
             // 
-            // checkBox1
+            // _chkArchiveChats
             // 
-            checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(36, 32);
-            checkBox1.Margin = new Padding(4, 4, 4, 4);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(216, 29);
-            checkBox1.TabIndex = 0;
-            checkBox1.Text = "Archive chats to folder:";
-            checkBox1.UseVisualStyleBackColor = true;
+            _chkArchiveChats.AutoSize = true;
+            _chkArchiveChats.Location = new Point(42, 55);
+            _chkArchiveChats.Margin = new Padding(4);
+            _chkArchiveChats.Name = "_chkArchiveChats";
+            _chkArchiveChats.Size = new Size(341, 44);
+            _chkArchiveChats.TabIndex = 0;
+            _chkArchiveChats.Text = "Archive chats to folder:";
+            _chkArchiveChats.UseVisualStyleBackColor = true;
+            _chkArchiveChats.CheckedChanged += ChkArchiveChats_CheckedChanged;
             // 
             // groupBox1
             // 
             groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             groupBox1.Controls.Add(fluentDecoratorPanel1);
-            groupBox1.Controls.Add(checkBox1);
-            groupBox1.Location = new Point(15, 15);
-            groupBox1.Margin = new Padding(4, 4, 4, 4);
+            groupBox1.Controls.Add(_chkArchiveChats);
+            groupBox1.Location = new Point(13, 33);
+            groupBox1.Margin = new Padding(4);
             groupBox1.Name = "groupBox1";
-            groupBox1.Padding = new Padding(4, 4, 4, 4);
-            groupBox1.Size = new Size(599, 275);
+            groupBox1.Padding = new Padding(4);
+            groupBox1.Size = new Size(862, 188);
             groupBox1.TabIndex = 1;
             groupBox1.TabStop = false;
             groupBox1.Text = "Archive chats";
@@ -68,41 +69,42 @@
             // 
             fluentDecoratorPanel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             fluentDecoratorPanel1.BorderThickness = 1;
-            fluentDecoratorPanel1.Controls.Add(textBox1);
-            fluentDecoratorPanel1.Controls.Add(button1);
-            fluentDecoratorPanel1.Location = new Point(58, 69);
-            fluentDecoratorPanel1.Margin = new Padding(4, 4, 4, 4);
+            fluentDecoratorPanel1.Controls.Add(_txtAppDataPath);
+            fluentDecoratorPanel1.Controls.Add(_btnPickPath);
+            fluentDecoratorPanel1.Location = new Point(76, 111);
+            fluentDecoratorPanel1.Margin = new Padding(4);
             fluentDecoratorPanel1.Name = "fluentDecoratorPanel1";
-            fluentDecoratorPanel1.Padding = new Padding(6, 6, 6, 6);
-            fluentDecoratorPanel1.Size = new Size(533, 43);
+            fluentDecoratorPanel1.Padding = new Padding(6);
+            fluentDecoratorPanel1.Size = new Size(752, 65);
             fluentDecoratorPanel1.TabIndex = 1;
             // 
-            // textBox1
+            // _txtAppDataPath
             // 
-            textBox1.BorderStyle = BorderStyle.None;
-            textBox1.Location = new Point(7, 9);
-            textBox1.Margin = new Padding(4, 4, 4, 4);
-            textBox1.Name = "textBox1";
-            textBox1.Size = new Size(481, 24);
-            textBox1.TabIndex = 0;
+            _txtAppDataPath.BorderStyle = BorderStyle.None;
+            _txtAppDataPath.Location = new Point(7, 13);
+            _txtAppDataPath.Margin = new Padding(4);
+            _txtAppDataPath.Name = "_txtAppDataPath";
+            _txtAppDataPath.Size = new Size(678, 39);
+            _txtAppDataPath.TabIndex = 0;
             // 
-            // button1
+            // _btnPickPath
             // 
-            button1.Font = new Font("Segoe UI", 7.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button1.Location = new Point(498, 9);
-            button1.Margin = new Padding(4, 4, 4, 4);
-            button1.Name = "button1";
-            button1.Size = new Size(28, 24);
-            button1.TabIndex = 2;
-            button1.Text = "...";
-            button1.UseVisualStyleBackColor = true;
+            _btnPickPath.Font = new Font("Segoe UI", 7.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            _btnPickPath.Location = new Point(695, 13);
+            _btnPickPath.Margin = new Padding(4);
+            _btnPickPath.Name = "_btnPickPath";
+            _btnPickPath.Size = new Size(50, 39);
+            _btnPickPath.TabIndex = 2;
+            _btnPickPath.Text = "...";
+            _btnPickPath.UseVisualStyleBackColor = true;
+            _btnPickPath.Click += BtnPickPath_Click;
             // 
             // _btnOK
             // 
             _btnOK.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnOK.Location = new Point(621, 25);
+            _btnOK.Location = new Point(912, 33);
             _btnOK.Name = "_btnOK";
-            _btnOK.Size = new Size(126, 42);
+            _btnOK.Size = new Size(215, 71);
             _btnOK.TabIndex = 2;
             _btnOK.Text = "OK";
             _btnOK.UseVisualStyleBackColor = true;
@@ -110,25 +112,27 @@
             // _btnCancel
             // 
             _btnCancel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnCancel.Location = new Point(622, 73);
+            _btnCancel.Location = new Point(912, 125);
             _btnCancel.Name = "_btnCancel";
-            _btnCancel.Size = new Size(126, 42);
+            _btnCancel.Size = new Size(215, 71);
             _btnCancel.TabIndex = 3;
             _btnCancel.Text = "Cancel";
             _btnCancel.UseVisualStyleBackColor = true;
             // 
             // FrmOptions
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(16F, 40F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(760, 308);
+            ClientSize = new Size(1139, 234);
             Controls.Add(_btnCancel);
             Controls.Add(_btnOK);
             Controls.Add(groupBox1);
             Font = new Font("Segoe UI", 10.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            Margin = new Padding(4, 4, 4, 4);
+            Margin = new Padding(4);
             Name = "FrmOptions";
+            StartPosition = FormStartPosition.CenterParent;
             Text = "Options";
+            Load += FrmOptions_Load;
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
             fluentDecoratorPanel1.ResumeLayout(false);
@@ -138,11 +142,11 @@
 
         #endregion
 
-        private CheckBox checkBox1;
+        private CheckBox _chkArchiveChats;
         private GroupBox groupBox1;
         private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel fluentDecoratorPanel1;
-        private TextBox textBox1;
-        private Button button1;
+        private TextBox _txtAppDataPath;
+        private Button _btnPickPath;
         private Button _btnOK;
         private Button _btnCancel;
     }

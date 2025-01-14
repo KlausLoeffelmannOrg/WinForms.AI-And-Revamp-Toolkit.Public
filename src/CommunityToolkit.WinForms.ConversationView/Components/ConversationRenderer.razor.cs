@@ -7,7 +7,8 @@ using System.ComponentModel;
 namespace CommunityToolkit.WinForms.ConversationView.Components;
 
 /// <summary>
-///  MarkDown renderer component - based on Alexander Mutel's MarkDig, Copyright by Alexander Mutel.
+///  MarkDown renderer component - based on Alexander Mutel's MarkDig, 
+///  Copyright by Alexander Mutel.
 /// </summary>
 public partial class ConversationRenderer : ComponentBase
 {
@@ -29,6 +30,9 @@ public partial class ConversationRenderer : ComponentBase
 
     [Parameter]
     public string BackColor { get; set; } = null!;
+
+    [Parameter]
+    public bool DarkMode { get; set; }
 
     protected async override void OnInitialized()
     {
