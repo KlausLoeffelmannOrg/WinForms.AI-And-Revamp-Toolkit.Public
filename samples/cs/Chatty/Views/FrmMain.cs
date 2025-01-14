@@ -1,3 +1,4 @@
+using Chatty.ViewModels;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Extensions;
 
@@ -7,6 +8,8 @@ public partial class FrmMain : Form
 {
     private static readonly string ApiKeyEnvironmentVarLookup = "AI:OpenAI:ApiKey";
     private readonly IUserSettingsService _settingsService;
+
+    private OptionsViewModel? _options;
 
     public FrmMain()
     {
@@ -39,13 +42,17 @@ public partial class FrmMain : Form
         // Preselect the first personality once the form has completely loaded:
         _tscPersonalities.SelectedIndex = 0;
 
-        var bounds = _settingsService.GetInstance(
+        Rectangle bounds = _settingsService.GetInstance(
             "bounds",
             this.CenterOnScreen(
                 horizontalFillGrade: 80,
                 verticalFillGrade: 80));
 
         Bounds = bounds;
+
+        _options = _settingsService.GetInstance(
+            key: "options",
+            defaultValue: new OptionsViewModel());
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
@@ -53,6 +60,7 @@ public partial class FrmMain : Form
         base.OnFormClosed(e);
 
         _settingsService.SetInstance("bounds", this.GetRestorableBounds());
+        _settingsService.SetInstance("options", _options);
         _settingsService.Save();
     }
 
