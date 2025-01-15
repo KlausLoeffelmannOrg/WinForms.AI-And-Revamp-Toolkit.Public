@@ -43,10 +43,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Controls\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.AI\CommunityToolkit.WinForms.AI.csproj" />
 	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj" />
 	  <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.ConversationView\CommunityToolkit.WinForms.ConversationView.csproj" />

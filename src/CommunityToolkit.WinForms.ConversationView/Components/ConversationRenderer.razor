@@ -3,7 +3,7 @@
 
 <div class="canvas" style="background-color: @(BackColor);">
     <div class="fullScreen-box" style="background-color: @(this.ViewModel.BackColor); color: @(this.ViewModel.ForeColor);">
-        <h1>@ViewModel.Headline</h1>
+        <h1>@ViewModel.Title</h1>
         @foreach (var item in this.ViewModel.ConversationItems)
         {
             <div class="@(item.IsResponse ? "response-area" : "request-area")">

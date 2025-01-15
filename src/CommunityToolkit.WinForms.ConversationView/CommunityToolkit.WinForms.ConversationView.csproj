@@ -26,4 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\CommunityToolkit.WinForms.Mvvm\CommunityToolkit.WinForms.Mvvm.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ConversationView_Debugging.cs" />
+  </ItemGroup>
 </Project>

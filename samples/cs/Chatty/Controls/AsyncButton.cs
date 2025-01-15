@@ -24,7 +24,7 @@ public class AsyncButton : Button
 
     /// <summary>
     ///  Raises the <see cref="Control.Click"/> 
-    ///  and the <see cref="AsyncClick" event/>.
+    ///  and the <see cref="AsyncClick"/> event.
     /// </summary>
     /// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
     protected async override void OnClick(EventArgs e)

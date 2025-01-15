@@ -1,9 +1,8 @@
 ﻿using CommunityToolkit.WinForms.ConversationView.Components;
 using Markdig;
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
-using Microsoft.Web.WebView2.Core;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -12,13 +11,13 @@ namespace CommunityToolkit.WinForms.Controls.Blazor;
 ///  Represents a custom conversation view control that extends 
 ///  the BlazorWebView class.
 /// </summary>
-public class ConversationView : BlazorWebView
+public partial class ConversationView : BlazorWebView
 {
-    private readonly IServiceProvider? _serviceProvider;
+    public event EventHandler<ConversationTitleChangedEventArgs>? ConversationTitleChanged;
+    public event EventHandler<ConversationItemAddedEventArgs>? ConversationItemAdded;
 
-    [AllowNull]
+    private readonly IServiceProvider? _serviceProvider;
     private ConversationViewModel _viewModel;
-    private readonly Conversation _conversation = new();
 
     /// <summary>
     ///  Initializes a new instance of the ConversationView class.
@@ -32,60 +31,78 @@ public class ConversationView : BlazorWebView
             Services = _serviceProvider;
         }
 
+        _viewModel = new ConversationViewModel()
+        {
+            BackColor = SystemColors.ControlLightLight.ToWebColor(),
+            ForeColor = SystemColors.ControlText.ToWebColor(),
+            Title = "New"
+        };
+
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.ConversationItems.CollectionChanged += ConversationItems_CollectionChanged;
+
         WebView.CoreWebView2InitializationCompleted += WebView_CoreWebView2InitializationCompleted;
         WebView.NavigationCompleted += WebView_NavigationCompleted;
         WebView.NavigationStarting += WebView_NavigationStarting;
     }
 
-    private void WebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
+    private void ConversationItems_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
-        Debug.Print($"Navigation starting - URI:{e.Uri}");
+        if (ConversationItemAdded is not null
+            && e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add
+            && e.NewItems?.Count == 1
+            && e.NewItems[0] is ConversationItemViewModel conversationItem)
+        {
+            ConversationItemAdded.Invoke(this, new ConversationItemAddedEventArgs(conversationItem));
+        }
     }
 
-    private void CoreWebView2_DOMContentLoaded(object? sender, CoreWebView2DOMContentLoadedEventArgs e)
-        => Debug.Print($"DOM content loaded - ID:{e.NavigationId}");
-
-    private void WebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
-        => Debug.Print($"Navigation completed - success:{e.IsSuccess}");
-
-    private void WebView_CoreWebView2InitializationCompleted(object? sender, CoreWebView2InitializationCompletedEventArgs e)
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        WebView.CoreWebView2.DOMContentLoaded += CoreWebView2_DOMContentLoaded;
-        WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
-        WebView.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
+        if (e.PropertyName == nameof(ConversationViewModel.Title))
+        {
+            OnConversationTitleChanged(new ConversationTitleChangedEventArgs(_viewModel.Title));
+        }
     }
 
-    private void CoreWebView2_WebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
+    protected virtual void OnConversationTitleChanged(ConversationTitleChangedEventArgs conversationTitleChangedEventArgs) 
+        => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
+
+    [DefaultValue("")]
+    public string? ConversationTitle
     {
-        Debug.Print($"Web resource requested: {e.Request.Uri}");
+        get => _viewModel.Title;
+        set
+        {
+            if (_viewModel is not null)
+            {
+                _viewModel.Title = value!;
+            }
+        }
     }
 
-    private void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
-    {
-        Debug.Print($"Web message received: {e.TryGetWebMessageAsString()}");
-    }
-
-    /// <summary>
-    ///  Gets the conversation associated with the view.
-    /// </summary>
-    public Conversation Conversation => _conversation;
+    public IEnumerable<ConversationItemViewModel> ConversationItems 
+        => _viewModel.ConversationItems;
 
     /// <summary>
     ///  Adds a conversation item to the conversation view.
     /// </summary>
     /// <param name="text">The text of the conversation item.</param>
     /// <param name="isResponse">A flag indicating whether the conversation item is a response.</param>
-    public void AddConversationItem(string text, bool isResponse)
+    public ConversationItemViewModel AddConversationItem(string text, bool isResponse)
     {
         var item = new ConversationItemViewModel
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
             HtmlContent = $"<p>{text}<p>",
+            MarkdownContent = text,
             IsResponse = isResponse
         };
 
         _viewModel?.ConversationItems.Add(item);
+
+        return item;
     }
 
     /// <summary>
@@ -101,22 +118,30 @@ public class ConversationView : BlazorWebView
         }
 
         StringBuilder currentParagraph = new();
-        string builtUpHtmlParagraphs = string.Empty;
+        StringBuilder builtUpHtmlParagraphs = new();
+        StringBuilder builtUpMarkdown = new();
+
+        string currentMarkdown = string.Empty;
 
         // Iterate through the responses asynchronously and add them to the conversation view model
         await foreach (var response in asyncEnumerable)
         {
             currentParagraph.Append(response);
+            currentMarkdown = currentParagraph.ToString();
 
             // Convert Markdown to HTML using Markdig
-            string currentHTML = Markdown.ToHtml(currentParagraph.ToString());
+            string currentHTML = Markdown.ToHtml(currentMarkdown);
 
             // Test, if the response ends with any sort of LineFeed/CR:
             if (response.EndsWith('\n') || response.EndsWith('\r'))
             {
-                Debug.Print($"Next Paragraph: {currentParagraph}");
-                builtUpHtmlParagraphs += currentHTML;
+                Debug.Print($"Next Paragraph: {currentMarkdown}");
+
+                builtUpHtmlParagraphs.Append(currentHTML);
+                builtUpMarkdown.Append(currentMarkdown);
+
                 currentParagraph.Clear();
+                currentMarkdown = string.Empty;
                 currentHTML = string.Empty;
             }
 
@@ -129,6 +154,7 @@ public class ConversationView : BlazorWebView
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
+            MarkdownContent = $"{builtUpMarkdown}",
             HtmlContent = $"<p>{_viewModel.ResponseInProgress}<p>",
             IsResponse = true
         });
@@ -141,16 +167,6 @@ public class ConversationView : BlazorWebView
     /// </summary>
     public void ClearHistory()
         => _viewModel?.ConversationItems.Clear();
-
-    /// <summary>
-    ///  Updates the title of the conversation.
-    /// </summary>
-    /// <param name="title">The new title of the conversation.</param>
-    public void UpdateConversationTitle(string title)
-    {
-        _conversation.Title = title;
-        _viewModel.Headline = title;
-    }
 
     /// <summary>
     ///  Paints the background of the control.
@@ -170,12 +186,6 @@ public class ConversationView : BlazorWebView
     {
         base.OnHandleCreated(e);
 
-        _viewModel = new ConversationViewModel(
-            headline: $"Conversation on {DateTime.Now:f}",
-            backColor: SystemColors.ControlLightLight.ToWebColor(),
-            foreColor: SystemColors.ControlText.ToWebColor(),
-            newItemsBackColor: SystemColors.ControlLightLight.ToWebColor());
-
         // Create new dictionary of parameters for the component
         Dictionary<string, object?> parameters = new()
             {
@@ -194,15 +204,47 @@ public class ConversationView : BlazorWebView
         string systemMode = Application.IsDarkModeEnabled ? "dark" : "light";
         HostPage = $"wwwroot/index.html";
     }
-}
 
-/// <summary>
-///  Represents a conversation.
-/// </summary>
-public class Conversation
-{
-    /// <summary>
-    ///  Gets or sets the title of the conversation.
-    /// </summary>
-    public string? Title { get; set; }
+    public string ToJson()
+    {
+        try
+        {
+            using MemoryStream stream = new();
+            _viewModel.WriteJSon(stream);
+
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public void FromJson(string json)
+    {
+        _viewModel.ConversationItems.Clear();
+
+        try
+        {
+            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+            var tempModel = ConversationViewModel.FromJSon(stream);
+
+            // Let's clone the model and the items,
+            // so the Blazor view will get the changes and update.
+            _viewModel.Title = tempModel.Title;
+            _viewModel.BackColor = tempModel.BackColor;
+            _viewModel.ForeColor = tempModel.ForeColor;
+
+            foreach (var item in tempModel.ConversationItems)
+            {
+                string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
+                item.HtmlContent = $"<p>{currentHTML}<p>";
+                _viewModel.ConversationItems.Add(item);
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 }

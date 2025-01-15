@@ -237,6 +237,19 @@ public partial class SemanticKernelComponent : BindableComponent
         => AsyncRequestExecutionSettings?.Invoke(this, eArgs)
             ?? Task.CompletedTask;
 
+    public void AddChatItem(bool isResponse, string message)
+    {
+        if (_chatHistory is null)
+        {
+            _chatHistory = [];
+            
+        }
+
+        _chatHistory.AddMessage(
+            isResponse ? AuthorRole.Assistant : AuthorRole.User,
+            message);
+    }
+
     /// <summary>
     ///  Gets or sets a Func that returns the API key to use for the OpenAI API. 
     ///  Don't ever store the key in the source code! Rather put it for example in a environment variable, or even better,
