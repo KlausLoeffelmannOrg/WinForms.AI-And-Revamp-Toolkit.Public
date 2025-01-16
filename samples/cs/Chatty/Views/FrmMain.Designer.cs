@@ -32,7 +32,10 @@
             _menuStrip = new MenuStrip();
             _tsmFile = new ToolStripMenuItem();
             _tsmQuit = new ToolStripMenuItem();
+            helpToolStripMenuItem = new ToolStripMenuItem();
+            _tsmAbout = new ToolStripMenuItem();
             _statusStrip = new StatusStrip();
+            _tslInfo = new ToolStripStatusLabel();
             _toolStrip = new ToolStrip();
             newToolStripButton = new ToolStripButton();
             openToolStripButton = new ToolStripButton();
@@ -44,7 +47,6 @@
             pasteToolStripButton = new ToolStripButton();
             toolStripSeparator1 = new ToolStripSeparator();
             helpToolStripButton = new ToolStripButton();
-            toolStripStatusLabel1 = new ToolStripStatusLabel();
             _splitContainer = new SplitContainer();
             treeView1 = new TreeView();
             _menuStrip.SuspendLayout();
@@ -59,11 +61,11 @@
             // 
             _menuStrip.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _menuStrip.ImageScalingSize = new Size(24, 24);
-            _menuStrip.Items.AddRange(new ToolStripItem[] { _tsmFile });
+            _menuStrip.Items.AddRange(new ToolStripItem[] { _tsmFile, helpToolStripMenuItem });
             _menuStrip.Location = new Point(0, 0);
             _menuStrip.Name = "_menuStrip";
             _menuStrip.Padding = new Padding(7, 2, 0, 2);
-            _menuStrip.Size = new Size(1070, 36);
+            _menuStrip.Size = new Size(1104, 36);
             _menuStrip.TabIndex = 0;
             _menuStrip.Text = "menuStrip1";
             // 
@@ -77,20 +79,41 @@
             // _tsmQuit
             // 
             _tsmQuit.Name = "_tsmQuit";
-            _tsmQuit.Size = new Size(270, 36);
+            _tsmQuit.Size = new Size(152, 36);
             _tsmQuit.Text = "Quit";
+            // 
+            // helpToolStripMenuItem
+            // 
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _tsmAbout });
+            helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            helpToolStripMenuItem.Size = new Size(69, 32);
+            helpToolStripMenuItem.Text = "&Help";
+            // 
+            // _tsmAbout
+            // 
+            _tsmAbout.Name = "_tsmAbout";
+            _tsmAbout.Size = new Size(270, 36);
+            _tsmAbout.Text = "About...";
+            _tsmAbout.Click += About_Click;
             // 
             // _statusStrip
             // 
             _statusStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _statusStrip.ImageScalingSize = new Size(24, 24);
-            _statusStrip.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
-            _statusStrip.Location = new Point(0, 550);
+            _statusStrip.Items.AddRange(new ToolStripItem[] { _tslInfo });
+            _statusStrip.Location = new Point(0, 538);
             _statusStrip.Name = "_statusStrip";
             _statusStrip.Padding = new Padding(1, 0, 17, 0);
-            _statusStrip.Size = new Size(1070, 37);
+            _statusStrip.Size = new Size(1104, 37);
             _statusStrip.TabIndex = 1;
             _statusStrip.Text = "statusStrip1";
+            // 
+            // _tslInfo
+            // 
+            _tslInfo.Name = "_tslInfo";
+            _tslInfo.Size = new Size(1086, 30);
+            _tslInfo.Spring = true;
+            _tslInfo.Text = "#info";
             // 
             // _toolStrip
             // 
@@ -98,7 +121,7 @@
             _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, openToolStripButton, saveToolStripButton, printToolStripButton, toolStripSeparator, cutToolStripButton, copyToolStripButton, pasteToolStripButton, toolStripSeparator1, helpToolStripButton });
             _toolStrip.Location = new Point(0, 36);
             _toolStrip.Name = "_toolStrip";
-            _toolStrip.Size = new Size(1070, 33);
+            _toolStrip.Size = new Size(1104, 33);
             _toolStrip.TabIndex = 2;
             _toolStrip.Text = "toolStrip1";
             // 
@@ -184,12 +207,6 @@
             helpToolStripButton.Size = new Size(34, 28);
             helpToolStripButton.Text = "He&lp";
             // 
-            // toolStripStatusLabel1
-            // 
-            toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(215, 30);
-            toolStripStatusLabel1.Text = "toolStripStatusLabel1";
-            // 
             // _splitContainer
             // 
             _splitContainer.Dock = DockStyle.Fill;
@@ -204,8 +221,8 @@
             // _splitContainer.Panel2
             // 
             _splitContainer.Panel2.Padding = new Padding(10);
-            _splitContainer.Size = new Size(1070, 481);
-            _splitContainer.SplitterDistance = 356;
+            _splitContainer.Size = new Size(1104, 469);
+            _splitContainer.SplitterDistance = 367;
             _splitContainer.TabIndex = 3;
             // 
             // treeView1
@@ -213,21 +230,21 @@
             treeView1.Dock = DockStyle.Fill;
             treeView1.Location = new Point(10, 10);
             treeView1.Name = "treeView1";
-            treeView1.Size = new Size(336, 461);
+            treeView1.Size = new Size(347, 449);
             treeView1.TabIndex = 0;
             // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1070, 587);
+            ClientSize = new Size(1104, 575);
             Controls.Add(_splitContainer);
             Controls.Add(_toolStrip);
             Controls.Add(_statusStrip);
             Controls.Add(_menuStrip);
             Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             MainMenuStrip = _menuStrip;
-            Margin = new Padding(4, 4, 4, 4);
+            Margin = new Padding(4);
             Name = "FrmMain";
             Text = "C.H.A.T.T.Y.";
             _menuStrip.ResumeLayout(false);
@@ -260,8 +277,10 @@
         private ToolStripButton pasteToolStripButton;
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripButton helpToolStripButton;
-        private ToolStripStatusLabel toolStripStatusLabel1;
+        private ToolStripStatusLabel _tslInfo;
         private SplitContainer _splitContainer;
         private TreeView treeView1;
+        private ToolStripMenuItem helpToolStripMenuItem;
+        private ToolStripMenuItem _tsmAbout;
     }
 }
