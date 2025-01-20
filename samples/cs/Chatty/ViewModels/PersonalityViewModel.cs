@@ -53,7 +53,7 @@ internal class PersonalityViewModel
         using Utf8JsonWriter writer = new(stream, options);
 
         writer.WriteStartObject();
-        writer.WriteStartArray(nameof(PersonalityItemViewModel));
+        writer.WriteStartArray(nameof(Personalities));
 
         foreach (PersonalityItemViewModel item in Personalities)
         {

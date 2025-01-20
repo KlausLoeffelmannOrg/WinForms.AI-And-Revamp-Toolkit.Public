@@ -11,7 +11,9 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.ComponentModel;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.AI;
 
@@ -19,7 +21,9 @@ namespace CommunityToolkit.WinForms.AI;
 public partial class SemanticKernelComponent : BindableComponent
 {
     // We're using the GPT-4o model from OpenAI directory for our Semantic Kernel scenario.
-    private const string DefaultModelName = "gpt-4o-2024-08-06";
+    private const string DefaultModelName = "gpt-4o";
+    private const string ApiEndpoint = "https://api.openai.com/v1/models";
+
 
     public event AsyncEventHandler<AsyncRequestAssistantInstructionsEventArgs>? AsyncRequestAssistanceInstructions;
     public event AsyncEventHandler<AsyncRequestExecutionSettingsEventArgs>? AsyncRequestExecutionSettings;
@@ -36,6 +40,7 @@ public partial class SemanticKernelComponent : BindableComponent
     private double? _temperature;
     private double? _presencePenalty;
     private double? _frequencyPenalty;
+    private JsonSerializerOptions? _jsonSerializerOptions;
 
     /// <summary>
     ///  Requests a prompt response from the OpenAI API. Make sure, you set at least the <see cref="ApiKeyGetter"/> property,
@@ -180,12 +185,45 @@ public partial class SemanticKernelComponent : BindableComponent
         _kernel = kernelBuilder.Build();
         _chatHistory ??= [];
 
-        var chatService = (OpenAIChatCompletionService)_kernel.GetRequiredService<IChatCompletionService>();
+        var chatService = (OpenAIChatCompletionService)_kernel
+            .GetRequiredService<IChatCompletionService>();
 
         return (chatService, settingsEventArgs.ExecutionSettings);
     }
 
-    private ILoggerFactory CreateTelemetryLogger()
+    public async Task<IEnumerable<string>?> QueryOpenAiModelnamesAsync()
+    {
+        string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
+        
+        using HttpClient client = new();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        try
+        {
+            _jsonSerializerOptions ??= new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+
+            HttpResponseMessage response = await client.GetAsync(ApiEndpoint);
+            response.EnsureSuccessStatusCode();
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            OpenAiModelList? models = JsonSerializer.Deserialize<OpenAiModelList>(
+                responseBody,
+                options: _jsonSerializerOptions);
+
+            return models?.Data.Select(item => item.Id);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private static ILoggerFactory CreateTelemetryLogger()
     {
         var resourceBuilder = ResourceBuilder
             .CreateDefault()
@@ -239,11 +277,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
     public void AddChatItem(bool isResponse, string message)
     {
-        if (_chatHistory is null)
-        {
-            _chatHistory = [];
-            
-        }
+        _chatHistory ??= [];
 
         _chatHistory.AddMessage(
             isResponse ? AuthorRole.Assistant : AuthorRole.User,

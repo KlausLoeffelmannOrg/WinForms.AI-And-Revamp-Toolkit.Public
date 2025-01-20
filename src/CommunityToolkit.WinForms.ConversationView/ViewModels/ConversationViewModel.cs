@@ -19,6 +19,9 @@ public partial class ConversationViewModel()
     }
 
     [ObservableProperty]
+    private string? _headline;
+
+    [ObservableProperty]
     private string _title = string.Empty;
 
     [ObservableProperty]
@@ -91,15 +94,17 @@ public partial class ConversationViewModel()
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
 
-        ConversationViewModel conversation = ConversationViewModel.GetHeaderFromStream(stream);
+        ConversationViewModel conversation = ConversationViewModel.GetHeaderFromRoot(root);
 
-        if (root.TryGetProperty(nameof(ConversationItems), out JsonElement conversationItemsElement))
+        if (!root.TryGetProperty(nameof(ConversationItems), out JsonElement conversationItemsElement))
         {
-            foreach (JsonElement itemElement in conversationItemsElement.EnumerateArray())
-            {
-                var item = ConversationItemViewModel.FromJsonElement(itemElement);
-                conversation.ConversationItems.Add(item);
-            }
+            return conversation;
+        }
+
+        foreach (JsonElement itemElement in conversationItemsElement.EnumerateArray())
+        {
+            var item = ConversationItemViewModel.FromJsonElement(itemElement);
+            conversation.ConversationItems.Add(item);
         }
 
         return conversation;
@@ -113,10 +118,17 @@ public partial class ConversationViewModel()
 
     public static ConversationViewModel GetHeaderFromStream(Stream stream)
     {
-        ConversationViewModel conversation = new();
-
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
+
+        var conversation = GetHeaderFromRoot(root);
+
+        return conversation;
+    }
+
+    private static ConversationViewModel GetHeaderFromRoot(JsonElement root)
+    {
+        ConversationViewModel conversation = new();
 
         conversation.Title = root.GetProperty(nameof(Title)).GetString() ?? string.Empty;
         conversation.Filename = root.GetProperty(nameof(Filename)).GetString() ?? string.Empty;

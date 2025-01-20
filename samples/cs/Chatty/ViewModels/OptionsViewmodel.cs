@@ -19,4 +19,6 @@ internal class OptionsViewModel
     /// Gets or sets the base path for application data.
     /// </summary>
     public string BasePath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Chatty";
+
+    public string LastUsedModel { get; set; } = "chatgpt-4o-latest";
 }

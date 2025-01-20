@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.WinForms.Controls.Blazor;
+﻿using CommunityToolkit.WinForms.AI;
+using CommunityToolkit.WinForms.Controls.Blazor;
 using CommunityToolkit.WinForms.ConversationView;
 
 namespace Chatty
@@ -57,11 +58,15 @@ namespace Chatty
             toolStripSeparator2 = new ToolStripSeparator();
             _splitMain = new SplitContainer();
             _trvConversationHistory = new TreeView();
-            tableLayoutPanel1 = new TableLayoutPanel();
+            _tlpHeader = new TableLayoutPanel();
             _mainTabControl = new CommunityToolkit.WinForms.FluentUI.FluentTabControl();
             _lblConversationTitle = new Label();
-            _skCommunicator = new CommunityToolkit.WinForms.AI.SemanticKernelComponent();
-            _skMetaDataProcessor = new CommunityToolkit.WinForms.AI.SemanticKernelComponent();
+            _lblDate = new Label();
+            _skCommunicator = new SemanticKernelComponent();
+            _skMetaDataProcessor = new SemanticKernelComponent();
+            toolStripSeparator4 = new ToolStripSeparator();
+            _tslModels = new ToolStripLabel();
+            _tscModels = new ToolStripComboBox();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -69,7 +74,7 @@ namespace Chatty
             _splitMain.Panel1.SuspendLayout();
             _splitMain.Panel2.SuspendLayout();
             _splitMain.SuspendLayout();
-            tableLayoutPanel1.SuspendLayout();
+            _tlpHeader.SuspendLayout();
             SuspendLayout();
             // 
             // _menuStrip
@@ -187,7 +192,7 @@ namespace Chatty
             // 
             _toolStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _toolStrip.ImageScalingSize = new Size(32, 32);
-            _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, toolStripSeparator, copyToolStripButton, toolStripSeparator1, toolStripLabel1, _tscPersonalities, toolStripSeparator2 });
+            _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, toolStripSeparator, copyToolStripButton, toolStripSeparator1, toolStripLabel1, _tscPersonalities, toolStripSeparator2, toolStripSeparator4, _tslModels, _tscModels });
             _toolStrip.Location = new Point(0, 38);
             _toolStrip.Name = "_toolStrip";
             _toolStrip.Padding = new Padding(10);
@@ -259,7 +264,7 @@ namespace Chatty
             // 
             // _splitMain.Panel2
             // 
-            _splitMain.Panel2.Controls.Add(tableLayoutPanel1);
+            _splitMain.Panel2.Controls.Add(_tlpHeader);
             _splitMain.Panel2.Padding = new Padding(10);
             _splitMain.Size = new Size(1264, 656);
             _splitMain.SplitterDistance = 363;
@@ -277,24 +282,27 @@ namespace Chatty
             _trvConversationHistory.TabIndex = 0;
             _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
             // 
-            // tableLayoutPanel1
+            // _tlpHeader
             // 
-            tableLayoutPanel1.ColumnCount = 1;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Controls.Add(_mainTabControl, 0, 1);
-            tableLayoutPanel1.Controls.Add(_lblConversationTitle, 0, 0);
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Location = new Point(10, 10);
-            tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 2;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle());
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(877, 636);
-            tableLayoutPanel1.TabIndex = 0;
+            _tlpHeader.ColumnCount = 2;
+            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 457F));
+            _tlpHeader.Controls.Add(_mainTabControl, 0, 1);
+            _tlpHeader.Controls.Add(_lblConversationTitle, 0, 0);
+            _tlpHeader.Controls.Add(_lblDate, 1, 0);
+            _tlpHeader.Dock = DockStyle.Fill;
+            _tlpHeader.Location = new Point(10, 10);
+            _tlpHeader.Name = "_tlpHeader";
+            _tlpHeader.RowCount = 2;
+            _tlpHeader.RowStyles.Add(new RowStyle());
+            _tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            _tlpHeader.Size = new Size(877, 636);
+            _tlpHeader.TabIndex = 0;
             // 
             // _mainTabControl
             // 
             _mainTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _tlpHeader.SetColumnSpan(_mainTabControl, 2);
             _mainTabControl.Location = new Point(3, 48);
             _mainTabControl.Name = "_mainTabControl";
             _mainTabControl.Size = new Size(871, 585);
@@ -307,9 +315,21 @@ namespace Chatty
             _lblConversationTitle.Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
             _lblConversationTitle.Location = new Point(3, 0);
             _lblConversationTitle.Name = "_lblConversationTitle";
-            _lblConversationTitle.Size = new Size(871, 45);
+            _lblConversationTitle.Size = new Size(414, 45);
             _lblConversationTitle.TabIndex = 1;
             _lblConversationTitle.Text = "Conversation Title";
+            // 
+            // _lblDate
+            // 
+            _lblDate.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            _lblDate.AutoSize = true;
+            _lblDate.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            _lblDate.Location = new Point(750, 0);
+            _lblDate.Name = "_lblDate";
+            _lblDate.Size = new Size(124, 45);
+            _lblDate.TabIndex = 2;
+            _lblDate.Text = "#dateTime";
+            _lblDate.TextAlign = ContentAlignment.MiddleRight;
             // 
             // _skCommunicator
             // 
@@ -318,6 +338,22 @@ namespace Chatty
             // _skMetaDataProcessor
             // 
             _skMetaDataProcessor.TopP = null;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 45);
+            // 
+            // _tslModels
+            // 
+            _tslModels.Name = "_tslModels";
+            _tslModels.Size = new Size(96, 40);
+            _tslModels.Text = "Models: ";
+            // 
+            // _tscModels
+            // 
+            _tscModels.Name = "_tscModels";
+            _tscModels.Size = new Size(250, 45);
             // 
             // FrmMain
             // 
@@ -343,8 +379,8 @@ namespace Chatty
             _splitMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)_splitMain).EndInit();
             _splitMain.ResumeLayout(false);
-            tableLayoutPanel1.ResumeLayout(false);
-            tableLayoutPanel1.PerformLayout();
+            _tlpHeader.ResumeLayout(false);
+            _tlpHeader.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -365,7 +401,7 @@ namespace Chatty
         private TreeView _trvConversationHistory;
         private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem _tsmAbout;
-        private CommunityToolkit.WinForms.AI.SemanticKernelComponent _skCommunicator;
+        private SemanticKernelComponent _skCommunicator;
         private ToolStripComboBox _tscPersonalities;
         private ToolStripLabel toolStripLabel1;
         private ToolStripSeparator toolStripSeparator2;
@@ -373,13 +409,17 @@ namespace Chatty
         private ToolStripSeparator toolStripSeparator3;
         private ToolStripMenuItem _tsmTools;
         private ToolStripMenuItem _tsmOptions;
-        private CommunityToolkit.WinForms.AI.SemanticKernelComponent _skMetaDataProcessor;
+        private SemanticKernelComponent _skMetaDataProcessor;
         private ToolStripMenuItem _tsiEdit;
         private ToolStripMenuItem _tsiPersonalities;
         private ToolStripMenuItem toolStripMenuItem2;
-        private TableLayoutPanel tableLayoutPanel1;
+        private TableLayoutPanel _tlpHeader;
         private CommunityToolkit.WinForms.FluentUI.FluentTabControl _mainTabControl;
         private Label _lblConversationTitle;
         private ToolStripStatusLabel _tslClockInfo;
+        private Label _lblDate;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripLabel _tslModels;
+        private ToolStripComboBox _tscModels;
     }
 }

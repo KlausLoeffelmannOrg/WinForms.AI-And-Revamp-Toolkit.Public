@@ -232,13 +232,14 @@ public partial class ConversationView : BlazorWebView
             // Let's clone the model and the items,
             // so the Blazor view will get the changes and update.
             _viewModel.Title = tempModel.Title;
-            _viewModel.BackColor = tempModel.BackColor;
-            _viewModel.ForeColor = tempModel.ForeColor;
 
             foreach (var item in tempModel.ConversationItems)
             {
                 string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
                 item.HtmlContent = $"<p>{currentHTML}<p>";
+                item.ForeColor = ForeColor.ToWebColor();
+                item.BackColor = SystemColors.ControlLight.ToWebColor();
+
                 _viewModel.ConversationItems.Add(item);
             }
         }

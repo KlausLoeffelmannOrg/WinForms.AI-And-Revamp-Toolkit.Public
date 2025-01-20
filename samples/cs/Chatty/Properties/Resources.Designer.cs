@@ -59,5 +59,50 @@ namespace Chatty.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please write a Summary of this conversation. The Summary should not have more than 4000 characters, but it can have (even much) less characters, if it makes sense. .
+        /// </summary>
+        internal static string Prompt_RequestChatSummary {
+            get {
+                return ResourceManager.GetString("Prompt_RequestChatSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please provide a title for the following conversation..
+        /// </summary>
+        internal static string Prompt_RequestConversationTitle {
+            get {
+                return ResourceManager.GetString("Prompt_RequestConversationTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please provide {0} keywords for the following conversation. 
+        ///Try to find the keywords in such a way that they become increasingly specific/concrete from original rather generalized..
+        /// </summary>
+        internal static string Prompt_RequestKeywords {
+            get {
+                return ResourceManager.GetString("Prompt_RequestKeywords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Today is {0}. It is {1}. 
+        ///You are an assistant in an LLM Chat-Bot client software. 
+        ///You&apos;re purpose is to provide certain meta information during a typical LLM chat with a user, like:
+        ///
+        ///* Writing chat summaries
+        ///* Finding titles for chat topics
+        ///* Finding short description for provided code snippets in technical discussions about software development.
+        ///* Providing keywords for chat conversations.
+        ///.
+        /// </summary>
+        internal static string SystemPrompt_MetaInfo {
+            get {
+                return ResourceManager.GetString("SystemPrompt_MetaInfo", resourceCulture);
+            }
+        }
     }
 }

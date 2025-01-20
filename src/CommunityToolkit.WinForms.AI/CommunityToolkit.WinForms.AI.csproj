@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="SemanticKernelComponent.AssistentInstructions.md">
+    <EmbeddedResource Include="SemanticKernelComponent\SemanticKernelComponent.AssistentInstructions.md">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>

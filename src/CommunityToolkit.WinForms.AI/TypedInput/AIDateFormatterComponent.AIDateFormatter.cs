@@ -27,7 +27,7 @@ public partial class AIDateFormatterComponent
         ];
     }
 
-    public class AIDateFormatter : TypedFormatter<DateTime?>
+    public partial class AIDateFormatter : TypedFormatter<DateTime?>
     {
         private const string OpenAiApiKeyLookupKey = "AI:OpenAi:ApiKey";
         private readonly SemanticKernelComponent _skComponent = new();
@@ -139,19 +139,6 @@ public partial class AIDateFormatterComponent
             }
 
             return null;
-        }
-
-        // Helper class, which carries the structured return values from the AI.
-        private class AIDateTimeParsingReturnValues
-        {
-            [Description("The users value after spell-checking and optional translation, when it wasn't in English.")]
-            public string DateTimeAsText { get; set; } = string.Empty;
-
-            [Description("A brief description of what needed to be corrected or brushed up.")]
-            public string MetaData { get; set; } = string.Empty;
-
-            [Description("Either 'OK' or a brief description of what went wrong.")]
-            public string ReturnStatus { get; set; } = string.Empty;
         }
 
         public override Task<string?> InitializeEditedValueAsync(DateTime? value, CancellationToken token) 
