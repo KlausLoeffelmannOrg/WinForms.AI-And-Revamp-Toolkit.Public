@@ -46,6 +46,7 @@ namespace Chatty
             _tsmAbout = new ToolStripMenuItem();
             _statusStrip = new StatusStrip();
             _tslInfo = new ToolStripStatusLabel();
+            _tslClockInfo = new ToolStripStatusLabel();
             _toolStrip = new ToolStrip();
             newToolStripButton = new ToolStripButton();
             toolStripSeparator = new ToolStripSeparator();
@@ -54,26 +55,21 @@ namespace Chatty
             toolStripLabel1 = new ToolStripLabel();
             _tscPersonalities = new ToolStripComboBox();
             toolStripSeparator2 = new ToolStripSeparator();
-            _splitContainer = new SplitContainer();
+            _splitMain = new SplitContainer();
             _trvConversationHistory = new TreeView();
-            _chatAreaSplitter = new SplitContainer();
-            _conversationView = new ConversationView();
-            _decoratorPanel = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
-            _promptControl = new SemanticKernelDemo.Controls.AsyncPromptControl();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            _mainTabControl = new CommunityToolkit.WinForms.FluentUI.FluentTabControl();
+            _lblConversationTitle = new Label();
             _skCommunicator = new CommunityToolkit.WinForms.AI.SemanticKernelComponent();
             _skMetaDataProcessor = new CommunityToolkit.WinForms.AI.SemanticKernelComponent();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)_splitContainer).BeginInit();
-            _splitContainer.Panel1.SuspendLayout();
-            _splitContainer.Panel2.SuspendLayout();
-            _splitContainer.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)_chatAreaSplitter).BeginInit();
-            _chatAreaSplitter.Panel1.SuspendLayout();
-            _chatAreaSplitter.Panel2.SuspendLayout();
-            _chatAreaSplitter.SuspendLayout();
-            _decoratorPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)_splitMain).BeginInit();
+            _splitMain.Panel1.SuspendLayout();
+            _splitMain.Panel2.SuspendLayout();
+            _splitMain.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // _menuStrip
@@ -84,7 +80,7 @@ namespace Chatty
             _menuStrip.Location = new Point(0, 0);
             _menuStrip.Name = "_menuStrip";
             _menuStrip.Padding = new Padding(7, 2, 0, 2);
-            _menuStrip.Size = new Size(1574, 38);
+            _menuStrip.Size = new Size(1264, 38);
             _menuStrip.TabIndex = 0;
             _menuStrip.Text = "menuStrip1";
             // 
@@ -165,21 +161,27 @@ namespace Chatty
             // 
             _statusStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _statusStrip.ImageScalingSize = new Size(24, 24);
-            _statusStrip.Items.AddRange(new ToolStripItem[] { _tslInfo });
-            _statusStrip.Location = new Point(0, 707);
+            _statusStrip.Items.AddRange(new ToolStripItem[] { _tslInfo, _tslClockInfo });
+            _statusStrip.Location = new Point(0, 759);
             _statusStrip.Name = "_statusStrip";
             _statusStrip.Padding = new Padding(1, 0, 17, 0);
-            _statusStrip.Size = new Size(1574, 37);
+            _statusStrip.Size = new Size(1264, 37);
             _statusStrip.TabIndex = 1;
             _statusStrip.Text = "statusStrip1";
             // 
             // _tslInfo
             // 
             _tslInfo.Name = "_tslInfo";
-            _tslInfo.Size = new Size(1556, 30);
+            _tslInfo.Size = new Size(1171, 30);
             _tslInfo.Spring = true;
             _tslInfo.Text = "#info";
             _tslInfo.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // _tslClockInfo
+            // 
+            _tslClockInfo.Name = "_tslClockInfo";
+            _tslClockInfo.Size = new Size(75, 30);
+            _tslClockInfo.Text = "#clock";
             // 
             // _toolStrip
             // 
@@ -189,7 +191,7 @@ namespace Chatty
             _toolStrip.Location = new Point(0, 38);
             _toolStrip.Name = "_toolStrip";
             _toolStrip.Padding = new Padding(10);
-            _toolStrip.Size = new Size(1574, 65);
+            _toolStrip.Size = new Size(1264, 65);
             _toolStrip.TabIndex = 2;
             _toolStrip.Text = "toolStrip1";
             // 
@@ -244,24 +246,24 @@ namespace Chatty
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new Size(6, 45);
             // 
-            // _splitContainer
+            // _splitMain
             // 
-            _splitContainer.Dock = DockStyle.Fill;
-            _splitContainer.Location = new Point(0, 103);
-            _splitContainer.Name = "_splitContainer";
+            _splitMain.Dock = DockStyle.Fill;
+            _splitMain.Location = new Point(0, 103);
+            _splitMain.Name = "_splitMain";
             // 
-            // _splitContainer.Panel1
+            // _splitMain.Panel1
             // 
-            _splitContainer.Panel1.Controls.Add(_trvConversationHistory);
-            _splitContainer.Panel1.Padding = new Padding(10);
+            _splitMain.Panel1.Controls.Add(_trvConversationHistory);
+            _splitMain.Panel1.Padding = new Padding(10);
             // 
-            // _splitContainer.Panel2
+            // _splitMain.Panel2
             // 
-            _splitContainer.Panel2.Controls.Add(_chatAreaSplitter);
-            _splitContainer.Panel2.Padding = new Padding(10);
-            _splitContainer.Size = new Size(1574, 604);
-            _splitContainer.SplitterDistance = 453;
-            _splitContainer.TabIndex = 3;
+            _splitMain.Panel2.Controls.Add(tableLayoutPanel1);
+            _splitMain.Panel2.Padding = new Padding(10);
+            _splitMain.Size = new Size(1264, 656);
+            _splitMain.SplitterDistance = 363;
+            _splitMain.TabIndex = 3;
             // 
             // _trvConversationHistory
             // 
@@ -271,63 +273,43 @@ namespace Chatty
             _trvConversationHistory.Location = new Point(10, 10);
             _trvConversationHistory.Name = "_trvConversationHistory";
             _trvConversationHistory.ShowNodeToolTips = true;
-            _trvConversationHistory.Size = new Size(433, 584);
+            _trvConversationHistory.Size = new Size(343, 636);
             _trvConversationHistory.TabIndex = 0;
             _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
             // 
-            // _chatAreaSplitter
+            // tableLayoutPanel1
             // 
-            _chatAreaSplitter.Dock = DockStyle.Fill;
-            _chatAreaSplitter.Location = new Point(10, 10);
-            _chatAreaSplitter.Name = "_chatAreaSplitter";
-            _chatAreaSplitter.Orientation = Orientation.Horizontal;
+            tableLayoutPanel1.ColumnCount = 1;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Controls.Add(_mainTabControl, 0, 1);
+            tableLayoutPanel1.Controls.Add(_lblConversationTitle, 0, 0);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(10, 10);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 2;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle());
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Size = new Size(877, 636);
+            tableLayoutPanel1.TabIndex = 0;
             // 
-            // _chatAreaSplitter.Panel1
+            // _mainTabControl
             // 
-            _chatAreaSplitter.Panel1.Controls.Add(_conversationView);
-            _chatAreaSplitter.Panel1.Padding = new Padding(5);
+            _mainTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _mainTabControl.Location = new Point(3, 48);
+            _mainTabControl.Name = "_mainTabControl";
+            _mainTabControl.Size = new Size(871, 585);
+            _mainTabControl.TabIndex = 0;
             // 
-            // _chatAreaSplitter.Panel2
+            // _lblConversationTitle
             // 
-            _chatAreaSplitter.Panel2.Controls.Add(_decoratorPanel);
-            _chatAreaSplitter.Panel2.Padding = new Padding(5);
-            _chatAreaSplitter.Size = new Size(1097, 584);
-            _chatAreaSplitter.SplitterDistance = 434;
-            _chatAreaSplitter.TabIndex = 0;
-            // 
-            // _conversationView
-            // 
-            _conversationView.ConversationTitle = "New";
-            _conversationView.Dock = DockStyle.Fill;
-            _conversationView.HostPage = "wwwroot/index.html";
-            _conversationView.Location = new Point(5, 5);
-            _conversationView.Name = "_conversationView";
-            _conversationView.Size = new Size(1087, 424);
-            _conversationView.TabIndex = 0;
-            _conversationView.Text = "conversationView1";
-            _conversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
-            // 
-            // _decoratorPanel
-            // 
-            _decoratorPanel.BorderThickness = 1;
-            _decoratorPanel.Controls.Add(_promptControl);
-            _decoratorPanel.Dock = DockStyle.Fill;
-            _decoratorPanel.Location = new Point(5, 5);
-            _decoratorPanel.Name = "_decoratorPanel";
-            _decoratorPanel.Padding = new Padding(5);
-            _decoratorPanel.Size = new Size(1087, 136);
-            _decoratorPanel.TabIndex = 0;
-            // 
-            // _promptControl
-            // 
-            _promptControl.BorderStyle = BorderStyle.None;
-            _promptControl.Dock = DockStyle.Fill;
-            _promptControl.Location = new Point(6, 5);
-            _promptControl.Multiline = true;
-            _promptControl.Name = "_promptControl";
-            _promptControl.Size = new Size(1075, 126);
-            _promptControl.TabIndex = 0;
-            _promptControl.AsyncSendPrompt += PromptControl_AsyncSendPrompt;
+            _lblConversationTitle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _lblConversationTitle.AutoSize = true;
+            _lblConversationTitle.Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            _lblConversationTitle.Location = new Point(3, 0);
+            _lblConversationTitle.Name = "_lblConversationTitle";
+            _lblConversationTitle.Size = new Size(871, 45);
+            _lblConversationTitle.TabIndex = 1;
+            _lblConversationTitle.Text = "Conversation Title";
             // 
             // _skCommunicator
             // 
@@ -341,8 +323,8 @@ namespace Chatty
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1574, 744);
-            Controls.Add(_splitContainer);
+            ClientSize = new Size(1264, 796);
+            Controls.Add(_splitMain);
             Controls.Add(_toolStrip);
             Controls.Add(_statusStrip);
             Controls.Add(_menuStrip);
@@ -357,16 +339,12 @@ namespace Chatty
             _statusStrip.PerformLayout();
             _toolStrip.ResumeLayout(false);
             _toolStrip.PerformLayout();
-            _splitContainer.Panel1.ResumeLayout(false);
-            _splitContainer.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)_splitContainer).EndInit();
-            _splitContainer.ResumeLayout(false);
-            _chatAreaSplitter.Panel1.ResumeLayout(false);
-            _chatAreaSplitter.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)_chatAreaSplitter).EndInit();
-            _chatAreaSplitter.ResumeLayout(false);
-            _decoratorPanel.ResumeLayout(false);
-            _decoratorPanel.PerformLayout();
+            _splitMain.Panel1.ResumeLayout(false);
+            _splitMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)_splitMain).EndInit();
+            _splitMain.ResumeLayout(false);
+            tableLayoutPanel1.ResumeLayout(false);
+            tableLayoutPanel1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -383,18 +361,14 @@ namespace Chatty
         private ToolStripButton copyToolStripButton;
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripStatusLabel _tslInfo;
-        private SplitContainer _splitContainer;
+        private SplitContainer _splitMain;
         private TreeView _trvConversationHistory;
         private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem _tsmAbout;
-        private SplitContainer _chatAreaSplitter;
-        private ConversationView _conversationView;
-        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _decoratorPanel;
         private CommunityToolkit.WinForms.AI.SemanticKernelComponent _skCommunicator;
         private ToolStripComboBox _tscPersonalities;
         private ToolStripLabel toolStripLabel1;
         private ToolStripSeparator toolStripSeparator2;
-        private SemanticKernelDemo.Controls.AsyncPromptControl _promptControl;
         private ToolStripMenuItem toolStripMenuItem1;
         private ToolStripSeparator toolStripSeparator3;
         private ToolStripMenuItem _tsmTools;
@@ -403,5 +377,9 @@ namespace Chatty
         private ToolStripMenuItem _tsiEdit;
         private ToolStripMenuItem _tsiPersonalities;
         private ToolStripMenuItem toolStripMenuItem2;
+        private TableLayoutPanel tableLayoutPanel1;
+        private CommunityToolkit.WinForms.FluentUI.FluentTabControl _mainTabControl;
+        private Label _lblConversationTitle;
+        private ToolStripStatusLabel _tslClockInfo;
     }
 }
