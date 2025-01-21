@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.WinForms.TypedInputExtenders;
 using System.ComponentModel;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.AI.TypedInput;

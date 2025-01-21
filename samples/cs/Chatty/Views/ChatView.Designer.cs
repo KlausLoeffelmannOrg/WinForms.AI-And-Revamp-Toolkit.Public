@@ -31,106 +31,174 @@ partial class ChatView
         System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ChatView));
         _splitChatArea = new SplitContainer();
         _conversationView = new CommunityToolkit.WinForms.Controls.Blazor.ConversationView();
-        _chatToolStrip = new ToolStrip();
         _decoratorPanel = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
         _promptControl = new SemanticKernelDemo.Controls.AsyncPromptControl();
-        toolStripButton1 = new ToolStripButton();
+        _chatToolStrip = new ToolStrip();
+        _newPrompt = new ToolStripButton();
+        _tsbRefreshMetaData = new ToolStripButton();
+        _tsbSaveConversation = new ToolStripButton();
+        toolStripSeparator = new ToolStripSeparator();
+        _tsbCut = new ToolStripButton();
+        _tsbCopy = new ToolStripButton();
+        _tsbPaste = new ToolStripButton();
+        toolStripSeparator1 = new ToolStripSeparator();
         ((System.ComponentModel.ISupportInitialize)_splitChatArea).BeginInit();
         _splitChatArea.Panel1.SuspendLayout();
         _splitChatArea.Panel2.SuspendLayout();
         _splitChatArea.SuspendLayout();
-        _chatToolStrip.SuspendLayout();
         _decoratorPanel.SuspendLayout();
+        _chatToolStrip.SuspendLayout();
         SuspendLayout();
         // 
         // _splitChatArea
         // 
         _splitChatArea.Dock = DockStyle.Fill;
         _splitChatArea.Location = new Point(0, 0);
+        _splitChatArea.Margin = new Padding(4);
         _splitChatArea.Name = "_splitChatArea";
         _splitChatArea.Orientation = Orientation.Horizontal;
         // 
         // _splitChatArea.Panel1
         // 
         _splitChatArea.Panel1.Controls.Add(_conversationView);
-        _splitChatArea.Panel1.Padding = new Padding(5);
+        _splitChatArea.Panel1.Padding = new Padding(6);
         // 
         // _splitChatArea.Panel2
         // 
         _splitChatArea.Panel2.Controls.Add(_decoratorPanel);
         _splitChatArea.Panel2.Controls.Add(_chatToolStrip);
-        _splitChatArea.Panel2.Padding = new Padding(5);
-        _splitChatArea.Size = new Size(1019, 726);
-        _splitChatArea.SplitterDistance = 537;
+        _splitChatArea.Panel2.Padding = new Padding(6);
+        _splitChatArea.Size = new Size(1223, 871);
+        _splitChatArea.SplitterDistance = 644;
+        _splitChatArea.SplitterWidth = 5;
         _splitChatArea.TabIndex = 1;
         // 
         // _conversationView
         // 
-        _conversationView.ConversationTitle = "New";
         _conversationView.Dock = DockStyle.Fill;
         _conversationView.HostPage = "wwwroot/index.html";
-        _conversationView.Location = new Point(5, 5);
+        _conversationView.Location = new Point(6, 6);
+        _conversationView.Margin = new Padding(4);
         _conversationView.Name = "_conversationView";
-        _conversationView.Size = new Size(1009, 527);
+        _conversationView.Size = new Size(1211, 632);
         _conversationView.TabIndex = 0;
         _conversationView.Text = "conversationView1";
-        // 
-        // toolStrip1
-        // 
-        _chatToolStrip.ImageScalingSize = new Size(32, 32);
-        _chatToolStrip.Items.AddRange(new ToolStripItem[] { toolStripButton1 });
-        _chatToolStrip.Location = new Point(5, 5);
-        _chatToolStrip.Name = "toolStrip1";
-        _chatToolStrip.Size = new Size(1009, 41);
-        _chatToolStrip.TabIndex = 1;
-        _chatToolStrip.Text = "_promptToolStrip";
         // 
         // _decoratorPanel
         // 
         _decoratorPanel.BorderThickness = 1;
         _decoratorPanel.Controls.Add(_promptControl);
         _decoratorPanel.Dock = DockStyle.Fill;
-        _decoratorPanel.Location = new Point(5, 46);
+        _decoratorPanel.Location = new Point(6, 48);
+        _decoratorPanel.Margin = new Padding(4);
         _decoratorPanel.Name = "_decoratorPanel";
-        _decoratorPanel.Padding = new Padding(10);
-        _decoratorPanel.Size = new Size(1009, 134);
+        _decoratorPanel.Padding = new Padding(12);
+        _decoratorPanel.Size = new Size(1211, 168);
         _decoratorPanel.TabIndex = 0;
         // 
         // _promptControl
         // 
         _promptControl.BorderStyle = BorderStyle.None;
         _promptControl.Dock = DockStyle.Fill;
-        _promptControl.Location = new Point(11, 10);
+        _promptControl.Location = new Point(13, 12);
+        _promptControl.Margin = new Padding(4);
         _promptControl.Multiline = true;
         _promptControl.Name = "_promptControl";
-        _promptControl.Size = new Size(987, 114);
+        _promptControl.Size = new Size(1185, 144);
         _promptControl.TabIndex = 0;
         // 
-        // toolStripButton1
+        // _chatToolStrip
         // 
-        toolStripButton1.DisplayStyle = ToolStripItemDisplayStyle.Image;
-        toolStripButton1.Image = (Image)resources.GetObject("toolStripButton1.Image");
-        toolStripButton1.ImageTransparentColor = Color.Magenta;
-        toolStripButton1.Name = "toolStripButton1";
-        toolStripButton1.Size = new Size(36, 36);
-        toolStripButton1.Text = "toolStripButton1";
+        _chatToolStrip.ImageScalingSize = new Size(32, 32);
+        _chatToolStrip.Items.AddRange(new ToolStripItem[] { _newPrompt, _tsbRefreshMetaData, _tsbSaveConversation, toolStripSeparator, _tsbCut, _tsbCopy, _tsbPaste, toolStripSeparator1 });
+        _chatToolStrip.Location = new Point(6, 6);
+        _chatToolStrip.Name = "_chatToolStrip";
+        _chatToolStrip.Size = new Size(1211, 42);
+        _chatToolStrip.TabIndex = 1;
+        _chatToolStrip.Text = "_promptToolStrip";
+        // 
+        // _newPrompt
+        // 
+        _newPrompt.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _newPrompt.Image = (Image)resources.GetObject("_newPrompt.Image");
+        _newPrompt.ImageTransparentColor = Color.Magenta;
+        _newPrompt.Name = "_newPrompt";
+        _newPrompt.Size = new Size(40, 36);
+        _newPrompt.Text = "&New";
+        // 
+        // _tsbRefreshMetaData
+        // 
+        _tsbRefreshMetaData.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _tsbRefreshMetaData.Image = (Image)resources.GetObject("_tsbRefreshMetaData.Image");
+        _tsbRefreshMetaData.ImageTransparentColor = Color.Magenta;
+        _tsbRefreshMetaData.Name = "_tsbRefreshMetaData";
+        _tsbRefreshMetaData.Size = new Size(40, 36);
+        _tsbRefreshMetaData.Text = "Refresh MetaData";
+        _tsbRefreshMetaData.Click += TsbRefreshMetaData_Click;
+        // 
+        // _tsbSaveConversation
+        // 
+        _tsbSaveConversation.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _tsbSaveConversation.Image = (Image)resources.GetObject("_tsbSaveConversation.Image");
+        _tsbSaveConversation.ImageTransparentColor = Color.Magenta;
+        _tsbSaveConversation.Name = "_tsbSaveConversation";
+        _tsbSaveConversation.Size = new Size(40, 36);
+        _tsbSaveConversation.Text = "&Save";
+        // 
+        // toolStripSeparator
+        // 
+        toolStripSeparator.Name = "toolStripSeparator";
+        toolStripSeparator.Size = new Size(6, 42);
+        // 
+        // _tsbCut
+        // 
+        _tsbCut.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _tsbCut.Image = (Image)resources.GetObject("_tsbCut.Image");
+        _tsbCut.ImageTransparentColor = Color.Magenta;
+        _tsbCut.Name = "_tsbCut";
+        _tsbCut.Size = new Size(40, 36);
+        _tsbCut.Text = "C&ut";
+        // 
+        // _tsbCopy
+        // 
+        _tsbCopy.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _tsbCopy.Image = (Image)resources.GetObject("_tsbCopy.Image");
+        _tsbCopy.ImageTransparentColor = Color.Magenta;
+        _tsbCopy.Name = "_tsbCopy";
+        _tsbCopy.Size = new Size(40, 36);
+        _tsbCopy.Text = "&Copy";
+        // 
+        // _tsbPaste
+        // 
+        _tsbPaste.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        _tsbPaste.Image = (Image)resources.GetObject("_tsbPaste.Image");
+        _tsbPaste.ImageTransparentColor = Color.Magenta;
+        _tsbPaste.Name = "_tsbPaste";
+        _tsbPaste.Size = new Size(40, 36);
+        _tsbPaste.Text = "&Paste";
+        // 
+        // toolStripSeparator1
+        // 
+        toolStripSeparator1.Name = "toolStripSeparator1";
+        toolStripSeparator1.Size = new Size(6, 42);
         // 
         // ChatView
         // 
-        AutoScaleDimensions = new SizeF(10F, 25F);
+        AutoScaleDimensions = new SizeF(12F, 30F);
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(_splitChatArea);
+        Margin = new Padding(4);
         Name = "ChatView";
-        Size = new Size(1019, 726);
+        Size = new Size(1223, 871);
         _splitChatArea.Panel1.ResumeLayout(false);
         _splitChatArea.Panel2.ResumeLayout(false);
         _splitChatArea.Panel2.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)_splitChatArea).EndInit();
         _splitChatArea.ResumeLayout(false);
-        _chatToolStrip.ResumeLayout(false);
-        _chatToolStrip.PerformLayout();
         _decoratorPanel.ResumeLayout(false);
         _decoratorPanel.PerformLayout();
+        _chatToolStrip.ResumeLayout(false);
+        _chatToolStrip.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -141,5 +209,12 @@ partial class ChatView
     private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _decoratorPanel;
     private SemanticKernelDemo.Controls.AsyncPromptControl _promptControl;
     private ToolStrip _chatToolStrip;
-    private ToolStripButton toolStripButton1;
+    private ToolStripButton _newPrompt;
+    private ToolStripButton _tsbRefreshMetaData;
+    private ToolStripButton _tsbSaveConversation;
+    private ToolStripSeparator toolStripSeparator;
+    private ToolStripButton _tsbCut;
+    private ToolStripButton _tsbCopy;
+    private ToolStripButton _tsbPaste;
+    private ToolStripSeparator toolStripSeparator1;
 }

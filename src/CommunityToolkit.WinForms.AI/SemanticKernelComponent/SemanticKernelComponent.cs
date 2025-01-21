@@ -12,6 +12,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.ComponentModel;
 using System.Net.Http.Headers;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.Json;
 
@@ -21,7 +22,7 @@ namespace CommunityToolkit.WinForms.AI;
 public partial class SemanticKernelComponent : BindableComponent
 {
     // We're using the GPT-4o model from OpenAI directory for our Semantic Kernel scenario.
-    private const string DefaultModelName = "gpt-4o";
+    private const string DefaultModelName = "gpt-4o-2024-11-20";
     private const string ApiEndpoint = "https://api.openai.com/v1/models";
 
 
@@ -42,6 +43,10 @@ public partial class SemanticKernelComponent : BindableComponent
     private double? _frequencyPenalty;
     private JsonSerializerOptions? _jsonSerializerOptions;
 
+    private SynchronizationContext? _syncContext=WindowsFormsSynchronizationContext.Current;
+    private string? _systemPrompt;
+    private bool _queueSystemPrompt;
+
     /// <summary>
     ///  Requests a prompt response from the OpenAI API. Make sure, you set at least the <see cref="ApiKeyGetter"/> property,
     ///  and the <see cref="SystemPrompt"/> property, which is the general description, what the Assistant is suppose to do.
@@ -56,18 +61,12 @@ public partial class SemanticKernelComponent : BindableComponent
         if (string.IsNullOrWhiteSpace(valueToProcess))
             throw new InvalidOperationException("You requested to process a prompt, but did not provide any content to process.");
 
-        var (chatService, executionSettings) = await GetOrCreateChatServiceAsync();
+        (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
 
-        if (ChatHistory is null)
-            throw new InvalidOperationException("You requested to process a prompt, but the ChatHistory is not set.");
+        var chatHistory=HandleChatHistory(valueToProcess, keepChatHistory);
 
-        if (!keepChatHistory)
-            ChatHistory.Clear();
-
-        ChatHistory.AddUserMessage(valueToProcess);
-
-        var responses = await chatService.GetChatMessageContentsAsync(
-            ChatHistory,
+        IReadOnlyList<ChatMessageContent> responses = await chatService.GetChatMessageContentsAsync(
+            chatHistory,
             kernel: _kernel,
             executionSettings: executionSettings);
 
@@ -77,7 +76,7 @@ public partial class SemanticKernelComponent : BindableComponent
         // But we need to also add them to the chat history!
         foreach (ChatMessageContent response in responses)
         {
-            ChatHistory.AddMessage(response.Role, response.ToString());
+            chatHistory.AddMessage(response.Role, response.ToString());
             responseStringBuilder.Append(response);
         }
 
@@ -98,25 +97,19 @@ public partial class SemanticKernelComponent : BindableComponent
         if (string.IsNullOrWhiteSpace(valueToProcess))
             throw new InvalidOperationException("You requested to process a prompt, but did not provide any content to process.");
 
-        var (chatService, executionSettings) = await GetOrCreateChatServiceAsync();
+        (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
 
-        if (ChatHistory is null)
-            throw new InvalidOperationException("You requested to process a prompt, but the ChatHistory is not set.");
+        var chatHistory= HandleChatHistory(valueToProcess, keepChatHistory);
 
-        if (!keepChatHistory)
-            ChatHistory.Clear();
-
-        ChatHistory.AddUserMessage(valueToProcess);
-
-        var responses = chatService.GetStreamingChatMessageContentsAsync(
-            ChatHistory,
+        IAsyncEnumerable<StreamingChatMessageContent> responses = chatService.GetStreamingChatMessageContentsAsync(
+            chatHistory,
             executionSettings: executionSettings,
             kernel: _kernel);
 
-        responses = ChatHistory.AddStreamingMessageAsync(
+        responses = chatHistory.AddStreamingMessageAsync(
             (IAsyncEnumerable<OpenAIStreamingChatMessageContent>)responses);
 
-        await foreach (var response in responses)
+        await foreach (StreamingChatMessageContent response in responses)
         {
             if (response.Content is null)
             {
@@ -125,6 +118,33 @@ public partial class SemanticKernelComponent : BindableComponent
 
             yield return response.Content;
         }
+    }
+
+    private ChatHistory HandleChatHistory(string valueToProcess, bool keepChatHistory)
+    {
+        if (ChatHistory is null)
+        {
+            throw new InvalidOperationException("You requested to process a prompt, but the ChatHistory is not set.");
+        }
+
+        if (!keepChatHistory)
+        {
+            ChatHistory.Clear();
+            _queueSystemPrompt = true;
+        }
+
+        if (_queueSystemPrompt)
+        {
+            ChatHistory.AddMessage(
+                AuthorRole.Assistant,
+                EffectiveSystemPrompt ?? throw new InvalidOperationException("The effective system prompt is not set."));
+
+            _queueSystemPrompt = false;
+        }
+
+        ChatHistory.AddUserMessage(valueToProcess);
+
+        return ChatHistory;
     }
 
     private async Task<(OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings)> GetOrCreateChatServiceAsync()
@@ -145,14 +165,16 @@ public partial class SemanticKernelComponent : BindableComponent
             ModelId = ModelName
         };
 
-        executionSettings = executionSettings
-            .WithSystemPrompt(EffectiveSystemPrompt)
-                    .WithDefaultModelParameters(
-                        MaxTokens: 8000,
-                        temperature: Temperature,
-                        topP: TopP,
-                        frequencyPenalty: _frequencyPenalty,
-                        presencePenalty: _presencePenalty);
+        if (!ModelName.StartsWith("o1"))
+        {
+            executionSettings = executionSettings
+            .WithDefaultModelParameters(
+                MaxTokens: MaxTokens,
+                temperature: Temperature,
+                topP: TopP,
+                frequencyPenalty: _frequencyPenalty,
+                presencePenalty: _presencePenalty);
+        }
 
         if (!string.IsNullOrEmpty(JsonSchema))
         {
@@ -168,7 +190,7 @@ public partial class SemanticKernelComponent : BindableComponent
         string apiKey = ApiKeyGetter.Invoke()
             ?? throw new InvalidOperationException("The ApiKeyGetter did not retrieve a working api key.");
 
-        var kernelBuilder = Kernel
+        IKernelBuilder kernelBuilder = Kernel
             .CreateBuilder()
             .AddOpenAIChatCompletion(ModelName, apiKey);
 
@@ -185,13 +207,13 @@ public partial class SemanticKernelComponent : BindableComponent
         _kernel = kernelBuilder.Build();
         _chatHistory ??= [];
 
-        var chatService = (OpenAIChatCompletionService)_kernel
+        OpenAIChatCompletionService chatService = (OpenAIChatCompletionService)_kernel
             .GetRequiredService<IChatCompletionService>();
 
         return (chatService, settingsEventArgs.ExecutionSettings);
     }
 
-    public async Task<IEnumerable<string>?> QueryOpenAiModelnamesAsync()
+    public async Task<IEnumerable<string>?> QueryOpenAiModelNamesAsync()
     {
         string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
         
@@ -217,15 +239,137 @@ public partial class SemanticKernelComponent : BindableComponent
 
             return models?.Data.Select(item => item.Id);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            throw;
+            ExceptionDispatchInfo dispatchInfo = ExceptionDispatchInfo.Capture(ex);
+
+            // Marshal to the UI thread
+            _syncContext?.Post(_ => 
+                {
+                    dispatchInfo.Throw();
+                }, null);
+
+            return null;
+        }
+    }
+
+    public async Task<ModelInfo?> QueryModelNameAsync(string modelName)
+    {
+        string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
+
+        using HttpClient client = new();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        try
+        {
+            HttpResponseMessage response = await client.GetAsync($"{ApiEndpoint}/{modelName}");
+            response.EnsureSuccessStatusCode();
+
+            string content = await response.Content.ReadAsStringAsync();
+            ModelInfo? modelInfo = JsonSerializer.Deserialize<ModelInfo>(content);
+
+            return modelInfo;
+        }
+        catch (Exception ex)
+        {
+            ExceptionDispatchInfo dispatchInfo = ExceptionDispatchInfo.Capture(ex);
+
+            // Marshal to the UI thread
+            _syncContext?.Post(_ =>
+                {
+                    dispatchInfo.Throw();
+                }, null);
+        }
+
+        return null;
+    }
+
+    public async Task<T> RequestStructuredResponseAsync<T>(string request, CancellationToken token)
+    {
+        string? jsonSchema = PromptFromTypeGenerator.GetJSonSchema<T>();
+        StructuredReturnDataAttribute promptInfo = PromptFromTypeGenerator.GetTypePromptInfo<T>();
+        string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
+
+        StringBuilder stringBuilder = new();
+
+        if (promptInfo.ProvideDate)
+        {
+            stringBuilder.AppendLine($"Today is {DateTime.Now:d}.");
+        }
+
+        if (promptInfo.ProvideTime)
+        {
+            stringBuilder.AppendLine($"The current time is {DateTime.Now:T}.");
+        }
+
+        if (promptInfo.ProvideTimeZone)
+        {
+            stringBuilder.AppendLine($"The current time zone is {TimeZoneInfo.Local.DisplayName}.");
+        }
+
+        if (promptInfo.LanguageCulture is not null)
+        {
+            stringBuilder.AppendLine($"The user requested assistance for the following language: {promptInfo.LanguageCulture.DisplayName}.");
+        }
+
+        stringBuilder.AppendLine("Please provide the requested information and return Json according to the provided Json Schema.");
+        stringBuilder.AppendLine("Please provide the following information:");
+
+        IEnumerable<string> propertiesRequests = PromptFromTypeGenerator.GetTypePropertyPrompts<T>();
+
+        foreach (string propertyRequest in propertiesRequests)
+        {
+            stringBuilder.AppendLine(propertyRequest);
+        }
+
+        stringBuilder.AppendLine();
+        stringBuilder.AppendLine("The Data to work with is as follow:");
+        stringBuilder.AppendLine();
+        stringBuilder.AppendLine(request);
+
+        string prompt = stringBuilder.ToString();
+
+        string? previousJSonSchema = JsonSchema;
+        string? previousSystemPrompt = SystemPrompt;
+
+        JsonSchema = jsonSchema;
+        SystemPrompt = systemPrompt;
+
+        try
+        {
+            string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
+
+            if (string.IsNullOrEmpty(jsonReturnData))
+            {
+                throw new InvalidOperationException("Trying to parse the text input failed for unknown reasons.");
+            }
+
+            try
+            {
+                T typedReturnValue = JsonSerializer.Deserialize<T>(jsonReturnData)!;
+                return typedReturnValue;
+            }
+
+            catch (Exception innerException)
+            {
+                if (innerException is FormatException)
+                {
+                    throw;
+                }
+
+                throw new FormatException("There was a problem constructing the type from the response data.", innerException);
+            }
+        }
+        finally
+        {
+            JsonSchema = previousJSonSchema;
+            SystemPrompt = previousSystemPrompt;
         }
     }
 
     private static ILoggerFactory CreateTelemetryLogger()
     {
-        var resourceBuilder = ResourceBuilder
+        ResourceBuilder resourceBuilder = ResourceBuilder
             .CreateDefault()
             .AddService("TelemetryConsoleQuickstart");
 
@@ -235,19 +379,19 @@ public partial class SemanticKernelComponent : BindableComponent
         // Enable model diagnostics without sensitive data.
         AppContext.SetSwitch("Microsoft.SemanticKernel.Experimental.GenAI.EnableOTelDiagnostics", true);
 
-        using var traceProvider = Sdk.CreateTracerProviderBuilder()
+        using TracerProvider traceProvider = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(resourceBuilder)
             .AddSource("Microsoft.SemanticKernel*")
             .AddConsoleExporter()
             .Build();
 
-        using var meterProvider = Sdk.CreateMeterProviderBuilder()
+        using MeterProvider meterProvider = Sdk.CreateMeterProviderBuilder()
             .SetResourceBuilder(resourceBuilder)
             .AddMeter("Microsoft.SemanticKernel*")
             .AddConsoleExporter()
             .Build();
 
-        var loggerFactory = LoggerFactory.Create(builder =>
+        ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
         {
             // Add OpenTelemetry as a logging provider
             builder.AddOpenTelemetry(options =>
@@ -264,7 +408,7 @@ public partial class SemanticKernelComponent : BindableComponent
         return loggerFactory;
     }
 
-    protected virtual string GetAssistantInstructions()
+    protected virtual string? GetAssistantInstructions()
         => SystemPrompt;
 
     protected virtual Task OnRequestAssistantInstructionsAsync(AsyncRequestAssistantInstructionsEventArgs eArgs)
@@ -328,6 +472,13 @@ public partial class SemanticKernelComponent : BindableComponent
     [Description("Gets or sets the Json schema description. This does currently not influence what the model returns.")]
     public string? JsonSchemaDescription { get; set; } = null;
 
+    [Bindable(true)]
+    [Browsable(true)]
+    [DefaultValue(4096)]
+    [Category("Model Parameter")]
+    [Description("Gets or sets the maximum number of tokens to return.")]
+    public int MaxTokens { get; set; } = 4096;
+
     /// <summary>
     ///  Gets or sets the resource string source for the Assistant Instructions.
     /// </summary>
@@ -343,8 +494,18 @@ public partial class SemanticKernelComponent : BindableComponent
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public virtual string SystemPrompt { get; set; }
-        = "You are an Assistant for helping Developers with questions around .NET, C# and Visual Basic.";
+    public virtual string? SystemPrompt
+    {
+        get => _systemPrompt;
+        set
+        {
+            if (value == _systemPrompt)
+                return;
+
+            _systemPrompt = value;
+            _queueSystemPrompt = true;
+        }
+    }
 
     /// <summary>
     ///  The SystemPrompt, as it became constructed based on schema information, original SystemPrompt and SystemPrompt event.
@@ -356,6 +517,8 @@ public partial class SemanticKernelComponent : BindableComponent
     ///  we need to instruct the model to return the result in JSon according to the schema information.
     /// </summary>
     protected virtual string SystemPromptSchemaAmendment { get; set; } =
+        // Note: The "IMPORTANT" is actually not necessary anymore with more modern models, like GPT-4o.
+        // Also read: https://cookbook.openai.com/examples/structured_outputs_intro
         $"""
         In addition to everything previously said, it is absolutely essential that you return 
         the result in Json according to the enclosed json schema information. 
@@ -438,4 +601,3 @@ public partial class SemanticKernelComponent : BindableComponent
         set => _topP = value;
     }
 }
-#pragma warning restore SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.

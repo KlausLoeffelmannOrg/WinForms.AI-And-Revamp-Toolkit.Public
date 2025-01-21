@@ -1,15 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.WinForms.ConversationView.Extensions;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
 
-public partial class ConversationViewModel()
+public partial class Conversation()
     : ObservableObject
 {
-    public ConversationViewModel(string title) : this()
+    public Conversation(string title) : this()
     {
         _title = title;
+        _id = Guid.NewGuid();
         _backColor = string.Empty;
         _foreColor = string.Empty;
         _dateCreated = DateTimeOffset.Now;
@@ -17,6 +19,9 @@ public partial class ConversationViewModel()
         _backColor = string.Empty;
         _foreColor = string.Empty;
     }
+
+    [ObservableProperty]
+    private Guid _id;
 
     [ObservableProperty]
     private string? _headline;
@@ -29,6 +34,9 @@ public partial class ConversationViewModel()
 
     [ObservableProperty]
     private string _keywords = string.Empty;
+
+    [ObservableProperty]
+    private int _tokenCount;
 
     [ObservableProperty]
     private string _filename = string.Empty;
@@ -52,7 +60,7 @@ public partial class ConversationViewModel()
     private string? _responseInProgressBackColor;
 
     [ObservableProperty]
-    private ObservableCollection<ConversationItemViewModel> _conversationItems = [];
+    private ObservableCollection<ConversationItem> _conversationItems = [];
 
     public void WriteJSon(Stream stream)
     {
@@ -67,16 +75,18 @@ public partial class ConversationViewModel()
         using Utf8JsonWriter writer = new(stream, options);
 
         writer.WriteStartObject();
+        writer.WriteString(nameof(Id), Id);
         writer.WriteString(nameof(Title), Title);
         writer.WriteString(nameof(Filename), Filename);
         writer.WriteString(nameof(DateCreated), DateCreated);
         writer.WriteString(nameof(DateLastEdited), DateLastEdited);
         writer.WriteString(nameof(Summary), Summary);
         writer.WriteString(nameof(Keywords), Keywords);
+        writer.WriteNumber(nameof(TokenCount), TokenCount);
 
         writer.WriteStartArray(nameof(ConversationItems));
 
-        foreach (ConversationItemViewModel item in ConversationItems)
+        foreach (ConversationItem item in ConversationItems)
         {
             writer.WriteStartObject();
             item.WriteJSon(writer);
@@ -87,14 +97,14 @@ public partial class ConversationViewModel()
         writer.WriteEndObject();
     }
 
-    public static ConversationViewModel FromJSon(Stream stream)
+    public static Conversation FromJSon(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream, nameof(stream));
 
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
 
-        ConversationViewModel conversation = ConversationViewModel.GetHeaderFromRoot(root);
+        Conversation conversation = Conversation.GetHeaderFromRoot(root);
 
         if (!root.TryGetProperty(nameof(ConversationItems), out JsonElement conversationItemsElement))
         {
@@ -103,20 +113,20 @@ public partial class ConversationViewModel()
 
         foreach (JsonElement itemElement in conversationItemsElement.EnumerateArray())
         {
-            var item = ConversationItemViewModel.FromJsonElement(itemElement);
+            var item = ConversationItem.FromJsonElement(itemElement);
             conversation.ConversationItems.Add(item);
         }
 
         return conversation;
     }
 
-    public static ConversationViewModel GetHeaderFromFile(string fileName)
+    public static Conversation GetHeaderFromFile(string fileName)
     {
         using Stream stream = File.OpenRead(fileName);
         return GetHeaderFromStream(stream);
     }
 
-    public static ConversationViewModel GetHeaderFromStream(Stream stream)
+    public static Conversation GetHeaderFromStream(Stream stream)
     {
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
@@ -126,16 +136,18 @@ public partial class ConversationViewModel()
         return conversation;
     }
 
-    private static ConversationViewModel GetHeaderFromRoot(JsonElement root)
+    private static Conversation GetHeaderFromRoot(JsonElement root)
     {
-        ConversationViewModel conversation = new();
+        Conversation conversation = new();
 
-        conversation.Title = root.GetProperty(nameof(Title)).GetString() ?? string.Empty;
-        conversation.Filename = root.GetProperty(nameof(Filename)).GetString() ?? string.Empty;
-        conversation.DateCreated = root.GetProperty(nameof(DateCreated)).GetDateTimeOffset();
-        conversation.DateLastEdited = root.GetProperty(nameof(DateLastEdited)).GetDateTimeOffset();
-        conversation.Summary = root.GetProperty(nameof(Summary)).GetString() ?? string.Empty;
-        conversation.Keywords = root.GetProperty(nameof(Keywords)).GetString() ?? string.Empty;
+        conversation.Title = root.GetPropertyOrDefault(nameof(Title), conversation.Title);
+        conversation.Id = root.GetPropertyOrDefault(nameof(Id), conversation.Id);
+        conversation.Filename = root.GetPropertyOrDefault(nameof(Filename), conversation.Filename);
+        conversation.DateCreated = root.GetPropertyOrDefault(nameof(DateCreated), conversation.DateCreated);
+        conversation.DateLastEdited = root.GetPropertyOrDefault(nameof(DateLastEdited), conversation.DateLastEdited);
+        conversation.Summary = root.GetPropertyOrDefault(nameof(Summary), conversation.Summary);
+        conversation.Keywords = root.GetPropertyOrDefault(nameof(Keywords), conversation.Keywords);
+        conversation.TokenCount = root.GetPropertyOrDefault(nameof(TokenCount), conversation.TokenCount);
 
         return conversation;
     }

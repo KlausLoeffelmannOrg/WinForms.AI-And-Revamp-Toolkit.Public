@@ -3,9 +3,9 @@ using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
 
-public partial class ConversationItemViewModel : ObservableObject
+public partial class ConversationItem : ObservableObject
 {
-    public ConversationItemViewModel()
+    public ConversationItem()
     {
         _dateCreated = DateTime.Now.ToString("f");
     }
@@ -40,9 +40,9 @@ public partial class ConversationItemViewModel : ObservableObject
         writer.WriteString(nameof(DateCreated), DateCreated);
     }
 
-    public static ConversationItemViewModel FromJsonElement(JsonElement jsonElement)
+    public static ConversationItem FromJsonElement(JsonElement jsonElement)
     {
-        var conversationItemViewModel = new ConversationItemViewModel();
+        var conversationItemViewModel = new ConversationItem();
 
         conversationItemViewModel.MarkdownContent = jsonElement.GetProperty(nameof(MarkdownContent)).GetString();
         conversationItemViewModel.IsResponse = jsonElement.GetProperty(nameof(IsResponse)).GetBoolean();

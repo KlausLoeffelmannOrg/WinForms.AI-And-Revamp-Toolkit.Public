@@ -1,6 +1,6 @@
 ﻿namespace CommunityToolkit.WinForms.AI;
 
-public class AsyncRequestAssistantInstructionsEventArgs(string assistanceInstructions) : EventArgs
+public class AsyncRequestAssistantInstructionsEventArgs(string? assistanceInstructions) : EventArgs
 {
-    public string AssistantInstructions { get; set; } = assistanceInstructions;
+    public string? AssistantInstructions { get; set; } = assistanceInstructions;
 }

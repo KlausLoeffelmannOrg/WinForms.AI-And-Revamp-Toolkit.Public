@@ -56,6 +56,9 @@ namespace Chatty
             toolStripLabel1 = new ToolStripLabel();
             _tscPersonalities = new ToolStripComboBox();
             toolStripSeparator2 = new ToolStripSeparator();
+            toolStripSeparator4 = new ToolStripSeparator();
+            _tslModels = new ToolStripLabel();
+            _tscModels = new ToolStripComboBox();
             _splitMain = new SplitContainer();
             _trvConversationHistory = new TreeView();
             _tlpHeader = new TableLayoutPanel();
@@ -64,9 +67,6 @@ namespace Chatty
             _lblDate = new Label();
             _skCommunicator = new SemanticKernelComponent();
             _skMetaDataProcessor = new SemanticKernelComponent();
-            toolStripSeparator4 = new ToolStripSeparator();
-            _tslModels = new ToolStripLabel();
-            _tscModels = new ToolStripComboBox();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -85,7 +85,7 @@ namespace Chatty
             _menuStrip.Location = new Point(0, 0);
             _menuStrip.Name = "_menuStrip";
             _menuStrip.Padding = new Padding(7, 2, 0, 2);
-            _menuStrip.Size = new Size(1264, 38);
+            _menuStrip.Size = new Size(1264, 44);
             _menuStrip.TabIndex = 0;
             _menuStrip.Text = "menuStrip1";
             // 
@@ -93,58 +93,58 @@ namespace Chatty
             // 
             _tsmFile.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuItem1, toolStripSeparator3, _tsmQuit });
             _tsmFile.Name = "_tsmFile";
-            _tsmFile.Size = new Size(62, 34);
+            _tsmFile.Size = new Size(72, 40);
             _tsmFile.Text = "&File";
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(252, 38);
+            toolStripMenuItem1.Size = new Size(299, 44);
             toolStripMenuItem1.Text = "Start new chat";
             toolStripMenuItem1.Click += BtnStartNewChat_Click;
             // 
             // toolStripSeparator3
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(249, 6);
+            toolStripSeparator3.Size = new Size(296, 6);
             // 
             // _tsmQuit
             // 
             _tsmQuit.Name = "_tsmQuit";
-            _tsmQuit.Size = new Size(252, 38);
+            _tsmQuit.Size = new Size(299, 44);
             _tsmQuit.Text = "Quit";
             // 
             // _tsiEdit
             // 
             _tsiEdit.DropDownItems.AddRange(new ToolStripItem[] { _tsiPersonalities });
             _tsiEdit.Name = "_tsiEdit";
-            _tsiEdit.Size = new Size(65, 34);
+            _tsiEdit.Size = new Size(76, 40);
             _tsiEdit.Text = "&Edit";
             // 
             // _tsiPersonalities
             // 
             _tsiPersonalities.Name = "_tsiPersonalities";
-            _tsiPersonalities.Size = new Size(300, 38);
+            _tsiPersonalities.Size = new Size(356, 44);
             _tsiPersonalities.Text = "Chat Personalities...";
             _tsiPersonalities.Click += Personalities_Click;
             // 
             // toolStripMenuItem2
             // 
             toolStripMenuItem2.Name = "toolStripMenuItem2";
-            toolStripMenuItem2.Size = new Size(76, 34);
+            toolStripMenuItem2.Size = new Size(88, 40);
             toolStripMenuItem2.Text = "&View";
             // 
             // _tsmTools
             // 
             _tsmTools.DropDownItems.AddRange(new ToolStripItem[] { _tsmOptions });
             _tsmTools.Name = "_tsmTools";
-            _tsmTools.Size = new Size(79, 34);
+            _tsmTools.Size = new Size(91, 40);
             _tsmTools.Text = "Tools";
             // 
             // _tsmOptions
             // 
             _tsmOptions.Name = "_tsmOptions";
-            _tsmOptions.Size = new Size(207, 38);
+            _tsmOptions.Size = new Size(244, 44);
             _tsmOptions.Text = "Options...";
             _tsmOptions.Click += TsmOptions_Click;
             // 
@@ -152,13 +152,13 @@ namespace Chatty
             // 
             helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { _tsmAbout });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            helpToolStripMenuItem.Size = new Size(75, 34);
+            helpToolStripMenuItem.Size = new Size(86, 40);
             helpToolStripMenuItem.Text = "&Help";
             // 
             // _tsmAbout
             // 
             _tsmAbout.Name = "_tsmAbout";
-            _tsmAbout.Size = new Size(190, 38);
+            _tsmAbout.Size = new Size(224, 44);
             _tsmAbout.Text = "About...";
             _tsmAbout.Click += About_Click;
             // 
@@ -167,17 +167,17 @@ namespace Chatty
             _statusStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _statusStrip.ImageScalingSize = new Size(24, 24);
             _statusStrip.Items.AddRange(new ToolStripItem[] { _tslInfo, _tslClockInfo });
-            _statusStrip.Location = new Point(0, 759);
+            _statusStrip.Location = new Point(0, 751);
             _statusStrip.Name = "_statusStrip";
             _statusStrip.Padding = new Padding(1, 0, 17, 0);
-            _statusStrip.Size = new Size(1264, 37);
+            _statusStrip.Size = new Size(1264, 45);
             _statusStrip.TabIndex = 1;
             _statusStrip.Text = "statusStrip1";
             // 
             // _tslInfo
             // 
             _tslInfo.Name = "_tslInfo";
-            _tslInfo.Size = new Size(1171, 30);
+            _tslInfo.Size = new Size(1158, 36);
             _tslInfo.Spring = true;
             _tslInfo.Text = "#info";
             _tslInfo.TextAlign = ContentAlignment.MiddleLeft;
@@ -185,7 +185,7 @@ namespace Chatty
             // _tslClockInfo
             // 
             _tslClockInfo.Name = "_tslClockInfo";
-            _tslClockInfo.Size = new Size(75, 30);
+            _tslClockInfo.Size = new Size(88, 36);
             _tslClockInfo.Text = "#clock";
             // 
             // _toolStrip
@@ -193,7 +193,7 @@ namespace Chatty
             _toolStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _toolStrip.ImageScalingSize = new Size(32, 32);
             _toolStrip.Items.AddRange(new ToolStripItem[] { newToolStripButton, toolStripSeparator, copyToolStripButton, toolStripSeparator1, toolStripLabel1, _tscPersonalities, toolStripSeparator2, toolStripSeparator4, _tslModels, _tscModels });
-            _toolStrip.Location = new Point(0, 38);
+            _toolStrip.Location = new Point(0, 44);
             _toolStrip.Name = "_toolStrip";
             _toolStrip.Padding = new Padding(10);
             _toolStrip.Size = new Size(1264, 65);
@@ -207,7 +207,7 @@ namespace Chatty
             newToolStripButton.ImageTransparentColor = Color.Magenta;
             newToolStripButton.Margin = new Padding(0, 4, 0, 5);
             newToolStripButton.Name = "newToolStripButton";
-            newToolStripButton.Size = new Size(36, 36);
+            newToolStripButton.Size = new Size(40, 36);
             newToolStripButton.Text = "&New";
             newToolStripButton.Click += BtnStartNewChat_Click;
             // 
@@ -223,7 +223,7 @@ namespace Chatty
             copyToolStripButton.ImageTransparentColor = Color.Magenta;
             copyToolStripButton.Margin = new Padding(4, 0, 5, 0);
             copyToolStripButton.Name = "copyToolStripButton";
-            copyToolStripButton.Size = new Size(36, 45);
+            copyToolStripButton.Size = new Size(40, 45);
             copyToolStripButton.Text = "&Copy";
             // 
             // toolStripSeparator1
@@ -235,7 +235,7 @@ namespace Chatty
             // 
             toolStripLabel1.Margin = new Padding(4, 0, 5, 0);
             toolStripLabel1.Name = "toolStripLabel1";
-            toolStripLabel1.Size = new Size(122, 45);
+            toolStripLabel1.Size = new Size(146, 45);
             toolStripLabel1.Text = "Personality:";
             // 
             // _tscPersonalities
@@ -251,10 +251,26 @@ namespace Chatty
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new Size(6, 45);
             // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 45);
+            // 
+            // _tslModels
+            // 
+            _tslModels.Name = "_tslModels";
+            _tslModels.Size = new Size(112, 39);
+            _tslModels.Text = "Models: ";
+            // 
+            // _tscModels
+            // 
+            _tscModels.Name = "_tscModels";
+            _tscModels.Size = new Size(250, 45);
+            // 
             // _splitMain
             // 
             _splitMain.Dock = DockStyle.Fill;
-            _splitMain.Location = new Point(0, 103);
+            _splitMain.Location = new Point(0, 109);
             _splitMain.Name = "_splitMain";
             // 
             // _splitMain.Panel1
@@ -266,7 +282,7 @@ namespace Chatty
             // 
             _splitMain.Panel2.Controls.Add(_tlpHeader);
             _splitMain.Panel2.Padding = new Padding(10);
-            _splitMain.Size = new Size(1264, 656);
+            _splitMain.Size = new Size(1264, 642);
             _splitMain.SplitterDistance = 363;
             _splitMain.TabIndex = 3;
             // 
@@ -278,7 +294,7 @@ namespace Chatty
             _trvConversationHistory.Location = new Point(10, 10);
             _trvConversationHistory.Name = "_trvConversationHistory";
             _trvConversationHistory.ShowNodeToolTips = true;
-            _trvConversationHistory.Size = new Size(343, 636);
+            _trvConversationHistory.Size = new Size(343, 622);
             _trvConversationHistory.TabIndex = 0;
             _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
             // 
@@ -296,16 +312,16 @@ namespace Chatty
             _tlpHeader.RowCount = 2;
             _tlpHeader.RowStyles.Add(new RowStyle());
             _tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            _tlpHeader.Size = new Size(877, 636);
+            _tlpHeader.Size = new Size(877, 622);
             _tlpHeader.TabIndex = 0;
             // 
             // _mainTabControl
             // 
             _mainTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _tlpHeader.SetColumnSpan(_mainTabControl, 2);
-            _mainTabControl.Location = new Point(3, 48);
+            _mainTabControl.Location = new Point(3, 54);
             _mainTabControl.Name = "_mainTabControl";
-            _mainTabControl.Size = new Size(871, 585);
+            _mainTabControl.Size = new Size(871, 565);
             _mainTabControl.TabIndex = 0;
             // 
             // _lblConversationTitle
@@ -315,7 +331,7 @@ namespace Chatty
             _lblConversationTitle.Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
             _lblConversationTitle.Location = new Point(3, 0);
             _lblConversationTitle.Name = "_lblConversationTitle";
-            _lblConversationTitle.Size = new Size(414, 45);
+            _lblConversationTitle.Size = new Size(414, 51);
             _lblConversationTitle.TabIndex = 1;
             _lblConversationTitle.Text = "Conversation Title";
             // 
@@ -324,9 +340,9 @@ namespace Chatty
             _lblDate.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             _lblDate.AutoSize = true;
             _lblDate.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            _lblDate.Location = new Point(750, 0);
+            _lblDate.Location = new Point(730, 0);
             _lblDate.Name = "_lblDate";
-            _lblDate.Size = new Size(124, 45);
+            _lblDate.Size = new Size(144, 51);
             _lblDate.TabIndex = 2;
             _lblDate.Text = "#dateTime";
             _lblDate.TextAlign = ContentAlignment.MiddleRight;
@@ -339,25 +355,9 @@ namespace Chatty
             // 
             _skMetaDataProcessor.TopP = null;
             // 
-            // toolStripSeparator4
-            // 
-            toolStripSeparator4.Name = "toolStripSeparator4";
-            toolStripSeparator4.Size = new Size(6, 45);
-            // 
-            // _tslModels
-            // 
-            _tslModels.Name = "_tslModels";
-            _tslModels.Size = new Size(96, 40);
-            _tslModels.Text = "Models: ";
-            // 
-            // _tscModels
-            // 
-            _tscModels.Name = "_tscModels";
-            _tscModels.Size = new Size(250, 45);
-            // 
             // FrmMain
             // 
-            AutoScaleDimensions = new SizeF(12F, 30F);
+            AutoScaleDimensions = new SizeF(14F, 36F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 796);
             Controls.Add(_splitMain);

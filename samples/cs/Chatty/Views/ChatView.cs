@@ -1,22 +1,28 @@
 ﻿using CommunityToolkit.WinForms.Controls.Blazor;
 using SemanticKernelDemo.Controls;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Chatty.Views;
 
-internal partial class ChatView: UserControl
+internal partial class ChatView : UserControl
 {
+    public event EventHandler? RefreshMetaData;
+
     public ChatView()
     {
         InitializeComponent();
     }
 
-    public ConversationView ConversationView 
+    public ConversationView ConversationView
         => _conversationView;
 
-    public AsyncPromptControl PromptControl 
+    public AsyncPromptControl PromptControl
         => _promptControl;
 
-    public ToolStrip ChatToolStrip 
+    public ToolStrip ChatToolStrip
         => _chatToolStrip;
+
+    private void TsbRefreshMetaData_Click(object sender, EventArgs e)
+    {
+        RefreshMetaData?.Invoke(this, EventArgs.Empty);
+    }
 }

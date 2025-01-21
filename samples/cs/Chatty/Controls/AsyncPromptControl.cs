@@ -111,9 +111,9 @@ public partial class AsyncPromptControl : TextBox
                 {
                     await handler.Invoke(this, e).ConfigureAwait(false);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Application.OnThreadException(ex);
+                    throw;
                 }
             }
         }

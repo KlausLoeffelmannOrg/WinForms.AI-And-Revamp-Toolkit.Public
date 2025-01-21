@@ -16,6 +16,7 @@ internal static class Program
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
         Application.SetColorMode(SystemColorMode.Dark);
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
         // WinFormsHost is using IHost of Microsoft.Extensions.Hosting and
         // provide DI, so we can easily communicate between different parts of the application.

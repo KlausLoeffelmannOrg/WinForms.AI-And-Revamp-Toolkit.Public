@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.WinForms.ConversationView.Components;
 using Markdig;
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
@@ -15,9 +16,10 @@ public partial class ConversationView : BlazorWebView
 {
     public event EventHandler<ConversationTitleChangedEventArgs>? ConversationTitleChanged;
     public event EventHandler<ConversationItemAddedEventArgs>? ConversationItemAdded;
+    public event EventHandler<ReceivedNextParagraphEventArgs>? ReceivedNextParagraph;
 
     private readonly IServiceProvider? _serviceProvider;
-    private ConversationViewModel _viewModel;
+    private readonly Conversation _conversation;
 
     /// <summary>
     ///  Initializes a new instance of the ConversationView class.
@@ -31,67 +33,36 @@ public partial class ConversationView : BlazorWebView
             Services = _serviceProvider;
         }
 
-        _viewModel = new ConversationViewModel()
+        _conversation = new Conversation()
         {
             BackColor = SystemColors.ControlLightLight.ToWebColor(),
             ForeColor = SystemColors.ControlText.ToWebColor(),
             Title = "New"
         };
 
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-        _viewModel.ConversationItems.CollectionChanged += ConversationItems_CollectionChanged;
+        _conversation.PropertyChanged += ViewModel_PropertyChanged;
+        _conversation.ConversationItems.CollectionChanged += ConversationItems_CollectionChanged;
 
         WebView.CoreWebView2InitializationCompleted += WebView_CoreWebView2InitializationCompleted;
         WebView.NavigationCompleted += WebView_NavigationCompleted;
         WebView.NavigationStarting += WebView_NavigationStarting;
     }
 
-    private void ConversationItems_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-    {
-        if (ConversationItemAdded is not null
-            && e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add
-            && e.NewItems?.Count == 1
-            && e.NewItems[0] is ConversationItemViewModel conversationItem)
-        {
-            ConversationItemAdded.Invoke(this, new ConversationItemAddedEventArgs(conversationItem));
-        }
-    }
-
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(ConversationViewModel.Title))
-        {
-            OnConversationTitleChanged(new ConversationTitleChangedEventArgs(_viewModel.Title));
-        }
-    }
-
-    protected virtual void OnConversationTitleChanged(ConversationTitleChangedEventArgs conversationTitleChangedEventArgs) 
-        => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
-
-    [DefaultValue("")]
-    public string? ConversationTitle
-    {
-        get => _viewModel.Title;
-        set
-        {
-            if (_viewModel is not null)
-            {
-                _viewModel.Title = value!;
-            }
-        }
-    }
-
-    public IEnumerable<ConversationItemViewModel> ConversationItems 
-        => _viewModel.ConversationItems;
+    /// <summary>
+    ///  Gets or sets the unique identifier for the conversation.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Conversation Conversation => _conversation;
 
     /// <summary>
     ///  Adds a conversation item to the conversation view.
     /// </summary>
-    /// <param name="text">The text of the conversation item.</param>
-    /// <param name="isResponse">A flag indicating whether the conversation item is a response.</param>
-    public ConversationItemViewModel AddConversationItem(string text, bool isResponse)
+    /// <param name="text">The text content of the conversation item.</param>
+    /// <param name="isResponse">Indicates whether the item is a response.</param>
+    /// <returns>The added conversation item.</returns>
+    public ConversationItem AddConversationItem(string text, bool isResponse)
     {
-        var item = new ConversationItemViewModel
+        var item = new ConversationItem
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
@@ -100,19 +71,109 @@ public partial class ConversationView : BlazorWebView
             IsResponse = isResponse
         };
 
-        _viewModel?.ConversationItems.Add(item);
+        _conversation?.ConversationItems.Add(item);
 
         return item;
     }
 
     /// <summary>
+    ///  Clears the conversation history.
+    /// </summary>
+    public void ClearHistory()
+        => _conversation?.ConversationItems.Clear();
+
+    /// <summary>
+    ///  Loads conversation items from a JSON string.
+    /// </summary>
+    /// <param name="json">The JSON string representing the conversation items.</param>
+    public void FromJson(string json)
+    {
+        _conversation.ConversationItems.Clear();
+
+        try
+        {
+            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+            var tempModel = Conversation.FromJSon(stream);
+
+            // Let's clone the model and the items,
+            // so the Blazor view will get the changes and update.
+            _conversation.Title = tempModel.Title;
+
+            foreach (var item in tempModel.ConversationItems)
+            {
+                string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
+                item.HtmlContent = $"<p>{currentHTML}<p>";
+                item.ForeColor = ForeColor.ToWebColor();
+                item.BackColor = SystemColors.ControlLight.ToWebColor();
+
+                _conversation.ConversationItems.Add(item);
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+
+        // Create new dictionary of parameters for the component
+        Dictionary<string, object?> parameters = new()
+            {
+                { nameof(ConversationRenderer.ViewModel), _conversation },
+                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
+            };
+
+        RootComponent component = new(
+            selector: "#app",
+            componentType: typeof(ConversationRenderer),
+            parameters: parameters);
+
+        RootComponents.Add(component);
+        HostPage = $"wwwroot/index.html";
+    }
+
+    protected virtual void OnConversationTitleChanged(ConversationTitleChangedEventArgs conversationTitleChangedEventArgs)
+    => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
+
+    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
+        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        base.OnPaintBackground(e);
+        e.Graphics.Clear(SystemColors.ControlLightLight);
+    }
+
+    /// <summary>
+    ///  Converts the conversation items to a JSON string.
+    /// </summary>
+    /// <returns>A JSON string representing the conversation items.</returns>
+    public string ToJson()
+    {
+        try
+        {
+            using MemoryStream stream = new();
+            _conversation.WriteJSon(stream);
+
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
     ///  Updates the current response asynchronously.
     /// </summary>
-    /// <param name="asyncEnumerable">The async enumerable that provides the responses.</param>
-    /// <returns>An async enumerable of the responses.</returns>
+    /// <param name="asyncEnumerable">An asynchronous enumerable of response strings.</param>
+    /// <returns>An asynchronous enumerable of response strings.</returns>
     public async IAsyncEnumerable<string> UpdateCurrentResponseAsync(IAsyncEnumerable<string> asyncEnumerable)
     {
-        if (_viewModel is null)
+        if (_conversation is null)
         {
             yield break;
         }
@@ -121,7 +182,7 @@ public partial class ConversationView : BlazorWebView
         StringBuilder builtUpHtmlParagraphs = new();
         StringBuilder builtUpMarkdown = new();
 
-        string currentMarkdown = string.Empty;
+        string currentMarkdown;
 
         // Iterate through the responses asynchronously and add them to the conversation view model
         await foreach (var response in asyncEnumerable)
@@ -136,6 +197,7 @@ public partial class ConversationView : BlazorWebView
             if (response.EndsWith('\n') || response.EndsWith('\r'))
             {
                 Debug.Print($"Next Paragraph: {currentMarkdown}");
+                OnReceivedNextParagraph(new ReceivedNextParagraphEventArgs(currentMarkdown));
 
                 builtUpHtmlParagraphs.Append(currentHTML);
                 builtUpMarkdown.Append(currentMarkdown);
@@ -145,107 +207,48 @@ public partial class ConversationView : BlazorWebView
                 currentHTML = string.Empty;
             }
 
-            _viewModel.ResponseInProgress = builtUpHtmlParagraphs + currentHTML;
+            _conversation.ResponseInProgress = builtUpHtmlParagraphs + currentHTML;
 
             yield return response;
         }
 
-        _viewModel.ConversationItems.Add(new ConversationItemViewModel
+        _conversation.ConversationItems.Add(new ConversationItem
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
             MarkdownContent = $"{builtUpMarkdown}",
-            HtmlContent = $"<p>{_viewModel.ResponseInProgress}<p>",
+            HtmlContent = $"<p>{_conversation.ResponseInProgress}<p>",
             IsResponse = true
         });
 
-        _viewModel.ResponseInProgress = string.Empty;
+        _conversation.ResponseInProgress = string.Empty;
     }
 
-    /// <summary>
-    ///  Clears the conversation history.
-    /// </summary>
-    public void ClearHistory()
-        => _viewModel?.ConversationItems.Clear();
-
-    /// <summary>
-    ///  Paints the background of the control.
-    /// </summary>
-    /// <param name="e">A PaintEventArgs that contains the event data.</param>
-    protected override void OnPaintBackground(PaintEventArgs e)
+    private void ConversationItems_CollectionChanged(
+        object? sender, 
+        NotifyCollectionChangedEventArgs e)
     {
-        base.OnPaintBackground(e);
-        e.Graphics.Clear(SystemColors.ControlLightLight);
-    }
-
-    /// <summary>
-    ///  Raises the HandleCreated event.
-    /// </summary>
-    /// <param name="e">An EventArgs that contains the event data.</param>
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-
-        // Create new dictionary of parameters for the component
-        Dictionary<string, object?> parameters = new()
-            {
-                { nameof(ConversationRenderer.ViewModel), _viewModel },
-                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
-            };
-
-        var component = new RootComponent(
-            selector: "#app",
-            componentType: typeof(ConversationRenderer),
-            parameters: parameters);
-
-        RootComponents.Add(component);
-
-        // Let's pass the system theme to the Blazor component:
-        string systemMode = Application.IsDarkModeEnabled ? "dark" : "light";
-        HostPage = $"wwwroot/index.html";
-    }
-
-    public string ToJson()
-    {
-        try
+        if (ConversationItemAdded is not null
+            && e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add
+            && e.NewItems?.Count == 1
+            && e.NewItems[0] is ConversationItem conversationItem)
         {
-            using MemoryStream stream = new();
-            _viewModel.WriteJSon(stream);
-
-            return Encoding.UTF8.GetString(stream.ToArray());
+            ConversationItemAdded.Invoke(this, new ConversationItemAddedEventArgs(conversationItem));
         }
-        catch (Exception)
-        {
-            throw;
-        }
+
+        _conversation.DateLastEdited = DateTimeOffset.Now;
     }
 
-    public void FromJson(string json)
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        _viewModel.ConversationItems.Clear();
-
-        try
+        if (e.PropertyName == nameof(Conversation.Title))
         {
-            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
-            var tempModel = ConversationViewModel.FromJSon(stream);
-
-            // Let's clone the model and the items,
-            // so the Blazor view will get the changes and update.
-            _viewModel.Title = tempModel.Title;
-
-            foreach (var item in tempModel.ConversationItems)
-            {
-                string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
-                item.HtmlContent = $"<p>{currentHTML}<p>";
-                item.ForeColor = ForeColor.ToWebColor();
-                item.BackColor = SystemColors.ControlLight.ToWebColor();
-
-                _viewModel.ConversationItems.Add(item);
-            }
+            OnConversationTitleChanged(new ConversationTitleChangedEventArgs(_conversation.Title));
         }
-        catch (Exception)
+
+        if (e.PropertyName != nameof(Conversation.DateLastEdited))
         {
-            throw;
+            _conversation.DateLastEdited = DateTimeOffset.Now;
         }
     }
 }

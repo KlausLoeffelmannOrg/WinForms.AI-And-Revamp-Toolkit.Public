@@ -12,14 +12,14 @@ namespace CommunityToolkit.WinForms.ConversationView.Components;
 /// </summary>
 public partial class ConversationRenderer : ComponentBase
 {
-    private ConversationViewModel _viewModel = null!;
-    private ObservableCollection<ConversationItemViewModel>? _conversationItems;
+    private Conversation _viewModel = null!;
+    private ObservableCollection<ConversationItem>? _conversationItems;
 
     [Inject]
     private IJSRuntime? JSRuntime { get; set; }
 
     [Parameter]
-    public ConversationViewModel ViewModel
+    public Conversation ViewModel
     {
         get => _viewModel;
         set
@@ -63,7 +63,7 @@ public partial class ConversationRenderer : ComponentBase
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ConversationViewModel.ConversationItems))
+        if (e.PropertyName == nameof(Conversation.ConversationItems))
         {
             SetConversationItems(_viewModel.ConversationItems);
         }
@@ -71,7 +71,7 @@ public partial class ConversationRenderer : ComponentBase
         InvokeAsync(StateHasChanged);
     }
 
-    private void SetConversationItems(ObservableCollection<ConversationItemViewModel>? conversationItems)
+    private void SetConversationItems(ObservableCollection<ConversationItem>? conversationItems)
     {
         if (_conversationItems is not null)
         {
