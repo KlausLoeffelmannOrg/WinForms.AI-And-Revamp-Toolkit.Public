@@ -17,13 +17,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="9.0.22" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+	<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
 	<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
 	<PackageReference Include="System.Text.Json" Version="9.0.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CommunityToolkit.WinForms.ConsoleControl\CommunityToolkit.WinForms.Controls.ConsoleControl.csproj" />
     <ProjectReference Include="..\CommunityToolkit.WinForms.Mvvm\CommunityToolkit.WinForms.Mvvm.csproj" />
   </ItemGroup>
 

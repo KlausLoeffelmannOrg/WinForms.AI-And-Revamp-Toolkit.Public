@@ -1,9 +1,12 @@
 ﻿using CommunityToolkit.WinForms.ConversationView.Components;
+using CommunityToolkit.WinForms.DebuggingAids;
 using Markdig;
+using Markdig.Helpers;
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -20,6 +23,7 @@ public partial class ConversationView : BlazorWebView
 
     private readonly IServiceProvider? _serviceProvider;
     private readonly Conversation _conversation;
+    private readonly HexAsciiDumper _hexDumper = new();
 
     /// <summary>
     ///  Initializes a new instance of the ConversationView class.
@@ -35,9 +39,10 @@ public partial class ConversationView : BlazorWebView
 
         _conversation = new Conversation()
         {
+            Id = Guid.NewGuid(),
             BackColor = SystemColors.ControlLightLight.ToWebColor(),
             ForeColor = SystemColors.ControlText.ToWebColor(),
-            Title = "New"
+            Title = $"New conversation {DateTime.Now: ddd mm, HH:mm}"
         };
 
         _conversation.PropertyChanged += ViewModel_PropertyChanged;
@@ -66,7 +71,7 @@ public partial class ConversationView : BlazorWebView
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
-            HtmlContent = $"<p>{text}<p>",
+            HtmlContent = $"<p>{text}</p>",
             MarkdownContent = text,
             IsResponse = isResponse
         };
@@ -102,7 +107,7 @@ public partial class ConversationView : BlazorWebView
             foreach (var item in tempModel.ConversationItems)
             {
                 string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
-                item.HtmlContent = $"<p>{currentHTML}<p>";
+                item.HtmlContent = $"<p>{currentHTML}</p>";
                 item.ForeColor = ForeColor.ToWebColor();
                 item.BackColor = SystemColors.ControlLight.ToWebColor();
 
@@ -166,12 +171,8 @@ public partial class ConversationView : BlazorWebView
         }
     }
 
-    /// <summary>
-    ///  Updates the current response asynchronously.
-    /// </summary>
-    /// <param name="asyncEnumerable">An asynchronous enumerable of response strings.</param>
-    /// <returns>An asynchronous enumerable of response strings.</returns>
-    public async IAsyncEnumerable<string> UpdateCurrentResponseAsync(IAsyncEnumerable<string> asyncEnumerable)
+    public async IAsyncEnumerable<string> UpdateCurrentResponseAsync(
+        IAsyncEnumerable<string> asyncEnumerable)
     {
         if (_conversation is null)
         {
@@ -181,47 +182,96 @@ public partial class ConversationView : BlazorWebView
         StringBuilder currentParagraph = new();
         StringBuilder builtUpHtmlParagraphs = new();
         StringBuilder builtUpMarkdown = new();
+        StringBuilder wordBuilder = new();
 
-        string currentMarkdown;
-
-        // Iterate through the responses asynchronously and add them to the conversation view model
-        await foreach (var response in asyncEnumerable)
+        // Iterate responses as characters
+        await foreach (char c in ConvertToCharStreamAsync(asyncEnumerable))
         {
-            currentParagraph.Append(response);
-            currentMarkdown = currentParagraph.ToString();
+            wordBuilder.Append(c);
 
-            // Convert Markdown to HTML using Markdig
-            string currentHTML = Markdown.ToHtml(currentMarkdown);
-
-            // Test, if the response ends with any sort of LineFeed/CR:
-            if (response.EndsWith('\n') || response.EndsWith('\r'))
+            // If we've hit a word boundary, yield the word
+            if (!IsWordSeparator(c) || wordBuilder.Length <= 0)
             {
-                Debug.Print($"Next Paragraph: {currentMarkdown}");
-                OnReceivedNextParagraph(new ReceivedNextParagraphEventArgs(currentMarkdown));
-
-                builtUpHtmlParagraphs.Append(currentHTML);
-                builtUpMarkdown.Append(currentMarkdown);
-
-                currentParagraph.Clear();
-                currentMarkdown = string.Empty;
-                currentHTML = string.Empty;
+                continue;
             }
 
-            _conversation.ResponseInProgress = builtUpHtmlParagraphs + currentHTML;
+            yield return ProcessWord(wordBuilder.ToString(), c);
 
-            yield return response;
+            wordBuilder.Clear();
         }
 
-        _conversation.ConversationItems.Add(new ConversationItem
+        // Flush any leftover word
+        if (wordBuilder.Length > 0)
         {
-            BackColor = SystemColors.ControlLight.ToWebColor(),
-            ForeColor = ForeColor.ToWebColor(),
-            MarkdownContent = $"{builtUpMarkdown}",
-            HtmlContent = $"<p>{_conversation.ResponseInProgress}<p>",
-            IsResponse = true
-        });
+            yield return ProcessWord(wordBuilder.ToString(), null);
+            wordBuilder.Clear();
+        }
+
+        // Add the conversation item
+        _conversation.ConversationItems.Add(
+            new ConversationItem
+            {
+                BackColor = SystemColors.ControlLight.ToWebColor(),
+                ForeColor = ForeColor.ToWebColor(),
+                MarkdownContent = builtUpMarkdown.ToString(),
+                HtmlContent = $"<p>{_conversation.ResponseInProgress}</p>",
+                IsResponse = true
+            });
 
         _conversation.ResponseInProgress = string.Empty;
+        builtUpHtmlParagraphs.Clear();
+        builtUpMarkdown.Clear();
+
+        /// <summary>
+        ///  Processes a single word, updating paragraph/HTML/markdown buffers.
+        /// </summary>
+        string ProcessWord(string word, char? lastChar)
+        {
+            currentParagraph.Append(word);
+
+            // Convert the accumulated text to HTML
+            string localMarkdown = currentParagraph.ToString();
+            string localHtml = Markdown.ToHtml(localMarkdown);
+
+            // If we ended with a newline, treat it as a paragraph boundary
+            if (lastChar.HasValue && lastChar.Value.IsNewLineOrLineFeed())
+            {
+                Debug.Print($"Next Paragraph: {localMarkdown}");
+                OnReceivedNextParagraph(new ReceivedNextParagraphEventArgs(localMarkdown));
+
+                builtUpHtmlParagraphs.Append(localHtml);
+                builtUpMarkdown.Append(localMarkdown);
+
+                currentParagraph.Clear();
+                localMarkdown = string.Empty;
+                localHtml = string.Empty;
+            }
+
+            _conversation.ResponseInProgress = builtUpHtmlParagraphs.ToString() + localHtml;
+
+            return word;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsWordSeparator(char c)
+            => c switch
+            {
+                ' ' => true,
+                '\n' => true,
+                '\r' => true,
+                _ => false
+            };
+
+        static async IAsyncEnumerable<char> ConvertToCharStreamAsync(IAsyncEnumerable<string> asyncEnumerable)
+        {
+            await foreach (var response in asyncEnumerable)
+            {
+                foreach (char c in response)
+                {
+                    yield return c;
+                }
+            }
+        }
     }
 
     private void ConversationItems_CollectionChanged(

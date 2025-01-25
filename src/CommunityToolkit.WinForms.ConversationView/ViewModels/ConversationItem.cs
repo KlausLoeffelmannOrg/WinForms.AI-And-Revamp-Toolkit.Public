@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.WinForms.ConversationView.Extensions;
+using Markdig;
 using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -7,7 +9,7 @@ public partial class ConversationItem : ObservableObject
 {
     public ConversationItem()
     {
-        _dateCreated = DateTime.Now.ToString("f");
+        _dateCreated = DateTime.Now;
     }
 
     [ObservableProperty]
@@ -26,7 +28,13 @@ public partial class ConversationItem : ObservableObject
     private string? _foreColor;
 
     [ObservableProperty]
-    private string _dateCreated;
+    private DateTime _dateCreated;
+
+    [ObservableProperty]
+    private TimeSpan _firstResponseDuration;
+
+    [ObservableProperty]
+    private TimeSpan _completeProcessDuration;
 
     public override string? ToString() 
         => MarkdownContent ?? HtmlContent ?? base.ToString();
@@ -38,17 +46,22 @@ public partial class ConversationItem : ObservableObject
         writer.WriteString(nameof(BackColor), BackColor);
         writer.WriteString(nameof(ForeColor), ForeColor);
         writer.WriteString(nameof(DateCreated), DateCreated);
+        writer.WriteString(nameof(FirstResponseDuration), FirstResponseDuration.ToString());
+        writer.WriteString(nameof(CompleteProcessDuration), CompleteProcessDuration.ToString());
     }
 
     public static ConversationItem FromJsonElement(JsonElement jsonElement)
     {
-        var conversationItemViewModel = new ConversationItem();
-
-        conversationItemViewModel.MarkdownContent = jsonElement.GetProperty(nameof(MarkdownContent)).GetString();
-        conversationItemViewModel.IsResponse = jsonElement.GetProperty(nameof(IsResponse)).GetBoolean();
-        conversationItemViewModel.BackColor = jsonElement.GetProperty(nameof(BackColor)).GetString();
-        conversationItemViewModel.ForeColor = jsonElement.GetProperty(nameof(ForeColor)).GetString();
-        conversationItemViewModel.DateCreated = jsonElement.GetProperty(nameof(DateCreated)).GetString()!;
+        var conversationItemViewModel = new ConversationItem
+        {
+            MarkdownContent = jsonElement.GetPropertyOrDefault(nameof(MarkdownContent), string.Empty),
+            IsResponse = jsonElement.GetPropertyOrDefault(nameof(IsResponse), false),
+            BackColor = jsonElement.GetPropertyOrDefault(nameof(BackColor), string.Empty),
+            ForeColor = jsonElement.GetPropertyOrDefault(nameof(ForeColor), string.Empty),
+            DateCreated = jsonElement.GetPropertyOrDefault(nameof(DateCreated), DateTime.Now),
+            FirstResponseDuration = jsonElement.GetPropertyOrDefault(nameof(FirstResponseDuration), TimeSpan.MinValue),
+            CompleteProcessDuration = jsonElement.GetPropertyOrDefault(nameof(CompleteProcessDuration), TimeSpan.MinValue)
+        };
 
         return conversationItemViewModel;
     }

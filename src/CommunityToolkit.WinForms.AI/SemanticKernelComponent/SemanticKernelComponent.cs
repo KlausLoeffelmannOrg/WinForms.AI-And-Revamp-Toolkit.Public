@@ -43,7 +43,7 @@ public partial class SemanticKernelComponent : BindableComponent
     private double? _frequencyPenalty;
     private JsonSerializerOptions? _jsonSerializerOptions;
 
-    private SynchronizationContext? _syncContext=WindowsFormsSynchronizationContext.Current;
+    private readonly SynchronizationContext? _syncContext=WindowsFormsSynchronizationContext.Current;
     private string? _systemPrompt;
     private bool _queueSystemPrompt;
 
@@ -99,7 +99,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
         (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
 
-        var chatHistory= HandleChatHistory(valueToProcess, keepChatHistory);
+        var chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
 
         IAsyncEnumerable<StreamingChatMessageContent> responses = chatService.GetStreamingChatMessageContentsAsync(
             chatHistory,
@@ -111,7 +111,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
         await foreach (StreamingChatMessageContent response in responses)
         {
-            if (response.Content is null)
+            if (string.IsNullOrEmpty(response.Content))
             {
                 continue;
             }
@@ -183,8 +183,20 @@ public partial class SemanticKernelComponent : BindableComponent
                 JsonSchemaName,
                 JsonSchemaDescription);
         }
+        else
+        {
+            string formatRequestString= $"\n\nIMPORTANT: Please make sure that you format the text of your replys consistently as " 
+                + ReturnStringsFormat switch
+            {
+                ReturnStringsFormat.Markdown => "Markdown (MD) format.",
+                ReturnStringsFormat.PlainText => "plain text.",
+                ReturnStringsFormat.Html => "in HTML tagged text.",
+                ReturnStringsFormat.MicrosoftRichText => "in Microsoft Rich Text Format (RTF).",
+                _ => "Plain text."
+            };
+        }
 
-        AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
+            AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
         await OnRequestExecutionSettingsAsync(settingsEventArgs);
 
         string apiKey = ApiKeyGetter.Invoke()
@@ -427,6 +439,13 @@ public partial class SemanticKernelComponent : BindableComponent
             isResponse ? AuthorRole.Assistant : AuthorRole.User,
             message);
     }
+
+    [Bindable(true)]
+    [Browsable(true)]
+    [Category("Model Parameter")]
+    [Description("Gets or sets the Format in which human readable, non-structured Text is requested to be returned from the Model.")]
+    [DefaultValue(ReturnStringsFormat.PlainText)]
+    public ReturnStringsFormat ReturnStringsFormat { get; set; } = ReturnStringsFormat.PlainText;
 
     /// <summary>
     ///  Gets or sets a Func that returns the API key to use for the OpenAI API. 

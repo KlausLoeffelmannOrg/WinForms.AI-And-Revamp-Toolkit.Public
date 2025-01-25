@@ -16,6 +16,8 @@ public partial class FrmMain : Form
     private const string Key_Options = nameof(Key_Options);
 
     private static readonly string ApiKeyEnvironmentVarLookup = "AI:OpenAI:ApiKey";
+    private readonly Dictionary<KnownNode, TreeNode> _knownNodes = [];
+
     private readonly IUserSettingsService _settingsService;
 
     private OptionsViewModel _options = null!;
@@ -23,22 +25,26 @@ public partial class FrmMain : Form
     private IEnumerable<string>? _openAIModels;
     private TreeNode? _currentNode;
     private ConversationProcessor _conversationProcessor = null!;
+    private readonly CancellationTokenSource _shutDownCancellation = new();
 
     private readonly ChatView _chatView;
 
     public FrmMain()
     {
         InitializeComponent();
+        
+        CreateKnownTreeViewNodes();
 
         Application.ThreadException += (s, e) =>
         {
-            _tslInfo.Text = e.Exception.Message;
-            _tslInfo.ToolTipText = e.Exception.StackTrace;
-            _tslInfo.ForeColor = Color.Red;
-        };  
+            ReportToStatusBarInfo(
+                message: e.Exception.Message,
+                toolTipText: e.Exception.Message,
+                additionalInfo: e.Exception.StackTrace,
+                critical: true);
+        };
 
         _chatView = new();
-
         _settingsService = WinFormsUserSettingsService.CreateAndLoad();
 
         // Wiring the delegate which provides the Open AI ApiKey when we need it:
@@ -72,8 +78,8 @@ public partial class FrmMain : Form
     {
         base.OnLoad(e);
 
-        _chatView.ConversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
         _chatView.ConversationView.ReceivedNextParagraph += ConversationView_ReceivedNextParagraph;
+        _chatView.ConversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
         _chatView.PromptControl.AsyncSendPrompt += PromptControl_AsyncSendPrompt;
         _chatView.RefreshMetaData += ChatView_RefreshMetaData;
 
@@ -101,6 +107,35 @@ public partial class FrmMain : Form
         UpdateTreeView();
 
         await SetupOpenAIModelsAsync();
+        await ShowTimeAsync(_shutDownCancellation.Token);
+
+        // The loop which is showing the time is running in the background.
+        async Task ShowTimeAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(500, token).ConfigureAwait(false);
+                await InvokeAsync(() =>
+                {
+                    _tslClockInfo.Text = $"{DateTime.Now:dddd, MMM dd yyyy - HH:mm:ss}";
+                }, token);
+            }
+        }
+    }
+
+    private void ConversationView_ConversationItemAdded(object? sender, ConversationItemAddedEventArgs e)
+    {
+        // We can save only with 2 items or more, since otherwise the Meta data
+        // we retrieve from the meta data skComponent can't provide enough reliable
+        // information.
+        if (_chatView.ConversationView.Conversation is not Conversation conversation
+            || conversation.ConversationItems.Count < 2)
+        {
+            return;
+        }
+
+        e.ConversationItem.FirstResponseDuration = _chatView.ConversationView.Conversation.LastKickOffTime;
+        e.ConversationItem.CompleteProcessDuration = DateTime.Now - conversation.DateCreated;
     }
 
     private void ConversationView_ReceivedNextParagraph(object? sender, ReceivedNextParagraphEventArgs e)
@@ -118,10 +153,18 @@ public partial class FrmMain : Form
 
         async void ConversationProcessor_ListingFileAdded(object? sender, ListingFileAddedEventArgs e)
         {
-            // Let's add another Tab to the TabControl:
-            var sourceViewer = new SourceViewer();
-            await sourceViewer.SourceCodeViewer.SetSourceCodeAsync(e.Content, e.FileName!);
-            _mainTabControl.AddTab("Listing", sourceViewer);
+            try
+            {
+                // Let's add another Tab to the TabControl:
+                var sourceViewer = new SourceViewer();
+                _mainTabControl.AddTab("Listing", sourceViewer);
+                await sourceViewer.SetListingFileAsync(e.ListingFile);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
     }
 
@@ -148,9 +191,9 @@ public partial class FrmMain : Form
         {
             await InvokeAsync(() =>
             {
-                _tslInfo.Text = $"Failed to refresh metadata: {ex.Message}";
-                _tslInfo.ToolTipText = ex.StackTrace;
-                _tslInfo.ForeColor = Color.Red;
+                _tslItemDateInfoCaption.Text = $"Failed to refresh metadata: {ex.Message}";
+                _tslItemDateInfoCaption.ToolTipText = ex.StackTrace;
+                _tslItemDateInfoCaption.ForeColor = Color.Red;
             });
         }
     }
@@ -180,45 +223,19 @@ public partial class FrmMain : Form
         _settingsService.Save();
     }
 
-    private void ConversationView_ConversationItemAdded(object? sender, ConversationItemAddedEventArgs e)
-    {
-        _conversationProcessor ??= new(
-                conversation: _chatView.ConversationView.Conversation,
-                basePath: _options.BasePath);
-
-        _conversationProcessor.SaveConversation();
-        _currentNode = UpdateTreeView(_chatView.ConversationView.Conversation.Id);
-    }
-
     private async Task PromptControl_AsyncSendPrompt(object? sender, EventArgs e)
     {
         string textToSend = _chatView.PromptControl.Text;
         _chatView.PromptControl.Clear();
+        Conversation conversation = _chatView.ConversationView.Conversation;
 
-        // Make sure we can await it in the context of awaiting other tasks,
-        // even when there is nothing to do.
-        Task<ChatMetaData?> getMetaDataTask = Task.FromResult<ChatMetaData?>(null);
+        conversation.LastKickOffTime = DateTime.Now - conversation.DateCreated;
 
-        getMetaDataTask = GetChatMetaDataAsync(_skCommunicator.ChatHistory, textToSend)
-            .ContinueWith(previousTask =>
-            {
-                // And once we got it, we can update the title.
-                if (!previousTask.IsCompletedSuccessfully || previousTask.Result is null)
-                {
-                    return null;
-                }
-
-                // This updates the meta-data we just got with the current conversation.
-                previousTask.Result.Merge(_chatView.ConversationView.Conversation);
-
-                // Setting this in the conversation view will update the UI. 
-                _lblConversationTitle.Invoke(() =>
-                {
-                    _lblConversationTitle.Text = previousTask.Result?.ChatTitle;
-                });
-
-                return previousTask.Result;
-            });
+        if (conversation.ConversationItems.Count == 0)
+        {
+            conversation.Model = _options.LastUsedModel;
+            conversation.Personality = _options.LastUsedPersonality;
+        }
 
         try
         {
@@ -234,10 +251,24 @@ public partial class FrmMain : Form
             IAsyncEnumerable<string> responses = _chatView.ConversationView.UpdateCurrentResponseAsync(
                 asyncEnumerable: _skCommunicator.RequestPromptResponseStreamAsync(textToSend, true));
 
-            Task responsePumpingTask = ResponsePumpingAsync(responses);
+            await ResponsePumpingAsync(responses);
 
-            // Let's wait for both task to complete (Auto title generation and response pumping).
-            await Task.WhenAll(getMetaDataTask, responsePumpingTask);
+            ChatMetaData? chatMetaData = await GetChatMetaDataAsync(_skCommunicator.ChatHistory, textToSend);
+
+            // This updates the meta-data we just got with the current conversation.
+            chatMetaData?.Merge(_chatView.ConversationView.Conversation);
+
+            _conversationProcessor ??= new(
+                conversation: _chatView.ConversationView.Conversation,
+                basePath: _options.BasePath);
+
+            _conversationProcessor.SaveConversation();
+
+            await _lblConversationTitle.InvokeAsync(() =>
+            {
+                _lblConversationTitle.Text = chatMetaData?.ChatTitle;
+                _currentNode= UpdateTreeView(_chatView.ConversationView.Conversation.Id);
+            });
         }
         catch (Exception ex)
         {
@@ -336,5 +367,15 @@ public partial class FrmMain : Form
         _tscPersonalities.SelectedItem = _tscPersonalities.Items
             .OfType<PersonalityItemViewModel>()
             .FirstOrDefault(item => item.Id == selectedId);
+    }
+
+    private void CreateKnownTreeViewNodes()
+    {
+        foreach (KnownNode knownNode in Enum.GetValues<KnownNode>())
+        {
+            TreeNode node = _trvConversationHistory.Nodes.Add(knownNode.ToString());
+            node.NodeFont = new Font(_trvConversationHistory.Font, FontStyle.Bold);
+            _knownNodes[knownNode] = node;
+        }
     }
 }

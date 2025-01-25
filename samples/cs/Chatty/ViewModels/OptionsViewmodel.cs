@@ -20,5 +20,7 @@ internal class OptionsViewModel
     /// </summary>
     public string BasePath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Chatty";
 
-    public string LastUsedModel { get; set; } = "chatgpt-4o-latest";
+    public string LastUsedModel { get; set; } = "gpt-4o";
+
+    public string LastUsedPersonality { get; set; } = "default";
 }

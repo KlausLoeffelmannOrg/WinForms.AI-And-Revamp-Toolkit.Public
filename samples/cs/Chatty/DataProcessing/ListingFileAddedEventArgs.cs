@@ -1,76 +1,9 @@
-﻿namespace Chatty.DataProcessing;
+﻿using Chatty.DataEntities;
 
-public class ListingFileAddedEventArgs(
-    ListingType listingType, 
-    string content, 
-    string? fileName = default) : EventArgs
-{
-    public ListingType ListingType { get; } = listingType;
-    public string Content { get; } = content;
-    public string? FileName { get; } = fileName;
-}
+namespace Chatty.DataProcessing;
 
-public enum ListingType
+public class ListingFileAddedEventArgs(ListingFile listingFile) : EventArgs
 {
-    Other,
-    CSharp,
-    VisualBasic,
-    PlainText=10,
-    ABAP,
-    ActionScript,
-    Ada,
-    Ada95,
-    Algol68,
-    APL,
-    AppleScript,
-    Assembly,
-    AWK,
-    Bash,
-    Batch,
-    Clojure,
-    COBOL,
-    Crystal,
-    CSS,
-    Diff,
-    DockerFile,
-    Elixir,
-    Erlang,
-    Fortran,
-    FSharp,
-    Groovy,
-    Haskell,
-    HTML,
-    Ini,
-    Java,
-    JavaScript,
-    JSON,
-    Julia,
-    Kotlin,
-    Lisp,
-    Lua,
-    MakeFile,
-    Markdown,
-    ObjectiveC,
-    ObjectiveCpp,
-    Pascal,
-    Perl,
-    PowerShell,
-    Prolog,
-    Python,
-    R,
-    Ruby,
-    Rust,
-    Scala,
-    Scheme,
-    Smalltalk,
-    SQL,
-    Swift,
-    SystemVerilog,
-    Tcl,
-    TypeScript,
-    VB6,
-    Verilog,
-    VHDL,
-    XML,
-    YAML,
+    public ListingFile ListingFile { get; } = listingFile
+        ?? throw new ArgumentNullException(nameof(listingFile));
 }

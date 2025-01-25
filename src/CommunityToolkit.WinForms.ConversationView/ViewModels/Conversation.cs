@@ -60,7 +60,16 @@ public partial class Conversation()
     private string? _responseInProgressBackColor;
 
     [ObservableProperty]
+    private string _model="gpt-4o";
+
+    [ObservableProperty]
+    private string _personality= "default";
+
+    [ObservableProperty]
     private ObservableCollection<ConversationItem> _conversationItems = [];
+
+    [ObservableProperty]
+    private TimeSpan _lastKickOffTime;
 
     public void WriteJSon(Stream stream)
     {
@@ -83,6 +92,8 @@ public partial class Conversation()
         writer.WriteString(nameof(Summary), Summary);
         writer.WriteString(nameof(Keywords), Keywords);
         writer.WriteNumber(nameof(TokenCount), TokenCount);
+        writer.WriteString(nameof(Model), Model);
+        writer.WriteString(nameof(Personality), Personality);
 
         writer.WriteStartArray(nameof(ConversationItems));
 
@@ -120,10 +131,31 @@ public partial class Conversation()
         return conversation;
     }
 
-    public static Conversation GetHeaderFromFile(string fileName)
+    public static Conversation? GetHeaderFromFile(string fileName)
     {
-        using Stream stream = File.OpenRead(fileName);
-        return GetHeaderFromStream(stream);
+        try
+        {
+            using Stream stream = File.OpenRead(fileName);
+            Conversation item = GetHeaderFromStream(stream);
+
+            // We fix this, if this info isn't there (version change.)
+            // Should it get serialized, this will be then fixed.
+            if (item.Id == Guid.Empty)
+            {
+                item.Id = Guid.NewGuid();
+            }
+
+            if (string.IsNullOrEmpty(item.Filename))
+            {
+                item.Filename = fileName;
+            }
+
+            return item;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     public static Conversation GetHeaderFromStream(Stream stream)
@@ -148,6 +180,8 @@ public partial class Conversation()
         conversation.Summary = root.GetPropertyOrDefault(nameof(Summary), conversation.Summary);
         conversation.Keywords = root.GetPropertyOrDefault(nameof(Keywords), conversation.Keywords);
         conversation.TokenCount = root.GetPropertyOrDefault(nameof(TokenCount), conversation.TokenCount);
+        conversation.Model = root.GetPropertyOrDefault(nameof(Model), conversation.Model);
+        conversation.Personality = root.GetPropertyOrDefault(nameof(Personality), conversation.Personality);
 
         return conversation;
     }
