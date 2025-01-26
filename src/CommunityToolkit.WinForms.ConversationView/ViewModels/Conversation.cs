@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.WinForms.ConversationView.Extensions;
+using Markdig;
 using System.Collections.ObjectModel;
+using System.Text;
 using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -108,7 +110,59 @@ public partial class Conversation()
         writer.WriteEndObject();
     }
 
-    public static Conversation FromJSon(Stream stream)
+    /// <summary>
+    ///  Loads conversation items from a JSON string.
+    /// </summary>
+    /// <param name="json">The JSON string representing the conversation items.</param>
+    public static Conversation FromJson(string json)
+    {
+        try
+        {
+            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+            Conversation conversation = Conversation.FromJson(stream);
+            ProcessMarkdownToHTML(conversation);
+
+            return conversation;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private static void ProcessMarkdownToHTML(Conversation conversation)
+    {
+        bool listingInProgress = false;
+
+        foreach (var item in conversation.ConversationItems)
+        {
+            string currentTrimmedLine = item.MarkdownContent!.Trim();
+            if (currentTrimmedLine.StartsWith("```") && currentTrimmedLine.Length > 3)
+            {
+                item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
+                listingInProgress = true;
+                continue;
+            }
+
+            if (listingInProgress)
+            {
+                if (currentTrimmedLine == ("```"))
+                {
+                    item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
+                    listingInProgress = false;
+                    continue;
+                }
+
+                item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
+                continue;
+            }
+
+            string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
+            item.HtmlContent = $"<p>{currentHTML}</p>";
+        }
+    }
+
+    public static Conversation FromJson(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream, nameof(stream));
 

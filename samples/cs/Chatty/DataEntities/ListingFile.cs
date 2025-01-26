@@ -62,7 +62,7 @@ public class ListingFile
 
     public string BasePath { get; }
 
-    public string? FileName { get; }
+    public string? FileName { get; set; }
 
     public string Content { get; }
 

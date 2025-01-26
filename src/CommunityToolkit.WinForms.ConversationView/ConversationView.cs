@@ -20,9 +20,11 @@ public partial class ConversationView : BlazorWebView
     public event EventHandler<ConversationTitleChangedEventArgs>? ConversationTitleChanged;
     public event EventHandler<ConversationItemAddedEventArgs>? ConversationItemAdded;
     public event EventHandler<ReceivedNextParagraphEventArgs>? ReceivedNextParagraph;
+    public event EventHandler<ReceivedMetaDataEventArgs>? ReceivedMetaData;
+
+    private Conversation _conversation;
 
     private readonly IServiceProvider? _serviceProvider;
-    private readonly Conversation _conversation;
     private readonly HexAsciiDumper _hexDumper = new();
 
     /// <summary>
@@ -57,7 +59,40 @@ public partial class ConversationView : BlazorWebView
     ///  Gets or sets the unique identifier for the conversation.
     /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Conversation Conversation => _conversation;
+    public Conversation Conversation
+    {
+        get => _conversation;
+        set
+        {
+            if (object.Equals(_conversation, value))
+            {
+                return;
+            }
+
+            // Fast-fail if the value is null
+            ArgumentNullException.ThrowIfNull(value);
+
+            // We do not replacing the conversation, but updating it.
+            _conversation.ConversationItems.Clear();
+
+            // Let's clone the classes content first:
+            _conversation.Id = value.Id;
+            _conversation.Title = value.Title;
+            _conversation.DateCreated = value.DateCreated;
+            _conversation.DateLastEdited = value.DateLastEdited;
+            _conversation.Summary = value.Summary;
+            _conversation.Keywords = value.Keywords;
+            _conversation.TokenCount = value.TokenCount;
+            _conversation.Model = value.Model;
+            _conversation.Personality = value.Personality;
+
+            // Now we add the conversation items:
+            foreach (var item in value.ConversationItems)
+            {
+                _conversation.ConversationItems.Add(item);
+            }
+        }
+    }
 
     /// <summary>
     ///  Adds a conversation item to the conversation view.
@@ -86,71 +121,6 @@ public partial class ConversationView : BlazorWebView
     /// </summary>
     public void ClearHistory()
         => _conversation?.ConversationItems.Clear();
-
-    /// <summary>
-    ///  Loads conversation items from a JSON string.
-    /// </summary>
-    /// <param name="json">The JSON string representing the conversation items.</param>
-    public void FromJson(string json)
-    {
-        _conversation.ConversationItems.Clear();
-
-        try
-        {
-            using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
-            var tempModel = Conversation.FromJSon(stream);
-
-            // Let's clone the model and the items,
-            // so the Blazor view will get the changes and update.
-            _conversation.Title = tempModel.Title;
-
-            foreach (var item in tempModel.ConversationItems)
-            {
-                string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
-                item.HtmlContent = $"<p>{currentHTML}</p>";
-                item.ForeColor = ForeColor.ToWebColor();
-                item.BackColor = SystemColors.ControlLight.ToWebColor();
-
-                _conversation.ConversationItems.Add(item);
-            }
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-    }
-
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-
-        // Create new dictionary of parameters for the component
-        Dictionary<string, object?> parameters = new()
-            {
-                { nameof(ConversationRenderer.ViewModel), _conversation },
-                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
-            };
-
-        RootComponent component = new(
-            selector: "#app",
-            componentType: typeof(ConversationRenderer),
-            parameters: parameters);
-
-        RootComponents.Add(component);
-        HostPage = $"wwwroot/index.html";
-    }
-
-    protected virtual void OnConversationTitleChanged(ConversationTitleChangedEventArgs conversationTitleChangedEventArgs)
-    => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
-
-    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
-        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
-
-    protected override void OnPaintBackground(PaintEventArgs e)
-    {
-        base.OnPaintBackground(e);
-        e.Graphics.Clear(SystemColors.ControlLightLight);
-    }
 
     /// <summary>
     ///  Converts the conversation items to a JSON string.
@@ -183,10 +153,99 @@ public partial class ConversationView : BlazorWebView
         StringBuilder builtUpHtmlParagraphs = new();
         StringBuilder builtUpMarkdown = new();
         StringBuilder wordBuilder = new();
+        StringBuilder metaDataBuilder = new();
+
+        int positionCounter = 0;
+        char lastChar = '\0';
+        bool buildingMetaData = false;
+        bool metaDataPhaseInOrOut = false;
 
         // Iterate responses as characters
         await foreach (char c in ConvertToCharStreamAsync(asyncEnumerable))
         {
+            if (!buildingMetaData)
+            {
+                if (c == '{' && lastChar != '{')
+                {
+                    // We've hit a metadata block and need to start parsing.
+                    // We're not doing anything yet, but we're setting a flag.
+                    metaDataPhaseInOrOut = true;
+                    lastChar = c;
+                    continue;
+                }
+
+                if (metaDataPhaseInOrOut && c != '{')
+                {
+                    // false alarm.
+                    // We're not in a metadata block.
+                    metaDataPhaseInOrOut = false;
+                    positionCounter += 2;
+                    wordBuilder.Append($"{{{c}");
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (c == '{' && lastChar == '{')
+                {
+                    // We've hit a metadata block and need to start parsing
+                    // until we find the end.
+                    metaDataPhaseInOrOut = false;
+                    metaDataBuilder.Clear();
+                    buildingMetaData = true;
+
+                    lastChar = c;
+                    continue;
+                }
+            }
+
+            if (buildingMetaData)
+            {
+                if (c == '}' && lastChar != '}')
+                {
+                    // We've hit a metadata end-block and need maybe to stop parsing.
+                    // We're not doing anything yet, but we're setting a flag.
+                    metaDataPhaseInOrOut = true;
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (metaDataPhaseInOrOut && c != '}')
+                {
+                    // false alarm.
+                    // We're not in a metadata block.
+                    metaDataPhaseInOrOut = false;
+                    positionCounter += 2;
+                    wordBuilder.Append($"}}{c}");
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (c == '}' && lastChar == '}')
+                {
+                    // We've hit a metadata block and need to start parsing
+                    // until we find the end.
+                    metaDataPhaseInOrOut = false;
+
+                    OnReceivedMetaData(new ReceivedMetaDataEventArgs(
+                        metaDataBuilder.ToString(),
+                        positionCounter));
+
+                    metaDataBuilder.Clear();
+                    buildingMetaData = false;
+
+                    lastChar = c;
+                    continue;
+                }
+
+                metaDataBuilder.Append(c);
+                lastChar = c;
+                continue;
+            }
+
+            positionCounter++;
             wordBuilder.Append(c);
 
             // If we've hit a word boundary, yield the word
@@ -198,6 +257,7 @@ public partial class ConversationView : BlazorWebView
             yield return ProcessWord(wordBuilder.ToString(), c);
 
             wordBuilder.Clear();
+            lastChar = c;
         }
 
         // Flush any leftover word
@@ -237,7 +297,10 @@ public partial class ConversationView : BlazorWebView
             if (lastChar.HasValue && lastChar.Value.IsNewLineOrLineFeed())
             {
                 Debug.Print($"Next Paragraph: {localMarkdown}");
-                OnReceivedNextParagraph(new ReceivedNextParagraphEventArgs(localMarkdown));
+                OnReceivedNextParagraph(
+                    new ReceivedNextParagraphEventArgs(
+                        paragraph: localMarkdown,
+                        textPosition: positionCounter));
 
                 builtUpHtmlParagraphs.Append(localHtml);
                 builtUpMarkdown.Append(localMarkdown);
@@ -275,7 +338,7 @@ public partial class ConversationView : BlazorWebView
     }
 
     private void ConversationItems_CollectionChanged(
-        object? sender, 
+        object? sender,
         NotifyCollectionChangedEventArgs e)
     {
         if (ConversationItemAdded is not null
@@ -283,7 +346,7 @@ public partial class ConversationView : BlazorWebView
             && e.NewItems?.Count == 1
             && e.NewItems[0] is ConversationItem conversationItem)
         {
-            ConversationItemAdded.Invoke(this, new ConversationItemAddedEventArgs(conversationItem));
+            OnConversationItemAdded(new ConversationItemAddedEventArgs(conversationItem));
         }
 
         _conversation.DateLastEdited = DateTimeOffset.Now;
@@ -301,4 +364,73 @@ public partial class ConversationView : BlazorWebView
             _conversation.DateLastEdited = DateTimeOffset.Now;
         }
     }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        UpdateRootComponent();
+
+    }
+
+    private void UpdateRootComponent()
+    {
+        if (IsAncestorSiteInDesignMode)
+        {
+            return;
+        }
+
+        // Create new dictionary of parameters for the component
+        Dictionary<string, object?> parameters = new()
+            {
+                { nameof(ConversationRenderer.ViewModel), _conversation },
+                { nameof(ConversationRenderer.BackColor), SystemColors.ControlDark.ToWebColor() }
+            };
+
+        RootComponent component = new(
+            selector: "#app",
+            componentType: typeof(ConversationRenderer),
+            parameters: parameters);
+
+        RootComponents.Clear();
+        RootComponents.Add(component);
+        HostPage = $"wwwroot/index.html";
+    }
+
+    /// <summary>
+    /// Raises the <see cref="ConversationTitleChanged"/> event.
+    /// </summary>
+    /// <param name="conversationTitleChangedEventArgs">The event data.</param>
+    protected virtual void OnConversationTitleChanged(ConversationTitleChangedEventArgs conversationTitleChangedEventArgs)
+        => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
+
+    /// <summary>
+    /// Raises the <see cref="ReceivedNextParagraph"/> event.
+    /// </summary>
+    /// <param name="receivedNextParagraphEventArgs">The event data.</param>
+    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
+        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
+
+    /// <summary>
+    /// Paints the background of the control.
+    /// </summary>
+    /// <param name="e">A <see cref="PaintEventArgs"/> that contains the event data.</param>
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        base.OnPaintBackground(e);
+        e.Graphics.Clear(SystemColors.ControlLightLight);
+    }
+
+    /// <summary>
+    /// Raises the <see cref="ConversationItemAdded"/> event.
+    /// </summary>
+    /// <param name="conversationItemAddedEventArgs">The event data.</param>
+    protected virtual void OnConversationItemAdded(ConversationItemAddedEventArgs conversationItemAddedEventArgs)
+        => ConversationItemAdded?.Invoke(this, conversationItemAddedEventArgs);
+
+    /// <summary>
+    /// Raises the <see cref="ReceivedMetaData"/> event.
+    /// </summary>
+    /// <param name="receivedMetaDataEventArgs">The event data.</param>
+    protected virtual void OnReceivedMetaData(ReceivedMetaDataEventArgs receivedMetaDataEventArgs)
+        => ReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
 }

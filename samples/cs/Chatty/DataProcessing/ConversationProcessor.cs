@@ -1,11 +1,10 @@
 ﻿using Chatty.DataEntities;
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using System.Text;
 
 namespace Chatty.DataProcessing;
 
-internal class ConversationProcessor(Conversation conversation, string basePath)
+internal class ConversationProcessor(Conversation conversation)
 {
     public event EventHandler<ListingFileAddedEventArgs>? ListingFileAdded;
 
@@ -13,34 +12,33 @@ internal class ConversationProcessor(Conversation conversation, string basePath)
     private StringBuilder? _currentListingBuilder;
     private string? _currentListingType;
 
-    private Conversation Conversation { get; } = conversation
+    public Conversation Conversation { get; } = conversation
         ?? throw new ArgumentNullException(nameof(conversation));
 
-    private string BasePath { get; } = basePath
-        ?? throw new ArgumentNullException(nameof(basePath));
+    public string? CurrentListingDescription { get; internal set; }
 
-    public void SaveConversation()
+    public string? CurrentListingFilename { get; internal set; }
+
+    public (string path, string filename) GetPathAndFilename(string basePath, bool createRespectivePath)
     {
         // Let's create a filename from the title and make sure,
         // it doesn't have any invalid characters:
         string title = Conversation.Title!;
-        string? fileName = Conversation.Filename;
+        string uniqueFilename = GenerateUniqueFilename(basePath, title, ".cjson");
 
-        if (string.IsNullOrWhiteSpace(fileName))
+        DirectoryInfo directory = new(uniqueFilename);
+        string newBasePath = directory.FullName;
+
+        if (createRespectivePath)
         {
-            fileName = GenerateUniqueFilename(BasePath, title, ".cjson");
-            Conversation.Filename = fileName;
+            // Let's create the folder, should it not exist:
+            Directory.CreateDirectory(newBasePath);
         }
 
-        // Let's open a file stream to write the conversation to:
-        using FileStream fileStream = new(
-            path: fileName,
-            mode: FileMode.Create,
-            access: FileAccess.Write);
+        // Let's create the filename for the conversation:
+        return (newBasePath, $"{directory.Name}.cjson");
 
-        Conversation.WriteJSon(fileStream);
-
-        static string GenerateUniqueFilename(string basePath, string title, string extension)
+        static string GenerateUniqueFilename(string basePath, string title, string? extension = default)
         {
             // Remove invalid characters from the title
             string sanitizedTitle = string.Concat(title.Split(Path.GetInvalidFileNameChars()));
@@ -62,7 +60,23 @@ internal class ConversationProcessor(Conversation conversation, string basePath)
         }
     }
 
-    internal void AddParagraph(string paragraph)
+    public async Task SaveConversationAsync()
+    {
+        // Let's open a file stream to write the conversation to:
+        using FileStream fileStream = new(
+                path: Conversation.Filename,
+                mode: FileMode.Create,
+                access: FileAccess.Write);
+
+        Conversation.WriteJSon(fileStream);
+        await fileStream.FlushAsync();
+    }
+
+    internal void HandleReceiveContentMetaData(string metaData, int textPosition)
+    {
+    }
+
+    internal void HandleNewParagraph(string basePath, string paragraph, int textPosition)
     {
         string trimmedParagraph = paragraph.Trim();
 
@@ -101,7 +115,19 @@ internal class ConversationProcessor(Conversation conversation, string basePath)
     }
 
     protected virtual void OnListingFileAdded(ListingFileAddedEventArgs e)
+        => ListingFileAdded?.Invoke(this, e);
+
+    internal static async Task<ConversationProcessor> FromFileAsync(string basePath, string filename)
     {
-        ListingFileAdded?.Invoke(this, e);
+        // Just in case we still have the full path here from previous versions.
+        // TODO: Remove this in the future.
+        filename = Path.GetFileName(filename);
+        string folderName = Path.GetFileNameWithoutExtension(filename);
+        string folderPath = Path.Combine(basePath, folderName);
+
+        string json = await File.ReadAllTextAsync(Path.Combine(folderPath, filename));
+        var conversation = Conversation.FromJson(json);
+
+        return new ConversationProcessor(conversation);
     }
 }

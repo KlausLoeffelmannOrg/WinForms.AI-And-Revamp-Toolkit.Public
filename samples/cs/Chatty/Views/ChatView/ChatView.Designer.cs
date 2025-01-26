@@ -69,7 +69,7 @@ partial class ChatView
         _splitChatArea.Panel2.Controls.Add(_chatToolStrip);
         _splitChatArea.Panel2.Padding = new Padding(6);
         _splitChatArea.Size = new Size(1223, 871);
-        _splitChatArea.SplitterDistance = 644;
+        _splitChatArea.SplitterDistance = 643;
         _splitChatArea.SplitterWidth = 5;
         _splitChatArea.TabIndex = 1;
         // 
@@ -80,7 +80,7 @@ partial class ChatView
         _conversationView.Location = new Point(6, 6);
         _conversationView.Margin = new Padding(4);
         _conversationView.Name = "_conversationView";
-        _conversationView.Size = new Size(1211, 632);
+        _conversationView.Size = new Size(1211, 631);
         _conversationView.TabIndex = 0;
         _conversationView.Text = "conversationView1";
         // 
@@ -93,7 +93,7 @@ partial class ChatView
         _decoratorPanel.Margin = new Padding(4);
         _decoratorPanel.Name = "_decoratorPanel";
         _decoratorPanel.Padding = new Padding(12);
-        _decoratorPanel.Size = new Size(1211, 168);
+        _decoratorPanel.Size = new Size(1211, 169);
         _decoratorPanel.TabIndex = 0;
         // 
         // _promptControl
@@ -104,7 +104,7 @@ partial class ChatView
         _promptControl.Margin = new Padding(4);
         _promptControl.Multiline = true;
         _promptControl.Name = "_promptControl";
-        _promptControl.Size = new Size(1185, 144);
+        _promptControl.Size = new Size(1185, 145);
         _promptControl.TabIndex = 0;
         // 
         // _chatToolStrip

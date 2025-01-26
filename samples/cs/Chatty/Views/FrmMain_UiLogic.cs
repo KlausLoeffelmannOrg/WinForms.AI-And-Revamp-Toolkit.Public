@@ -1,4 +1,5 @@
-﻿using Chatty.Views;
+﻿using Chatty.DataProcessing;
+using Chatty.Views;
 using CommunityToolkit.WinForms.Controls.Blazor;
 
 namespace Chatty;
@@ -9,65 +10,86 @@ public partial class FrmMain
     {
         TreeNode nodeToReturn = null!;
 
-        // Clear the TreeView:
-        _trvConversationHistory.Nodes.Clear();
-
-
-        // Get all files from the base path and sort them by date descending:
-        List<Conversation> files = [.. Directory.EnumerateFiles(_options!.BasePath, "*.cjson")
-            .Select(file => Conversation.GetHeaderFromFile(file))
-            // We filter out the null entries.
-            .OfType<Conversation>()
-            .OrderByDescending(x => x.DateCreated)];
-
-        // Add files to the TreeView:
-        foreach (Conversation conversation in files)
+        try
         {
-            DateTimeOffset date = conversation.DateCreated;
+            // We want to be visually as quick as possible.
+            _trvConversationHistory.BeginUpdate();
 
-            TreeNode parentNode;
+            // Clear the TreeView:
+            _trvConversationHistory.Nodes.Clear();
 
-            parentNode = date.Date switch
+            // Let's get all the directories in the base path, and from there let's
+            // get the .cjson file in the folder:
+            foreach (string folder in Directory.EnumerateDirectories(_options.BasePath))
             {
-                var d when d == DateTime.Today => _knownNodes[KnownNode.Today],
-                var d when d == DateTime.Today.AddDays(-1) => _knownNodes[KnownNode.Yesterday],
-                var d when d >= DateTime.Today.AddDays(-7) => _knownNodes[KnownNode.LastWeek],
-                var d when d >= DateTime.Today.AddDays(-14) => _knownNodes[KnownNode.LastTwoWeeks],
-                var d when d >= DateTime.Today.AddMonths(-1) => _knownNodes[KnownNode.LastMonth],
-                _ => _trvConversationHistory.Nodes.Cast<TreeNode>()
-                    .FirstOrDefault(n => n.Text == date.ToString("MMMM yyyy"))
-                    ?? _trvConversationHistory.Nodes.Add(date.ToString("MMMM yyyy"))
-            };
+                string[] files = Directory.GetFiles(folder, "*.cjson");
+                if (files.Length == 0)
+                {
+                    continue;
+                }
 
-            // Let's find out, if that node is already in the TreeView:
-            if (!_trvConversationHistory.Nodes.Contains(parentNode))
-            {
-                _trvConversationHistory.Nodes.Add(parentNode);
+                using FileStream fileStream = new(files[0], FileMode.Open, FileAccess.Read);
+                Conversation conversation = Conversation.FromJson(fileStream);
+                DateTimeOffset date = conversation.DateCreated;
+
+                TreeNode parentNode;
+
+                parentNode = date.Date switch
+                {
+                    var d when d == DateTime.Today => _knownNodes[KnownNode.Today],
+                    var d when d == DateTime.Today.AddDays(-1) => _knownNodes[KnownNode.Yesterday],
+                    var d when d >= DateTime.Today.AddDays(-7) => _knownNodes[KnownNode.LastWeek],
+                    var d when d >= DateTime.Today.AddDays(-14) => _knownNodes[KnownNode.LastTwoWeeks],
+                    var d when d >= DateTime.Today.AddMonths(-1) => _knownNodes[KnownNode.LastMonth],
+                    _ => _trvConversationHistory.Nodes.Cast<TreeNode>()
+                        .FirstOrDefault(n => n.Text == date.ToString("MMMM yyyy"))
+                        ?? _trvConversationHistory.Nodes.Add(date.ToString("MMMM yyyy"))
+                };
+
+                // Let's find out, if that node is already in the TreeView:
+                if (!_trvConversationHistory.Nodes.Contains(parentNode))
+                {
+                    // We need to get rid of the nodes we might already have.
+                    // TODO: We should later build the delta and targeted update/remove.
+                    parentNode.Nodes.Clear();
+
+                    _trvConversationHistory.Nodes.Add(parentNode);
+                }
+
+                TreeNode node = parentNode.Nodes.Add(conversation.Title);
+                node.Tag = conversation;
+
+                // If no node was selected/current before, we pick the first one.
+                nodeToReturn ??= node;
+
+                if (id != Guid.Empty && conversation.Id == id)
+                {
+                    nodeToReturn = node;
+                }
+
+                if (!parentNode.IsExpanded)
+                {
+                    parentNode.Expand();
+                }
             }
 
-            TreeNode node = parentNode.Nodes.Add(conversation.Title);
-            node.Tag = conversation;
-
-            if (id != Guid.Empty && conversation.Id == id)
-            {
-                nodeToReturn = node;
-            }
-
-            if (!parentNode.IsExpanded)
-            {
-                parentNode.Expand();
-            }
+            _trvConversationHistory.SelectedNode = nodeToReturn;
+            return nodeToReturn;
         }
-
-        return nodeToReturn;
+        finally
+        {
+            _trvConversationHistory.EndUpdate();
+        }
     }
 
-    private void TrvConversationHistory_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+    private void TrvConversationHistory_AfterSelect(object sender, TreeViewEventArgs e)
     {
         if (e.Node?.Tag is not Conversation conversation)
         {
             return;
         }
+
+        _currentNode = e.Node;
 
         // We're updating the status bar:
         UpdateStatusBar(conversation);
@@ -76,10 +98,31 @@ public partial class FrmMain
     private void UpdateStatusBar(Conversation conversation)
     {
         _tslItemDateInfo.Text = $"{conversation.DateCreated:g}";
+        _tslPersonality.Text = $"{conversation.Personality} with {conversation.Model}";
+        _txtSummary.Text = conversation.Summary;
+
+        // Todo: We would need to load the conversation items.
+        // We will get the times we need best from the second item.
+        // (Test first one won't have latencies, since in these cases it came from the user.)
+        if (conversation.ConversationItems.Skip(1).FirstOrDefault() is ConversationItem conversationItem)
+        {
+            _tslProcessTimes.Text = 
+                $"{conversationItem.FirstResponseDuration.TotalSeconds:#,##0.000} s /" +
+                $"{conversationItem.CompleteProcessDuration.TotalSeconds:#,##0.000} s /";
+        }
+        else
+        {
+            _tslProcessTimes.Text = "- N/A -";
+        }
+
+        _tslProcessTimes.Text = "";
+
         _tsddKeywords.Text = null;
         _tsddKeywords.DropDownItems.Clear();
 
-        ReportToStatusBarInfo("OK.");
+        ReportToStatusBarInfo(
+            "OK.",
+            $"ID:{conversation.Id}\nPath:{conversation.Filename}\n\nDouble-Click copies path to clipboard ring.");
 
         if (string.IsNullOrWhiteSpace(conversation.Keywords))
         {
@@ -99,7 +142,7 @@ public partial class FrmMain
         }
     }
 
-    private void ConversationHistory_NodeMouseDoubleClick(
+    private async void ConversationHistory_NodeMouseDoubleClick(
         object sender, 
         TreeNodeMouseClickEventArgs e)
     {
@@ -112,19 +155,23 @@ public partial class FrmMain
 
         _currentNode = e.Node;
 
-        // And read the content of the file:
-        string fileFullName = conversation.Filename;
+        _conversationProcessor = await ConversationProcessor.FromFileAsync(
+            _options.BasePath,
+            conversation.Filename);
 
-        string json = File.ReadAllText(fileFullName);
+        conversation = _conversationProcessor.Conversation;
+
+        // This is a new instance which has now the conversation items.
+        e.Node.Tag = conversation;
 
         // And load it into the conversation view:
-        _chatView.ConversationView.FromJson(json);
+        _chatView.ConversationView.Conversation = conversation;
 
         _skCommunicator.ChatHistory?.Clear();
         _lblConversationTitle.Text = conversation.Title;
         _lblDate.Text = conversation.DateLastEdited.ToString("F");
 
-        foreach (ConversationItem item in _chatView.ConversationView.Conversation.ConversationItems)
+        foreach (ConversationItem item in conversation.ConversationItems)
         {
             _skCommunicator.AddChatItem(
                 item.IsResponse,

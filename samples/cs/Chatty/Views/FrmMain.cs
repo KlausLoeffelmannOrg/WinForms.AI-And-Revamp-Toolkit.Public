@@ -7,6 +7,8 @@ using CommunityToolkit.WinForms.Controls.Blazor;
 using CommunityToolkit.WinForms.Extensions;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Runtime.ExceptionServices;
+using CommunityToolkit.WinForms.AI.ResourceManagement;
+using System.Runtime.CompilerServices;
 
 namespace Chatty;
 
@@ -25,6 +27,8 @@ public partial class FrmMain : Form
     private IEnumerable<string>? _openAIModels;
     private TreeNode? _currentNode;
     private ConversationProcessor _conversationProcessor = null!;
+    private string? _lastListingTitle;
+    private string? _lastListingFilename;
     private readonly CancellationTokenSource _shutDownCancellation = new();
 
     private readonly ChatView _chatView;
@@ -32,7 +36,7 @@ public partial class FrmMain : Form
     public FrmMain()
     {
         InitializeComponent();
-        
+
         CreateKnownTreeViewNodes();
 
         Application.ThreadException += (s, e) =>
@@ -78,6 +82,7 @@ public partial class FrmMain : Form
     {
         base.OnLoad(e);
 
+        _chatView.ConversationView.ReceivedMetaData += ConversationView_ReceivedMetaData; 
         _chatView.ConversationView.ReceivedNextParagraph += ConversationView_ReceivedNextParagraph;
         _chatView.ConversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
         _chatView.PromptControl.AsyncSendPrompt += PromptControl_AsyncSendPrompt;
@@ -103,7 +108,7 @@ public partial class FrmMain : Form
         _personalities = PersonalityViewModel
             .GetPersonalitiesOrDefault(_options.BasePath);
 
-        RebuildPersonalitiesDropDown();
+        RebuildPersonalitiesDropDown(_options.LastUsedPersonality);
         UpdateTreeView();
 
         await SetupOpenAIModelsAsync();
@@ -123,6 +128,23 @@ public partial class FrmMain : Form
         }
     }
 
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        // Every async thing which is still active, please stop what you are doing!
+        _shutDownCancellation.Cancel();
+
+        base.OnFormClosing(e);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        base.OnFormClosed(e);
+
+        _settingsService.SetInstance(Key_MainView_Bounds, this.GetRestorableBounds());
+        _settingsService.SetInstance(Key_Options, _options);
+        _settingsService.Save();
+    }
+
     private void ConversationView_ConversationItemAdded(object? sender, ConversationItemAddedEventArgs e)
     {
         // We can save only with 2 items or more, since otherwise the Meta data
@@ -138,34 +160,92 @@ public partial class FrmMain : Form
         e.ConversationItem.CompleteProcessDuration = DateTime.Now - conversation.DateCreated;
     }
 
+    private void ConversationView_ReceivedMetaData(object? sender, ReceivedMetaDataEventArgs e)
+    {
+        if (e.MetaData.Contains(':'))
+        {
+            _lastListingTitle = e.MetaData;
+        }
+        else
+        {
+            _lastListingFilename = e.MetaData;
+        }
+
+        if (_conversationProcessor is null)
+        {
+            return;
+        }
+
+        _conversationProcessor.CurrentListingDescription = _lastListingTitle ?? string.Empty;
+        _conversationProcessor.CurrentListingFilename = _lastListingFilename ?? string.Empty;
+    }
+
     private void ConversationView_ReceivedNextParagraph(object? sender, ReceivedNextParagraphEventArgs e)
     {
+        string additionalResourceText = """
+            By default, no prompt asked for an extended format of the listing headers in Mark Down.
+            Listing Extraction is only possible, if the resulting Markdown formatted listing includes
+            ```csharp{{filename:myfilename.cs}}{{title:My Title}}.
+            
+            The resulting Markdown of the prompt did not include this information, which means
+            that the prompt did not ask for an extended format of the listing headers in Mark Down.
+            
+            Rewrite the prompt with regards to this and check, if the result satisfies the requirements.
+            """;
+
         if (_conversationProcessor is null)
         {
             _conversationProcessor = new(
-                conversation: _chatView.ConversationView.Conversation,
-                basePath: _options.BasePath);
+                conversation: _chatView.ConversationView.Conversation);
 
             _conversationProcessor.ListingFileAdded += ConversationProcessor_ListingFileAdded;
         }
 
-        _conversationProcessor.AddParagraph(e.Paragraph);
+        _conversationProcessor.HandleNewParagraph(
+            basePath: _options.BasePath,
+            paragraph: e.Paragraph,
+            textPosition: e.TextPosition);
 
         async void ConversationProcessor_ListingFileAdded(object? sender, ListingFileAddedEventArgs e)
         {
+            // If we don't have a filename, it's likely the user picked a profile, which returned
+            // a different format. In that case, the prompt is missing the ask to include
+            // meta-information in the response like {{filename:myfilename.cs}} or {{title:My Title}}.
+            if (string.IsNullOrEmpty(_lastListingFilename))
+            {
+                // We now report that as a warning to the user:
+                ReportToStatusBarInfo(
+                    message: "The profile you selected does not support listing extraction.",
+                    toolTipText: "The profile you selected does not support the meta-information.",
+                    additionalResourceText,
+                    critical: true);
+            }
+
             try
             {
                 // Let's add another Tab to the TabControl:
-                var sourceViewer = new SourceViewer();
-                _mainTabControl.AddTab("Listing", sourceViewer);
-                await sourceViewer.SetListingFileAsync(e.ListingFile);
+                RoslynSourceView sourceViewer = new();
+
+                _mainTabControl.AddTab(
+                    tabPageTitle: _lastListingFilename ?? throw new NullReferenceException(nameof(_lastListingFilename)),
+                    tabContent: sourceViewer);
+
+                e.ListingFile.FileName = _lastListingFilename;
+                e.ListingFile.ListingTitle = _lastListingTitle;
+
+                await sourceViewer.SetListingFileAsync(
+                    listingFile: e.ListingFile);
             }
             catch (Exception)
             {
-
                 throw;
             }
         }
+    }
+
+    private void ReportToStatusBarInfo(string message, string toolTipText, object value, string additionalInfo, bool critical)
+    {
+        throw new NotImplementedException();
     }
 
     private async void ChatView_RefreshMetaData(object? sender, EventArgs e)
@@ -214,15 +294,6 @@ public partial class FrmMain : Form
         _tscModels.SelectedItem = _options.LastUsedModel;
     }
 
-    protected override void OnFormClosed(FormClosedEventArgs e)
-    {
-        base.OnFormClosed(e);
-
-        _settingsService.SetInstance(Key_MainView_Bounds, this.GetRestorableBounds());
-        _settingsService.SetInstance(Key_Options, _options);
-        _settingsService.Save();
-    }
-
     private async Task PromptControl_AsyncSendPrompt(object? sender, EventArgs e)
     {
         string textToSend = _chatView.PromptControl.Text;
@@ -256,18 +327,36 @@ public partial class FrmMain : Form
             ChatMetaData? chatMetaData = await GetChatMetaDataAsync(_skCommunicator.ChatHistory, textToSend);
 
             // This updates the meta-data we just got with the current conversation.
-            chatMetaData?.Merge(_chatView.ConversationView.Conversation);
+            chatMetaData?.Merge(conversation);
 
             _conversationProcessor ??= new(
-                conversation: _chatView.ConversationView.Conversation,
-                basePath: _options.BasePath);
+                conversation: conversation);
 
-            _conversationProcessor.SaveConversation();
+            (string basePath, conversation.Filename) = _conversationProcessor.GetPathAndFilename(
+                basePath: _options.BasePath,
+                createRespectivePath: true);
+
+            await _conversationProcessor.SaveConversationAsync();
+
+            string conversationBaseFolder = Path.GetDirectoryName(conversation.Filename)
+                ?? throw new NullReferenceException(nameof(conversation.Filename));
+
+            // Iterate through any additional open tabs and save the respective listing files:
+            foreach (Panel tabPage in _mainTabControl.Tabs)
+            {
+                if (tabPage.Controls[0] is not RoslynSourceView sourceViewer)
+                {
+                    continue;
+                }
+
+                await sourceViewer.SaveFileAsync(conversationBaseFolder);
+            }
 
             await _lblConversationTitle.InvokeAsync(() =>
             {
                 _lblConversationTitle.Text = chatMetaData?.ChatTitle;
-                _currentNode= UpdateTreeView(_chatView.ConversationView.Conversation.Id);
+                _currentNode = UpdateTreeView(_chatView.ConversationView.Conversation.Id);
+                UpdateStatusBar(conversation);
             });
         }
         catch (Exception ex)
@@ -342,15 +431,17 @@ public partial class FrmMain : Form
         if (editor.ShowDialog(this) == DialogResult.OK)
         {
             _personalities = editor.Personalities;
-            RebuildPersonalitiesDropDown();
+            RebuildPersonalitiesDropDown(_options.LastUsedPersonality);
         }
     }
 
-    private void RebuildPersonalitiesDropDown()
+    private void RebuildPersonalitiesDropDown(string lastUsedPersonalityId)
     {
+        Guid.TryParse(lastUsedPersonalityId, out Guid lastUsedPersonalityGuid);
+
         // Let's remember the currently selected ID:
         Guid selectedId = _tscPersonalities.SelectedItem is PersonalityItemViewModel selectedPersonality
-            ? selectedPersonality.Id : Guid.Empty;
+            ? selectedPersonality.Id : lastUsedPersonalityGuid;
 
         _tscPersonalities.Items.Clear();
         _tscPersonalities.Items.AddRange([.. _personalities.Personalities]);
@@ -359,14 +450,20 @@ public partial class FrmMain : Form
         if (selectedId == Guid.Empty && _tscPersonalities.Items.Count > 0)
         {
             _tscPersonalities.SelectedIndex = 0;
-
             return;
         }
 
-        // And select the one we had before:
-        _tscPersonalities.SelectedItem = _tscPersonalities.Items
-            .OfType<PersonalityItemViewModel>()
-            .FirstOrDefault(item => item.Id == selectedId);
+        try
+        {
+            // And select the one we had before:
+            _tscPersonalities.SelectedItem = _tscPersonalities.Items
+                .OfType<PersonalityItemViewModel>()
+                .FirstOrDefault(item => item.Id == selectedId);
+        }
+        catch (Exception)
+        {
+            _tscPersonalities.SelectedIndex = 0;
+        }
     }
 
     private void CreateKnownTreeViewNodes()
@@ -377,5 +474,15 @@ public partial class FrmMain : Form
             node.NodeFont = new Font(_trvConversationHistory.Font, FontStyle.Bold);
             _knownNodes[knownNode] = node;
         }
+    }
+
+    private void TscPersonalities_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (_tscPersonalities.SelectedItem is not PersonalityItemViewModel selectedPersonality)
+        {
+            return;
+        }
+
+        _options.LastUsedPersonality = selectedPersonality.Id.ToString();
     }
 }

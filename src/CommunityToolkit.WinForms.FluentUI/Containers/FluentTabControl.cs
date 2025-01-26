@@ -102,6 +102,8 @@ public partial class FluentTabControl : Panel
         }
     }
 
+    public IEnumerable<Panel> Tabs => _tabPages;
+
     private void TabItem_Clicked(object? sender, EventArgs e)
     {
         // If the clicked item is selected, nothing changes.

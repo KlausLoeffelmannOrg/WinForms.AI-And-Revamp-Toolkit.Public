@@ -46,6 +46,11 @@ namespace Chatty
             filterChatsWithFilesToolStripMenuItem = new ToolStripMenuItem();
             chatSummaryToolStripMenuItem = new ToolStripMenuItem();
             _tsmAgents = new ToolStripMenuItem();
+            toolStripMenuItem6 = new ToolStripMenuItem();
+            classicApproachToolStripMenuItem = new ToolStripMenuItem();
+            soThatWithAIToolStripMenuItem = new ToolStripMenuItem();
+            fineButWhatAboutToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator5 = new ToolStripSeparator();
             modelOverviewToolStripMenuItem = new ToolStripMenuItem();
             _tsmPromptBuilder = new ToolStripMenuItem();
             _tsmPersonalityBuilder = new ToolStripMenuItem();
@@ -56,7 +61,7 @@ namespace Chatty
             _vsProjectRampUpper = new ToolStripMenuItem();
             toolStripMenuItem2 = new ToolStripSeparator();
             formLocalizerToolStripMenuItem = new ToolStripMenuItem();
-            winFormsBestPractizeQuizzerToolStripMenuItem = new ToolStripMenuItem();
+            winFormsBestPracticesQuizzerToolStripMenuItem = new ToolStripMenuItem();
             _tsmTools = new ToolStripMenuItem();
             _tsmOptions = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
@@ -68,6 +73,8 @@ namespace Chatty
             _tsddKeywords = new ToolStripDropDownButton();
             _tslPersonalityCaption = new ToolStripStatusLabel();
             _tslPersonality = new ToolStripStatusLabel();
+            _tslProcessTimesCaption = new ToolStripStatusLabel();
+            _tslProcessTimes = new ToolStripStatusLabel();
             _tslStatusCaption = new ToolStripStatusLabel();
             _tslInfo = new ToolStripStatusLabel();
             _tsbInfo = new ToolStripSplitButton();
@@ -84,13 +91,19 @@ namespace Chatty
             _tslModels = new ToolStripLabel();
             _tscModels = new ToolStripComboBox();
             _splitMain = new SplitContainer();
-            _trvConversationHistory = new TreeView();
+            _tlpNavigatorLayout = new TableLayoutPanel();
+            _searchBoxDecorator = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _cmbNavigatorSearch = new ComboBox();
+            fluentDecoratorPanel1 = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _txtSummary = new TextBox();
             _tlpHeader = new TableLayoutPanel();
             _mainTabControl = new CommunityToolkit.WinForms.FluentUI.FluentTabControl();
             _lblConversationTitle = new Label();
             _lblDate = new Label();
             _skCommunicator = new SemanticKernelComponent();
             _skMetaDataProcessor = new SemanticKernelComponent();
+            fluentDecoratorPanel2 = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _trvConversationHistory = new TreeView();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -98,7 +111,11 @@ namespace Chatty
             _splitMain.Panel1.SuspendLayout();
             _splitMain.Panel2.SuspendLayout();
             _splitMain.SuspendLayout();
+            _tlpNavigatorLayout.SuspendLayout();
+            _searchBoxDecorator.SuspendLayout();
+            fluentDecoratorPanel1.SuspendLayout();
             _tlpHeader.SuspendLayout();
+            fluentDecoratorPanel2.SuspendLayout();
             SuspendLayout();
             // 
             // _menuStrip
@@ -109,7 +126,7 @@ namespace Chatty
             _menuStrip.Location = new Point(0, 0);
             _menuStrip.Name = "_menuStrip";
             _menuStrip.Padding = new Padding(7, 2, 0, 2);
-            _menuStrip.Size = new Size(1595, 44);
+            _menuStrip.Size = new Size(1731, 44);
             _menuStrip.TabIndex = 0;
             _menuStrip.Text = "menuStrip1";
             // 
@@ -179,16 +196,48 @@ namespace Chatty
             // 
             // chatSummaryToolStripMenuItem
             // 
+            chatSummaryToolStripMenuItem.Checked = true;
+            chatSummaryToolStripMenuItem.CheckState = CheckState.Checked;
             chatSummaryToolStripMenuItem.Name = "chatSummaryToolStripMenuItem";
             chatSummaryToolStripMenuItem.Size = new Size(371, 44);
             chatSummaryToolStripMenuItem.Text = "Chat Summary";
             // 
             // _tsmAgents
             // 
-            _tsmAgents.DropDownItems.AddRange(new ToolStripItem[] { modelOverviewToolStripMenuItem, _tsmPromptBuilder, _tsmPersonalityBuilder, toolStripMenuItem4, toolStripMenuItem3, _tsmLanguageConverter, _classDocumenter, _vsProjectRampUpper, toolStripMenuItem2, formLocalizerToolStripMenuItem, winFormsBestPractizeQuizzerToolStripMenuItem });
+            _tsmAgents.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuItem6, toolStripSeparator5, modelOverviewToolStripMenuItem, _tsmPromptBuilder, _tsmPersonalityBuilder, toolStripMenuItem4, toolStripMenuItem3, _tsmLanguageConverter, _classDocumenter, _vsProjectRampUpper, toolStripMenuItem2, formLocalizerToolStripMenuItem, winFormsBestPracticesQuizzerToolStripMenuItem });
             _tsmAgents.Name = "_tsmAgents";
             _tsmAgents.Size = new Size(114, 40);
             _tsmAgents.Text = "Agents";
+            // 
+            // toolStripMenuItem6
+            // 
+            toolStripMenuItem6.DropDownItems.AddRange(new ToolStripItem[] { classicApproachToolStripMenuItem, soThatWithAIToolStripMenuItem, fineButWhatAboutToolStripMenuItem });
+            toolStripMenuItem6.Name = "toolStripMenuItem6";
+            toolStripMenuItem6.Size = new Size(511, 44);
+            toolStripMenuItem6.Text = "Classic UIs? Think different!";
+            // 
+            // classicApproachToolStripMenuItem
+            // 
+            classicApproachToolStripMenuItem.Name = "classicApproachToolStripMenuItem";
+            classicApproachToolStripMenuItem.Size = new Size(390, 44);
+            classicApproachToolStripMenuItem.Text = "Classic approach...";
+            // 
+            // soThatWithAIToolStripMenuItem
+            // 
+            soThatWithAIToolStripMenuItem.Name = "soThatWithAIToolStripMenuItem";
+            soThatWithAIToolStripMenuItem.Size = new Size(390, 44);
+            soThatWithAIToolStripMenuItem.Text = "So, that with AI...";
+            // 
+            // fineButWhatAboutToolStripMenuItem
+            // 
+            fineButWhatAboutToolStripMenuItem.Name = "fineButWhatAboutToolStripMenuItem";
+            fineButWhatAboutToolStripMenuItem.Size = new Size(390, 44);
+            fineButWhatAboutToolStripMenuItem.Text = "Fine. But what about...";
+            // 
+            // toolStripSeparator5
+            // 
+            toolStripSeparator5.Name = "toolStripSeparator5";
+            toolStripSeparator5.Size = new Size(508, 6);
             // 
             // modelOverviewToolStripMenuItem
             // 
@@ -248,11 +297,11 @@ namespace Chatty
             formLocalizerToolStripMenuItem.Size = new Size(511, 44);
             formLocalizerToolStripMenuItem.Text = "Form localizer...";
             // 
-            // winFormsBestPractizeQuizzerToolStripMenuItem
+            // winFormsBestPracticesQuizzerToolStripMenuItem
             // 
-            winFormsBestPractizeQuizzerToolStripMenuItem.Name = "winFormsBestPractizeQuizzerToolStripMenuItem";
-            winFormsBestPractizeQuizzerToolStripMenuItem.Size = new Size(511, 44);
-            winFormsBestPractizeQuizzerToolStripMenuItem.Text = "WinForms best practize quizzer...";
+            winFormsBestPracticesQuizzerToolStripMenuItem.Name = "winFormsBestPracticesQuizzerToolStripMenuItem";
+            winFormsBestPracticesQuizzerToolStripMenuItem.Size = new Size(511, 44);
+            winFormsBestPracticesQuizzerToolStripMenuItem.Text = "WinForms best practize quizzer...";
             // 
             // _tsmTools
             // 
@@ -286,11 +335,11 @@ namespace Chatty
             // 
             _statusStrip.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
             _statusStrip.ImageScalingSize = new Size(24, 24);
-            _statusStrip.Items.AddRange(new ToolStripItem[] { _tslItemDateInfoCaption, _tslItemDateInfo, _tslKeywordsCaption, _tsddKeywords, _tslPersonalityCaption, _tslPersonality, _tslStatusCaption, _tslInfo, _tsbInfo, _tslClockInfo });
-            _statusStrip.Location = new Point(0, 640);
+            _statusStrip.Items.AddRange(new ToolStripItem[] { _tslItemDateInfoCaption, _tslItemDateInfo, _tslKeywordsCaption, _tsddKeywords, _tslPersonalityCaption, _tslPersonality, _tslProcessTimesCaption, _tslProcessTimes, _tslStatusCaption, _tslInfo, _tsbInfo, _tslClockInfo });
+            _statusStrip.Location = new Point(0, 930);
             _statusStrip.Name = "_statusStrip";
             _statusStrip.Padding = new Padding(1, 0, 17, 0);
-            _statusStrip.Size = new Size(1595, 46);
+            _statusStrip.Size = new Size(1731, 46);
             _statusStrip.TabIndex = 1;
             _statusStrip.Text = "statusStrip1";
             // 
@@ -337,6 +386,19 @@ namespace Chatty
             _tslPersonality.Size = new Size(59, 37);
             _tslPersonality.Text = "- - -";
             // 
+            // _tslProcessTimesCaption
+            // 
+            _tslProcessTimesCaption.Font = new Font("Segoe UI", 11.1428576F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            _tslProcessTimesCaption.Name = "_tslProcessTimesCaption";
+            _tslProcessTimesCaption.Size = new Size(263, 37);
+            _tslProcessTimesCaption.Text = "Process times (ms):";
+            // 
+            // _tslProcessTimes
+            // 
+            _tslProcessTimes.Name = "_tslProcessTimes";
+            _tslProcessTimes.Size = new Size(59, 37);
+            _tslProcessTimes.Text = "- - -";
+            // 
             // _tslStatusCaption
             // 
             _tslStatusCaption.Font = new Font("Segoe UI", 11.1428576F, FontStyle.Bold, GraphicsUnit.Point, 0);
@@ -348,7 +410,7 @@ namespace Chatty
             // 
             _tslInfo.Name = "_tslInfo";
             _tslInfo.Overflow = ToolStripItemOverflow.Never;
-            _tslInfo.Size = new Size(636, 37);
+            _tslInfo.Size = new Size(504, 37);
             _tslInfo.Spring = true;
             _tslInfo.Text = "#info";
             _tslInfo.TextAlign = ContentAlignment.MiddleLeft;
@@ -377,7 +439,7 @@ namespace Chatty
             _toolStrip.Location = new Point(0, 44);
             _toolStrip.Name = "_toolStrip";
             _toolStrip.Padding = new Padding(10);
-            _toolStrip.Size = new Size(1595, 65);
+            _toolStrip.Size = new Size(1731, 65);
             _toolStrip.TabIndex = 2;
             _toolStrip.Text = "toolStrip1";
             // 
@@ -426,6 +488,7 @@ namespace Chatty
             _tscPersonalities.Margin = new Padding(4, 0, 5, 0);
             _tscPersonalities.Name = "_tscPersonalities";
             _tscPersonalities.Size = new Size(300, 45);
+            _tscPersonalities.SelectedIndexChanged += TscPersonalities_SelectedIndexChanged;
             // 
             // toolStripSeparator2
             // 
@@ -456,35 +519,80 @@ namespace Chatty
             // 
             // _splitMain.Panel1
             // 
-            _splitMain.Panel1.Controls.Add(_trvConversationHistory);
+            _splitMain.Panel1.Controls.Add(_tlpNavigatorLayout);
             _splitMain.Panel1.Padding = new Padding(10);
             // 
             // _splitMain.Panel2
             // 
             _splitMain.Panel2.Controls.Add(_tlpHeader);
             _splitMain.Panel2.Padding = new Padding(10);
-            _splitMain.Size = new Size(1595, 531);
-            _splitMain.SplitterDistance = 457;
+            _splitMain.Size = new Size(1731, 821);
+            _splitMain.SplitterDistance = 494;
             _splitMain.TabIndex = 3;
             // 
-            // _trvConversationHistory
+            // _tlpNavigatorLayout
             // 
-            _trvConversationHistory.Dock = DockStyle.Fill;
-            _trvConversationHistory.FullRowSelect = true;
-            _trvConversationHistory.HideSelection = false;
-            _trvConversationHistory.Location = new Point(10, 10);
-            _trvConversationHistory.Name = "_trvConversationHistory";
-            _trvConversationHistory.ShowNodeToolTips = true;
-            _trvConversationHistory.Size = new Size(437, 511);
-            _trvConversationHistory.TabIndex = 0;
-            _trvConversationHistory.NodeMouseClick += TrvConversationHistory_NodeMouseClick;
-            _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
+            _tlpNavigatorLayout.ColumnCount = 1;
+            _tlpNavigatorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            _tlpNavigatorLayout.Controls.Add(_searchBoxDecorator, 0, 0);
+            _tlpNavigatorLayout.Controls.Add(fluentDecoratorPanel1, 0, 2);
+            _tlpNavigatorLayout.Controls.Add(fluentDecoratorPanel2, 0, 1);
+            _tlpNavigatorLayout.Dock = DockStyle.Fill;
+            _tlpNavigatorLayout.Location = new Point(10, 10);
+            _tlpNavigatorLayout.Name = "_tlpNavigatorLayout";
+            _tlpNavigatorLayout.RowCount = 3;
+            _tlpNavigatorLayout.RowStyles.Add(new RowStyle());
+            _tlpNavigatorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 70F));
+            _tlpNavigatorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+            _tlpNavigatorLayout.Size = new Size(474, 801);
+            _tlpNavigatorLayout.TabIndex = 1;
+            // 
+            // _searchBoxDecorator
+            // 
+            _searchBoxDecorator.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _searchBoxDecorator.BorderThickness = 1;
+            _searchBoxDecorator.Controls.Add(_cmbNavigatorSearch);
+            _searchBoxDecorator.Location = new Point(5, 5);
+            _searchBoxDecorator.Margin = new Padding(5);
+            _searchBoxDecorator.Name = "_searchBoxDecorator";
+            _searchBoxDecorator.Padding = new Padding(10);
+            _searchBoxDecorator.Size = new Size(464, 52);
+            _searchBoxDecorator.TabIndex = 2;
+            // 
+            // _cmbNavigatorSearch
+            // 
+            _cmbNavigatorSearch.FormattingEnabled = true;
+            _cmbNavigatorSearch.Location = new Point(11, 4);
+            _cmbNavigatorSearch.Name = "_cmbNavigatorSearch";
+            _cmbNavigatorSearch.Size = new Size(442, 44);
+            _cmbNavigatorSearch.TabIndex = 0;
+            // 
+            // fluentDecoratorPanel1
+            // 
+            fluentDecoratorPanel1.BorderThickness = 1;
+            fluentDecoratorPanel1.Controls.Add(_txtSummary);
+            fluentDecoratorPanel1.Dock = DockStyle.Fill;
+            fluentDecoratorPanel1.Location = new Point(3, 582);
+            fluentDecoratorPanel1.Name = "fluentDecoratorPanel1";
+            fluentDecoratorPanel1.Padding = new Padding(10);
+            fluentDecoratorPanel1.Size = new Size(468, 216);
+            fluentDecoratorPanel1.TabIndex = 3;
+            // 
+            // _txtSummary
+            // 
+            _txtSummary.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _txtSummary.BorderStyle = BorderStyle.None;
+            _txtSummary.Location = new Point(11, 12);
+            _txtSummary.Multiline = true;
+            _txtSummary.Name = "_txtSummary";
+            _txtSummary.Size = new Size(446, 192);
+            _txtSummary.TabIndex = 2;
             // 
             // _tlpHeader
             // 
             _tlpHeader.ColumnCount = 2;
-            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 457F));
+            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             _tlpHeader.Controls.Add(_mainTabControl, 0, 1);
             _tlpHeader.Controls.Add(_lblConversationTitle, 0, 0);
             _tlpHeader.Controls.Add(_lblDate, 1, 0);
@@ -494,7 +602,7 @@ namespace Chatty
             _tlpHeader.RowCount = 2;
             _tlpHeader.RowStyles.Add(new RowStyle());
             _tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            _tlpHeader.Size = new Size(1114, 511);
+            _tlpHeader.Size = new Size(1213, 801);
             _tlpHeader.TabIndex = 0;
             // 
             // _mainTabControl
@@ -503,7 +611,7 @@ namespace Chatty
             _tlpHeader.SetColumnSpan(_mainTabControl, 2);
             _mainTabControl.Location = new Point(3, 54);
             _mainTabControl.Name = "_mainTabControl";
-            _mainTabControl.Size = new Size(1108, 454);
+            _mainTabControl.Size = new Size(1207, 744);
             _mainTabControl.TabIndex = 0;
             // 
             // _lblConversationTitle
@@ -513,16 +621,17 @@ namespace Chatty
             _lblConversationTitle.Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
             _lblConversationTitle.Location = new Point(3, 0);
             _lblConversationTitle.Name = "_lblConversationTitle";
-            _lblConversationTitle.Size = new Size(651, 51);
+            _lblConversationTitle.Size = new Size(721, 51);
             _lblConversationTitle.TabIndex = 1;
             _lblConversationTitle.Text = "Conversation Title";
             // 
             // _lblDate
             // 
             _lblDate.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            _lblDate.AutoEllipsis = true;
             _lblDate.AutoSize = true;
             _lblDate.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            _lblDate.Location = new Point(967, 0);
+            _lblDate.Location = new Point(1066, 0);
             _lblDate.Name = "_lblDate";
             _lblDate.Size = new Size(144, 51);
             _lblDate.TabIndex = 2;
@@ -537,11 +646,32 @@ namespace Chatty
             // 
             _skMetaDataProcessor.TopP = null;
             // 
+            // fluentDecoratorPanel2
+            // 
+            fluentDecoratorPanel2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            fluentDecoratorPanel2.BorderThickness = 1;
+            fluentDecoratorPanel2.Controls.Add(_trvConversationHistory);
+            fluentDecoratorPanel2.Location = new Point(3, 65);
+            fluentDecoratorPanel2.Name = "fluentDecoratorPanel2";
+            fluentDecoratorPanel2.Size = new Size(468, 511);
+            fluentDecoratorPanel2.TabIndex = 4;
+            // 
+            // _trvConversationHistory
+            // 
+            _trvConversationHistory.BorderStyle = BorderStyle.None;
+            _trvConversationHistory.FullRowSelect = true;
+            _trvConversationHistory.HideSelection = false;
+            _trvConversationHistory.Location = new Point(1, 8);
+            _trvConversationHistory.Name = "_trvConversationHistory";
+            _trvConversationHistory.ShowNodeToolTips = true;
+            _trvConversationHistory.Size = new Size(466, 494);
+            _trvConversationHistory.TabIndex = 1;
+            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(14F, 36F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1595, 686);
+            ClientSize = new Size(1731, 976);
             Controls.Add(_splitMain);
             Controls.Add(_toolStrip);
             Controls.Add(_statusStrip);
@@ -561,8 +691,13 @@ namespace Chatty
             _splitMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)_splitMain).EndInit();
             _splitMain.ResumeLayout(false);
+            _tlpNavigatorLayout.ResumeLayout(false);
+            _searchBoxDecorator.ResumeLayout(false);
+            fluentDecoratorPanel1.ResumeLayout(false);
+            fluentDecoratorPanel1.PerformLayout();
             _tlpHeader.ResumeLayout(false);
             _tlpHeader.PerformLayout();
+            fluentDecoratorPanel2.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -580,7 +715,6 @@ namespace Chatty
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripStatusLabel _tslItemDateInfoCaption;
         private SplitContainer _splitMain;
-        private TreeView _trvConversationHistory;
         private ToolStripMenuItem helpToolStripMenuItem;
         private ToolStripMenuItem _tsmAbout;
         private ToolStripComboBox _tscPersonalities;
@@ -614,7 +748,7 @@ namespace Chatty
         private ToolStripMenuItem formLocalizerToolStripMenuItem;
         private ToolStripStatusLabel _tslItemDateInfo;
         private ToolStripMenuItem toolStripMenuItem4;
-        private ToolStripMenuItem winFormsBestPractizeQuizzerToolStripMenuItem;
+        private ToolStripMenuItem winFormsBestPracticesQuizzerToolStripMenuItem;
         private ToolStripStatusLabel _tslKeywordsCaption;
         private ToolStripDropDownButton _tsddKeywords;
         private ToolStripSplitButton _tsbInfo;
@@ -627,5 +761,19 @@ namespace Chatty
         private ToolStripStatusLabel _tslPersonalityCaption;
         private ToolStripStatusLabel _tslPersonality;
         private ToolStripStatusLabel _tslStatusCaption;
+        private ToolStripMenuItem toolStripMenuItem6;
+        private ToolStripMenuItem classicApproachToolStripMenuItem;
+        private ToolStripMenuItem soThatWithAIToolStripMenuItem;
+        private ToolStripMenuItem fineButWhatAboutToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator5;
+        private ToolStripStatusLabel _tslProcessTimesCaption;
+        private ToolStripStatusLabel _tslProcessTimes;
+        private TableLayoutPanel _tlpNavigatorLayout;
+        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _searchBoxDecorator;
+        private ComboBox _cmbNavigatorSearch;
+        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel fluentDecoratorPanel1;
+        private TextBox _txtSummary;
+        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel fluentDecoratorPanel2;
+        private TreeView _trvConversationHistory;
     }
 }

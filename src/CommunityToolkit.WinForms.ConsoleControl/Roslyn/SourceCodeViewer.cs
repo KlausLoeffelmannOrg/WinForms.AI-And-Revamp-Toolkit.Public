@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.Controls;
@@ -16,6 +17,31 @@ public class SourceCodeViewer : RichTextBox
 
     private static readonly Color DefaultDarkModeBackColor = Color.FromArgb(30, 30, 30);
     private static readonly Color DefaultDarkModeForeColor = Color.White;
+
+    private static readonly Color EditorGeneric = GetColorFromHexString("dcdcdc");
+    private static readonly Color EditorKeyWord = GetColorFromHexString("569cd6");
+    private static readonly Color EditorFieldIdentifier = GetColorFromHexString("9cdcfe");
+    private static readonly Color EditorClassIdentifier = GetColorFromHexString("266c3f");
+    private static readonly Color EditorComment = GetColorFromHexString("4ec9b0");
+    private static readonly Color EditorStruct = GetColorFromHexString("86c691");
+
+    private static Color GetColorFromHexString(string v)
+    {
+        if (v.Length == 3)
+        {
+            v = string.Concat(v[0], v[0], v[1], v[1], v[2], v[2]);
+        }
+        else if (v.Length != 6)
+        {
+            throw new ArgumentException("Hex string should be 3 or 6 characters long.");
+        }
+
+        int r = Convert.ToInt32(v[..2], 16);
+        int g = Convert.ToInt32(v.Substring(2, 2), 16);
+        int b = Convert.ToInt32(v.Substring(4, 2), 16);
+
+        return Color.FromArgb(r, g, b);
+    }
 
     public SourceCodeViewer()
     {
@@ -39,7 +65,7 @@ public class SourceCodeViewer : RichTextBox
         // and we are also going for a monospaced font:
         if (Parent is not null)
         {
-            Font = new Font(CodeFontName, Parent.Font.Size + 2);
+            Font = new Font(CodeFontName, Parent.Font.Size + 3);
         }
     }
 
@@ -110,18 +136,27 @@ public class SourceCodeViewer : RichTextBox
         }
 
         SourceText docText = await _codeDocument.GetTextAsync();
-        var classifiedSpans = await Classifier.GetClassifiedSpansAsync(
-            _codeDocument,
-            new TextSpan(0, docText.Length));
 
-        // We'll define five slots in the color table:
-        // Index 1 = Blue, 2 = DarkGreen, 3 = Gray, 4 = Red
+        string debugText = docText.ToString();
+
+        var classifiedSpans = MergingClassifier.EnumerateClassifiedSpansAsync(_codeDocument);
+
         StringBuilder rtfBuilder = new();
         rtfBuilder.Append(@"{\rtf1\ansi");
-        rtfBuilder.Append(@"{\colortbl ;\red0\green0\blue255;\red0\green128\blue0;\red128\green128\blue128;\red255\green0\blue0;}");
+
+        // Define the color table
+        rtfBuilder.Append(@"{\colortbl ;");
+        rtfBuilder.Append(GetRtfColor(EditorGeneric));
+        rtfBuilder.Append(GetRtfColor(EditorKeyWord));
+        rtfBuilder.Append(GetRtfColor(EditorFieldIdentifier));
+        rtfBuilder.Append(GetRtfColor(EditorComment));
+        rtfBuilder.Append(GetRtfColor(EditorComment));
+        rtfBuilder.Append(GetRtfColor(EditorClassIdentifier));
+        rtfBuilder.Append(GetRtfColor(EditorStruct));
+        rtfBuilder.Append('}');
 
         // Start writing the content
-        foreach (var classifiedSpan in classifiedSpans)
+        await foreach (var classifiedSpan in classifiedSpans)
         {
             var spanText = docText.ToString(classifiedSpan.TextSpan);
 
@@ -130,23 +165,25 @@ public class SourceCodeViewer : RichTextBox
             spanText = EscapeForRtf(spanText);
 
             var colorIndex = GetColorForClassification(classifiedSpan.ClassificationType);
-            rtfBuilder.Append(@"\cf");
-            rtfBuilder.Append(colorIndex);
-            rtfBuilder.Append(' ');
-            rtfBuilder.Append(spanText);
+            rtfBuilder.Append($@"\cf{colorIndex} {spanText}");
         }
 
-        rtfBuilder.Append("}");
+        rtfBuilder.Append('}');
         return rtfBuilder.ToString();
 
         static int GetColorForClassification(string classificationType)
             => classificationType switch
             {
-                ClassificationTypeNames.Keyword => 1,
-                ClassificationTypeNames.Identifier => 2,
-                ClassificationTypeNames.Comment => 3,
-                ClassificationTypeNames.StringLiteral => 4,
-                _ => 0, // 0 => default color (black)
+                ClassificationTypeNames.Keyword => 2,
+                ClassificationTypeNames.Identifier => 3,
+                ClassificationTypeNames.Comment => 4,
+                ClassificationTypeNames.StringLiteral => 5,
+                ClassificationTypeNames.ClassName => 6,
+                ClassificationTypeNames.StructName => 7,
+                ClassificationTypeNames.FieldName => 3,
+                ClassificationTypeNames.InterfaceName => 6,
+                ClassificationTypeNames.EnumName => 7,
+                _ => 1, // 0 => default color (white/black)
             };
 
         static string EscapeForRtf(string text)
@@ -161,13 +198,61 @@ public class SourceCodeViewer : RichTextBox
                     case '\\': sb.Append(@"\\"); break;
                     case '{': sb.Append(@"\{"); break;
                     case '}': sb.Append(@"\}"); break;
-                    // You can optionally handle tab/CR/LF or multiple spaces here.
+                    case '\n': sb.Append(@"\par "); break; // Newline
+                    case '\r': break; // Ignore carriage return
+                    case '\t': sb.Append(@"\tab "); break; // Tab
+                    case ' ': sb.Append(@"\~"); break; // Space
                     default: sb.Append(c); break;
                 }
             }
 
             return sb.ToString();
         }
+
+        static string GetRtfColor(Color color)
+        {
+            return $@"\red{color.R}\green{color.G}\blue{color.B};";
+        }
     }
 }
 
+/// <summary>
+///  Provide a way to iterate through classified and unclassified text spans
+///  to include white spaces and complete other trivia in the return stream.
+/// </summary>
+public static class MergingClassifier
+{
+    public static async IAsyncEnumerable<ClassifiedSpan> EnumerateClassifiedSpansAsync(
+        Document document,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var docText = await document.GetTextAsync(cancellationToken);
+        var classifiedSpans = await Classifier.GetClassifiedSpansAsync(
+            document,
+            new TextSpan(0, docText.Length),
+            cancellationToken);
+
+        int lastEnd = 0;
+
+        foreach (var span in classifiedSpans.OrderBy(s => s.TextSpan.Start))
+        {
+            if (span.TextSpan.Start > lastEnd)
+            {
+                yield return new ClassifiedSpan(
+                    ClassificationTypeNames.Text,
+                    TextSpan.FromBounds(lastEnd, span.TextSpan.Start));
+            }
+
+            yield return span;
+            lastEnd = span.TextSpan.End;
+        }
+
+        if (lastEnd < docText.Length)
+        {
+            yield return new ClassifiedSpan(
+                ClassificationTypeNames.Text,
+                TextSpan.FromBounds(lastEnd, docText.Length));
+        }
+    }
+
+}
