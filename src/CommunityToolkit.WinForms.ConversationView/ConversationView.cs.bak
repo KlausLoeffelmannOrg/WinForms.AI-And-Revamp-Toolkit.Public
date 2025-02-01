@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.WinForms.ConversationView.Components;
 using CommunityToolkit.WinForms.DebuggingAids;
 using Markdig;
+using Markdig.Helpers;
 using Microsoft.AspNetCore.Components.WebView.WindowsForms;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.Controls.Blazor;
@@ -17,8 +19,10 @@ public partial class ConversationView : BlazorWebView
 {
     public event EventHandler<ConversationTitleChangedEventArgs>? ConversationTitleChanged;
     public event EventHandler<ConversationItemAddedEventArgs>? ConversationItemAdded;
+    public event EventHandler<ReceivedNextParagraphEventArgs>? ReceivedNextParagraph;
+    public event EventHandler<ReceivedMetaDataEventArgs>? ReceivedMetaData;
 
-    private readonly Conversation _conversation;
+    private Conversation _conversation;
 
     private readonly IServiceProvider? _serviceProvider;
     private readonly HexAsciiDumper _hexDumper = new();
@@ -40,7 +44,7 @@ public partial class ConversationView : BlazorWebView
             Id = Guid.NewGuid(),
             BackColor = SystemColors.ControlLightLight.ToWebColor(),
             ForeColor = SystemColors.ControlText.ToWebColor(),
-            Title = Conversation.GetDefaultTitle()
+            Title = $"New conversation {DateTime.Now: ddd mm, HH:mm}"
         };
 
         _conversation.PropertyChanged += ViewModel_PropertyChanged;
@@ -80,7 +84,7 @@ public partial class ConversationView : BlazorWebView
             _conversation.Keywords = value.Keywords;
             _conversation.TokenCount = value.TokenCount;
             _conversation.Model = value.Model;
-            _conversation.IdPersonality = value.IdPersonality;
+            _conversation.Personality = value.Personality;
 
             // Now we add the conversation items:
             foreach (var item in value.ConversationItems)
@@ -102,10 +106,8 @@ public partial class ConversationView : BlazorWebView
         {
             BackColor = SystemColors.ControlLight.ToWebColor(),
             ForeColor = ForeColor.ToWebColor(),
+            HtmlContent = $"<p>{text}</p>",
             MarkdownContent = text,
-            HtmlContent = Markdown.ToHtml(text),
-            DateCreated = DateTimeOffset.Now,
-            FirstResponseDuration = TimeSpan.Zero,
             IsResponse = isResponse
         };
 
@@ -147,79 +149,191 @@ public partial class ConversationView : BlazorWebView
             yield break;
         }
 
+        StringBuilder currentParagraph = new();
         StringBuilder builtUpHtmlParagraphs = new();
         StringBuilder builtUpMarkdown = new();
-        StringBuilder currentParagraph = new();
-        StringBuilder localHtml = new();
-        bool lockHtmlParagraphs = false;
+        StringBuilder wordBuilder = new();
+        StringBuilder metaDataBuilder = new();
 
-        int listingCount = 0;
+        int positionCounter = 0;
+        char lastChar = '\0';
+        bool buildingMetaData = false;
+        bool metaDataPhaseInOrOut = false;
 
-        await foreach (string word in asyncEnumerable)
+        // Iterate responses as characters
+        await foreach (char c in ConvertToCharStreamAsync(asyncEnumerable))
+        {
+            if (!buildingMetaData)
+            {
+                if (c == '{' && lastChar != '{')
+                {
+                    // We've hit a metadata block and need to start parsing.
+                    // We're not doing anything yet, but we're setting a flag.
+                    metaDataPhaseInOrOut = true;
+                    lastChar = c;
+                    continue;
+                }
+
+                if (metaDataPhaseInOrOut && c != '{')
+                {
+                    // false alarm.
+                    // We're not in a metadata block.
+                    metaDataPhaseInOrOut = false;
+                    positionCounter += 2;
+                    wordBuilder.Append($"{{{c}");
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (c == '{' && lastChar == '{')
+                {
+                    // We've hit a metadata block and need to start parsing
+                    // until we find the end.
+                    metaDataPhaseInOrOut = false;
+                    metaDataBuilder.Clear();
+                    buildingMetaData = true;
+
+                    lastChar = c;
+                    continue;
+                }
+            }
+
+            if (buildingMetaData)
+            {
+                if (c == '}' && lastChar != '}')
+                {
+                    // We've hit a metadata end-block and need maybe to stop parsing.
+                    // We're not doing anything yet, but we're setting a flag.
+                    metaDataPhaseInOrOut = true;
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (metaDataPhaseInOrOut && c != '}')
+                {
+                    // false alarm.
+                    // We're not in a metadata block.
+                    metaDataPhaseInOrOut = false;
+                    positionCounter += 2;
+                    wordBuilder.Append($"}}{c}");
+
+                    lastChar = c;
+                    continue;
+                }
+
+                if (c == '}' && lastChar == '}')
+                {
+                    // We've hit a metadata block and need to start parsing
+                    // until we find the end.
+                    metaDataPhaseInOrOut = false;
+
+                    OnReceivedMetaData(new ReceivedMetaDataEventArgs(
+                        metaDataBuilder.ToString(),
+                        positionCounter));
+
+                    metaDataBuilder.Clear();
+                    buildingMetaData = false;
+
+                    lastChar = c;
+                    continue;
+                }
+
+                metaDataBuilder.Append(c);
+                lastChar = c;
+                continue;
+            }
+
+            positionCounter++;
+            wordBuilder.Append(c);
+
+            // If we've hit a word boundary, yield the word
+            if (!IsWordSeparator(c) || wordBuilder.Length <= 0)
+            {
+                continue;
+            }
+
+            yield return ProcessWord(wordBuilder.ToString(), c);
+
+            wordBuilder.Clear();
+            lastChar = c;
+        }
+
+        // Flush any leftover word
+        if (wordBuilder.Length > 0)
+        {
+            yield return ProcessWord(wordBuilder.ToString(), null);
+            wordBuilder.Clear();
+        }
+
+        // Add the conversation item
+        _conversation.ConversationItems.Add(
+            new ConversationItem
+            {
+                BackColor = SystemColors.ControlLight.ToWebColor(),
+                ForeColor = ForeColor.ToWebColor(),
+                MarkdownContent = builtUpMarkdown.ToString(),
+                HtmlContent = $"<p>{_conversation.ResponseInProgress}</p>",
+                IsResponse = true
+            });
+
+        _conversation.ResponseInProgress = string.Empty;
+        builtUpHtmlParagraphs.Clear();
+        builtUpMarkdown.Clear();
+
+        /// <summary>
+        ///  Processes a single word, updating paragraph/HTML/markdown buffers.
+        /// </summary>
+        string ProcessWord(string word, char? lastChar)
         {
             currentParagraph.Append(word);
 
-            if (word.EndsWith("```\n") && listingCount == 0
-                || word.StartsWith("```") && word.Length > 3 && word[3] is not '\n')
-            {
-                if (listingCount == 0)
-                {
-                    builtUpHtmlParagraphs.AppendLine($"<listing>{word[3..].Trim()}</listing>");
-                    builtUpHtmlParagraphs.AppendLine("<pre><code>");
-                    lockHtmlParagraphs = true;
-                }
-
-                listingCount++;
-            }
-
-            if (word.EndsWith("```\n") && listingCount > 0)
-            {
-                listingCount--;
-
-                if (listingCount == 0)
-                {
-                    builtUpHtmlParagraphs.AppendLine("</code></pre>");
-                    lockHtmlParagraphs = true;
-                    localHtml.Clear();
-                }
-            }
-
             // Convert the accumulated text to HTML
             string localMarkdown = currentParagraph.ToString();
+            string localHtml = Markdown.ToHtml(localMarkdown);
 
-            if (listingCount == 0)
-            {
-                localHtml.Clear();
-                localHtml.Append(Markdown.ToHtml(localMarkdown));
-            }
-            else
-            {
-                if (!lockHtmlParagraphs)
-                {
-                    localHtml.Append(word);
-                }
-                else
-                {
-                    lockHtmlParagraphs = false;
-                }
-            }
-
-            if (word.EndsWith('\n'))
+            // If we ended with a newline, treat it as a paragraph boundary
+            if (lastChar.HasValue && lastChar.Value.IsNewLineOrLineFeed())
             {
                 Debug.Print($"Next Paragraph: {localMarkdown}");
+                OnReceivedNextParagraph(
+                    new ReceivedNextParagraphEventArgs(
+                        paragraph: localMarkdown,
+                        textPosition: positionCounter));
 
                 builtUpHtmlParagraphs.Append(localHtml);
                 builtUpMarkdown.Append(localMarkdown);
+
                 currentParagraph.Clear();
-                localHtml.Clear();
+                localMarkdown = string.Empty;
+                localHtml = string.Empty;
             }
 
-            _conversation.ResponseInProgress =
-                builtUpHtmlParagraphs.ToString()
-                + localHtml
-                + (listingCount > 0
-                    ? "\n</code></pre>"
-                    : string.Empty);
+            _conversation.ResponseInProgress = builtUpHtmlParagraphs.ToString() + localHtml;
+
+            return word;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsWordSeparator(char c)
+            => c switch
+            {
+                ' ' => true,
+                '\n' => true,
+                '\r' => true,
+                _ => false
+            };
+
+        static async IAsyncEnumerable<char> ConvertToCharStreamAsync(IAsyncEnumerable<string> asyncEnumerable)
+        {
+            await foreach (var response in asyncEnumerable)
+            {
+                foreach (char c in response)
+                {
+                    yield return c;
+                }
+            }
         }
     }
 
@@ -290,6 +404,13 @@ public partial class ConversationView : BlazorWebView
         => ConversationTitleChanged?.Invoke(this, conversationTitleChangedEventArgs);
 
     /// <summary>
+    /// Raises the <see cref="ReceivedNextParagraph"/> event.
+    /// </summary>
+    /// <param name="receivedNextParagraphEventArgs">The event data.</param>
+    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
+        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
+
+    /// <summary>
     /// Paints the background of the control.
     /// </summary>
     /// <param name="e">A <see cref="PaintEventArgs"/> that contains the event data.</param>
@@ -305,4 +426,11 @@ public partial class ConversationView : BlazorWebView
     /// <param name="conversationItemAddedEventArgs">The event data.</param>
     protected virtual void OnConversationItemAdded(ConversationItemAddedEventArgs conversationItemAddedEventArgs)
         => ConversationItemAdded?.Invoke(this, conversationItemAddedEventArgs);
+
+    /// <summary>
+    /// Raises the <see cref="ReceivedMetaData"/> event.
+    /// </summary>
+    /// <param name="receivedMetaDataEventArgs">The event data.</param>
+    protected virtual void OnReceivedMetaData(ReceivedMetaDataEventArgs receivedMetaDataEventArgs)
+        => ReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
 }

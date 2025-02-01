@@ -22,5 +22,5 @@ internal class OptionsViewModel
 
     public string LastUsedModel { get; set; } = "gpt-4o";
 
-    public Guid LastUsedIdPersonality { get; set; }
+    public string LastUsedPersonality { get; set; } = "default";
 }

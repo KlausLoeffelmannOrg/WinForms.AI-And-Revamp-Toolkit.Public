@@ -9,6 +9,7 @@ public partial class FluentDecoratorPanel
     {
         Top,
         Center,
-        Bottom
+        Bottom,
+        Fill // Added Fill option
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace WinFormsSkPlayGround.Controls;
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 /// <summary>
 ///  A control that combines a floating point track bar and a text box for editing floating point values.

@@ -25,10 +25,9 @@ public partial class SemanticKernelComponent : BindableComponent
     private const string DefaultModelName = "gpt-4o-2024-11-20";
     private const string ApiEndpoint = "https://api.openai.com/v1/models";
 
+
     public event AsyncEventHandler<AsyncRequestAssistantInstructionsEventArgs>? AsyncRequestAssistanceInstructions;
     public event AsyncEventHandler<AsyncRequestExecutionSettingsEventArgs>? AsyncRequestExecutionSettings;
-    public event EventHandler<ReceivedNextParagraphEventArgs>? ReceivedNextParagraph;
-    public event EventHandler<ReceivedMetaDataEventArgs>? ReceivedMetaData;
 
     // The chat history. If you are using ChatGPT for example directly in the WebBrowser,
     // this equals the chat history, so, the things you've said and the responses you've received.
@@ -44,7 +43,7 @@ public partial class SemanticKernelComponent : BindableComponent
     private double? _frequencyPenalty;
     private JsonSerializerOptions? _jsonSerializerOptions;
 
-    private readonly SynchronizationContext? _syncContext = WindowsFormsSynchronizationContext.Current;
+    private readonly SynchronizationContext? _syncContext=WindowsFormsSynchronizationContext.Current;
     private string? _systemPrompt;
     private bool _queueSystemPrompt;
 
@@ -64,7 +63,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
         (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
 
-        var chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
+        var chatHistory=HandleChatHistory(valueToProcess, keepChatHistory);
 
         IReadOnlyList<ChatMessageContent> responses = await chatService.GetChatMessageContentsAsync(
             chatHistory,
@@ -110,27 +109,16 @@ public partial class SemanticKernelComponent : BindableComponent
         responses = chatHistory.AddStreamingMessageAsync(
             (IAsyncEnumerable<OpenAIStreamingChatMessageContent>)responses);
 
-        await foreach (var response in ReturnTokenParser.ProcessTokens(
-            asyncEnumerable: responses,
-            onReceivedMetaDataAction: OnReceivedMetaData,
-            onReceivedNextParagraphAction: OnReceivedNextParagraph))
+        await foreach (StreamingChatMessageContent response in responses)
         {
-            if (string.IsNullOrEmpty(response))
+            if (string.IsNullOrEmpty(response.Content))
             {
                 continue;
             }
 
-            yield return response;
+            yield return response.Content;
         }
     }
-
-
-    /// <summary>
-    /// Raises the <see cref="ReceivedMetaData"/> event.
-    /// </summary>
-    /// <param name="receivedMetaDataEventArgs">The event data.</param>
-    protected virtual void OnReceivedMetaData(ReceivedMetaDataEventArgs receivedMetaDataEventArgs)
-        => ReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
 
     private ChatHistory HandleChatHistory(string valueToProcess, bool keepChatHistory)
     {
@@ -167,12 +155,17 @@ public partial class SemanticKernelComponent : BindableComponent
         AsyncRequestAssistantInstructionsEventArgs eArgs = new(GetAssistantInstructions());
         await OnRequestAssistantInstructionsAsync(eArgs);
 
+        EffectiveSystemPrompt = string.IsNullOrWhiteSpace(JsonSchema)
+            ? eArgs.AssistantInstructions
+            : $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
+              $"\n\nThe Json Schema is as follows:\n{JsonSchema}";
+
         OpenAIPromptExecutionSettings executionSettings = new()
         {
             ModelId = ModelName
         };
 
-        if (!ModelName.StartsWith("o1") && !ModelName.StartsWith("o3"))
+        if (!ModelName.StartsWith("o1"))
         {
             executionSettings = executionSettings
             .WithDefaultModelParameters(
@@ -189,31 +182,21 @@ public partial class SemanticKernelComponent : BindableComponent
                 JsonSchema,
                 JsonSchemaName,
                 JsonSchemaDescription);
-
-            EffectiveSystemPrompt = string.IsNullOrWhiteSpace(JsonSchema)
-                ? eArgs.AssistantInstructions
-                : $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
-                  $"\n\nThe Json Schema is as follows:\n{JsonSchema}";
         }
         else
         {
-            string formatRequestString = $"\n\nIMPORTANT: Please make sure that you format your replies consistently "
+            string formatRequestString= $"\n\nIMPORTANT: Please make sure that you format the text of your replys consistently as " 
                 + ReturnStringsFormat switch
             {
-                ReturnStringsFormat.Markdown => "as Markdown (MD) format.",
-                ReturnStringsFormat.PlainText => "as plain text without any additional formatting.",
-                ReturnStringsFormat.Html => "as HTML.",
-                ReturnStringsFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
+                ReturnStringsFormat.Markdown => "Markdown (MD) format.",
+                ReturnStringsFormat.PlainText => "plain text.",
+                ReturnStringsFormat.Html => "in HTML tagged text.",
+                ReturnStringsFormat.MicrosoftRichText => "in Microsoft Rich Text Format (RTF).",
                 _ => "Plain text."
             };
-
-            EffectiveSystemPrompt = string.IsNullOrWhiteSpace(JsonSchema)
-                ? eArgs.AssistantInstructions
-                : $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
-                  $"{formatRequestString}";
         }
 
-        AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
+            AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
         await OnRequestExecutionSettingsAsync(settingsEventArgs);
 
         string apiKey = ApiKeyGetter.Invoke()
@@ -282,7 +265,7 @@ public partial class SemanticKernelComponent : BindableComponent
         }
     }
 
-    public async Task<ModelInfo?> QueryOpenAiModelNameAsync(string modelName)
+    public async Task<ModelInfo?> QueryModelNameAsync(string modelName)
     {
         string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
 
@@ -315,8 +298,8 @@ public partial class SemanticKernelComponent : BindableComponent
 
     public async Task<T> RequestStructuredResponseAsync<T>(string request, CancellationToken token)
     {
-        string? jsonSchema = PromptFromTypeProcessor.GetJSonSchema<T>();
-        StructuredReturnDataAttribute promptInfo = PromptFromTypeProcessor.GetTypePromptInfo<T>();
+        string? jsonSchema = PromptFromTypeGenerator.GetJSonSchema<T>();
+        StructuredReturnDataAttribute promptInfo = PromptFromTypeGenerator.GetTypePromptInfo<T>();
         string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
 
         StringBuilder stringBuilder = new();
@@ -344,7 +327,7 @@ public partial class SemanticKernelComponent : BindableComponent
         stringBuilder.AppendLine("Please provide the requested information and return Json according to the provided Json Schema.");
         stringBuilder.AppendLine("Please provide the following information:");
 
-        IEnumerable<string> propertiesRequests = PromptFromTypeProcessor.GetTypePropertyPrompts<T>();
+        IEnumerable<string> propertiesRequests = PromptFromTypeGenerator.GetTypePropertyPrompts<T>();
 
         foreach (string propertyRequest in propertiesRequests)
         {
@@ -472,13 +455,6 @@ public partial class SemanticKernelComponent : BindableComponent
     protected virtual Task OnRequestExecutionSettingsAsync(AsyncRequestExecutionSettingsEventArgs eArgs)
         => AsyncRequestExecutionSettings?.Invoke(this, eArgs)
             ?? Task.CompletedTask;
-
-    /// <summary>
-    /// Raises the <see cref="ReceivedNextParagraph"/> event.
-    /// </summary>
-    /// <param name="receivedNextParagraphEventArgs">The event data.</param>
-    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
-        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
 
     public void AddChatItem(bool isResponse, string message)
     {

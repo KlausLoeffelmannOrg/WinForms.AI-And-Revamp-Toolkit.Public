@@ -2,13 +2,12 @@ using Chatty.DataEntities;
 using Chatty.DataProcessing;
 using Chatty.ViewModels;
 using Chatty.Views;
+using Chatty.Views.LastenheftAgent;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using CommunityToolkit.WinForms.Extensions;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Runtime.ExceptionServices;
-using CommunityToolkit.WinForms.FluentUI.Controls;
-using CommunityToolkit.WinForms.AI;
 
 namespace Chatty;
 
@@ -58,7 +57,6 @@ public partial class FrmMain : Form
 
         // We are wiring up the second one exactly like that.
         _skMetaDataProcessor.ApiKeyGetter = _skCommunicator.ApiKeyGetter;
-        _skMetaDataProcessor.ModelName = "gpt-3.5-turbo";
 
         // Handle changing the personalities:
         _tscPersonalities.SelectedIndexChanged += (s, e) =>
@@ -83,10 +81,10 @@ public partial class FrmMain : Form
     {
         base.OnLoad(e);
 
-        _skCommunicator.ReceivedMetaData += ConversationView_ReceivedMetaData;
-        _skCommunicator.ReceivedNextParagraph += SKConversationView_ReceivedNextParagraph;
+        _chatView.ConversationView.ReceivedMetaData += ConversationView_ReceivedMetaData;
+        _chatView.ConversationView.ReceivedNextParagraph += ConversationView_ReceivedNextParagraph;
         _chatView.ConversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
-        _chatView.PromptControl.AsyncSendCommand += PromptControl_AsyncSendCommand;
+        _chatView.PromptControl.AsyncSendPrompt += PromptControl_AsyncSendPrompt;
         _chatView.RefreshMetaData += ChatView_RefreshMetaData;
 
         _mainTabControl.AddTab("Conversation", _chatView);
@@ -109,7 +107,7 @@ public partial class FrmMain : Form
         _personalities = PersonalityViewModel
             .GetPersonalitiesOrDefault(_options.BasePath);
 
-        RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
+        RebuildPersonalitiesDropDown(_options.LastUsedPersonality);
         UpdateTreeView();
 
         await SetupOpenAIModelsAsync();
@@ -125,87 +123,6 @@ public partial class FrmMain : Form
                 {
                     _tslClockInfo.Text = $"{DateTime.Now:dddd, MMM dd yyyy - HH:mm:ss}";
                 }, token);
-            }
-        }
-    }
-
-    private async Task PromptControl_AsyncSendCommand(object sender, AsyncSendCommandEventArgs e)
-    {
-        string textToSend = e.CommandText;
-        _chatView.PromptControl.Clear();
-        Conversation conversation = _chatView.ConversationView.Conversation;
-
-        conversation.LastKickOffTime = TimeSpan.Zero;
-        conversation.DateLastEdited = DateTime.Now;
-
-        if (conversation.ConversationItems.Count == 0)
-        {
-            conversation.Model = _options.LastUsedModel;
-            conversation.IdPersonality = _options.LastUsedIdPersonality;
-        }
-
-        try
-        {
-            // First, we add our original question to the conversation view.
-            // This, by the way, will then raise the ConversationItemAdded event,
-            // where we then write the conversation to disc and update the tree view.
-            _chatView.ConversationView.AddConversationItem(textToSend, isResponse: false);
-
-            // And then, we let the _skCommunicator "pump" it's partial results from the
-            // async stream to the conversation view. When the answer is complete, we will be
-            // getting a respective event a la WinForms. And that's where we can write the
-            // conversation items on disc.
-            IAsyncEnumerable<string> responses = _chatView.ConversationView.UpdateCurrentResponseAsync(
-                asyncEnumerable: _skCommunicator.RequestPromptResponseStreamAsync(textToSend, true));
-
-            await ResponsePumpingAsync(responses);
-
-            ChatMetaData? chatMetaData = await GetChatMetaDataAsync(_skCommunicator.ChatHistory, textToSend);
-
-            // This updates the meta-data we just got with the current conversation.
-            chatMetaData?.Merge(conversation);
-
-            _conversationProcessor ??= new(
-                conversation: conversation,
-                basePath: _options.BasePath);
-
-            await _conversationProcessor.SaveConversationAsync();
-
-            // Iterate through any additional open tabs and save the respective listing files:
-            foreach (Panel tabPage in _mainTabControl.Tabs)
-            {
-                if (tabPage.Controls[0] is not RoslynSourceView sourceViewer)
-                {
-                    continue;
-                }
-
-                await sourceViewer.SaveFileAsync(_conversationProcessor?.ConversationBaseFolder 
-                    ?? throw new NullReferenceException(nameof(_conversationProcessor)));
-            }
-
-            await _lblConversationTitle.InvokeAsync(() =>
-            {
-                _lblConversationTitle.Text = chatMetaData?.ChatTitle;
-                _currentNode = UpdateTreeView(_chatView.ConversationView.Conversation.Id);
-                UpdateStatusBar(conversation);
-            });
-        }
-        catch (Exception ex)
-        {
-            var dispatchInfo = ExceptionDispatchInfo.Capture(ex);
-            dispatchInfo.Throw();
-        }
-
-        // And this is actual pumping, which here does nothing.
-        // This could be modified, for example to write logs or construct something.
-        static async Task ResponsePumpingAsync(IAsyncEnumerable<string> responses)
-        {
-            await foreach (string? response in responses)
-            {
-                if (response is null)
-                {
-                    continue;
-                }
             }
         }
     }
@@ -262,7 +179,7 @@ public partial class FrmMain : Form
         _conversationProcessor.CurrentListingFilename = _lastListingFilename ?? string.Empty;
     }
 
-    private void SKConversationView_ReceivedNextParagraph(object? sender, ReceivedNextParagraphEventArgs e)
+    private void ConversationView_ReceivedNextParagraph(object? sender, ReceivedNextParagraphEventArgs e)
     {
         string additionalResourceText = """
             By default, no prompt asked for an extended format of the listing headers in Mark Down.
@@ -278,16 +195,15 @@ public partial class FrmMain : Form
         if (_conversationProcessor is null)
         {
             _conversationProcessor = new(
-                conversation: _chatView.ConversationView.Conversation,
-                _options.BasePath);
+                conversation: _chatView.ConversationView.Conversation);
 
             _conversationProcessor.ListingFileAdded += ConversationProcessor_ListingFileAdded;
         }
 
         _conversationProcessor.HandleNewParagraph(
+            basePath: _options.BasePath,
             paragraph: e.Paragraph,
-            textPosition: e.TextPosition,
-            isLastParagraph: e.IsLastParagraph);
+            textPosition: e.TextPosition);
 
         async void ConversationProcessor_ListingFileAdded(object? sender, ListingFileAddedEventArgs e)
         {
@@ -324,6 +240,11 @@ public partial class FrmMain : Form
                 throw;
             }
         }
+    }
+
+    private void ReportToStatusBarInfo(string message, string toolTipText, object value, string additionalInfo, bool critical)
+    {
+        throw new NotImplementedException();
     }
 
     private async void ChatView_RefreshMetaData(object? sender, EventArgs e)
@@ -372,6 +293,93 @@ public partial class FrmMain : Form
         _tscModels.SelectedItem = _options.LastUsedModel;
     }
 
+    private async Task PromptControl_AsyncSendPrompt(object? sender, EventArgs e)
+    {
+        string textToSend = _chatView.PromptControl.Text;
+        _chatView.PromptControl.Clear();
+        Conversation conversation = _chatView.ConversationView.Conversation;
+
+        conversation.LastKickOffTime = DateTime.Now - conversation.DateCreated;
+
+        if (conversation.ConversationItems.Count == 0)
+        {
+            conversation.Model = _options.LastUsedModel;
+            conversation.Personality = _options.LastUsedPersonality;
+        }
+
+        try
+        {
+            // First, we add our original question to the conversation view.
+            // This, by the way, will then raise the ConversationItemAdded event,
+            // where we then write the conversation to disc and update the tree view.
+            _chatView.ConversationView.AddConversationItem(textToSend, isResponse: false);
+
+            // And then, we let the _skCommunicator "pump" it's partial results from the
+            // async stream to the conversation view. When the answer is complete, we will be
+            // getting a respective event a la WinForms. And that's where we can write the
+            // conversation items on disc.
+            IAsyncEnumerable<string> responses = _chatView.ConversationView.UpdateCurrentResponseAsync(
+                asyncEnumerable: _skCommunicator.RequestPromptResponseStreamAsync(textToSend, true));
+
+            await ResponsePumpingAsync(responses);
+
+            ChatMetaData? chatMetaData = await GetChatMetaDataAsync(_skCommunicator.ChatHistory, textToSend);
+
+            // This updates the meta-data we just got with the current conversation.
+            chatMetaData?.Merge(conversation);
+
+            _conversationProcessor ??= new(
+                conversation: conversation);
+
+            (string basePath, conversation.Filename) = _conversationProcessor.GetPathAndFilename(
+                basePath: _options.BasePath,
+                createRespectivePath: true);
+
+            await _conversationProcessor.SaveConversationAsync();
+
+            string conversationBaseFolder = Path.GetDirectoryName(conversation.Filename)
+                ?? throw new NullReferenceException(nameof(conversation.Filename));
+
+            // Iterate through any additional open tabs and save the respective listing files:
+            foreach (Panel tabPage in _mainTabControl.Tabs)
+            {
+                if (tabPage.Controls[0] is not RoslynSourceView sourceViewer)
+                {
+                    continue;
+                }
+
+                await sourceViewer.SaveFileAsync(conversationBaseFolder);
+            }
+
+            await _lblConversationTitle.InvokeAsync(() =>
+            {
+                _lblConversationTitle.Text = chatMetaData?.ChatTitle;
+                _currentNode = UpdateTreeView(_chatView.ConversationView.Conversation.Id);
+                UpdateStatusBar(conversation);
+            });
+        }
+        catch (Exception ex)
+        {
+            var dispatchInfo = ExceptionDispatchInfo.Capture(ex);
+
+            // Marshal to the UI thread
+            await InvokeAsync(() => dispatchInfo.Throw());
+        }
+
+        // And this is actual pumping, which here does nothing.
+        // This could be modified, for example to write logs or construct something.
+        static async Task ResponsePumpingAsync(IAsyncEnumerable<string> responses)
+        {
+            await foreach (string? response in responses)
+            {
+                if (response is null)
+                {
+                    continue;
+                }
+            }
+        }
+    }
+
     // That's the task which gets the title from the conversation.
     private async Task<ChatMetaData?> GetChatMetaDataAsync(ChatHistory? chatHistory, string? text = default)
     {
@@ -397,10 +405,20 @@ public partial class FrmMain : Form
             ? string.Empty
             : string.Join("\n", chatHistory.Select(item => item.Content));
 
+    private async void PromptControl_NewPromptSuggestionRequest(object sender, EventArgs e)
+    {
+        // string funnyRandomPrompt = FunnyPromptsProvider.GetRandomPrompt();
+        // _promptControl.Text = funnyRandomPrompt;
+
+        // We use a "side-affect" of InvokeAsync to schedule this,
+        // so that the text is set _before_ we select it.
+        await _chatView.PromptControl.InvokeAsync(() => _chatView.PromptControl.SelectAll());
+    }
+
     private void BtnStartNewChat_Click(object sender, EventArgs e)
     {
         _chatView.ConversationView.ClearHistory();
-        _chatView.ConversationView.Conversation.Title = Conversation.GetDefaultTitle();
+        _chatView.ConversationView.Conversation.Title = $"New chat {DateTime.Now:dddd, MMM dd yyyy}";
         _skCommunicator?.ChatHistory?.Clear();
     }
 
@@ -412,16 +430,17 @@ public partial class FrmMain : Form
         if (editor.ShowDialog(this) == DialogResult.OK)
         {
             _personalities = editor.Personalities;
-            RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
+            RebuildPersonalitiesDropDown(_options.LastUsedPersonality);
         }
     }
 
-    private void RebuildPersonalitiesDropDown(Guid lastUsedIdPersonality)
+    private void RebuildPersonalitiesDropDown(string lastUsedPersonalityId)
     {
+        Guid.TryParse(lastUsedPersonalityId, out Guid lastUsedPersonalityGuid);
+
         // Let's remember the currently selected ID:
         Guid selectedId = _tscPersonalities.SelectedItem is PersonalityItemViewModel selectedPersonality
-            ? selectedPersonality.Id
-            : lastUsedIdPersonality;
+            ? selectedPersonality.Id : lastUsedPersonalityGuid;
 
         _tscPersonalities.Items.Clear();
         _tscPersonalities.Items.AddRange([.. _personalities.Personalities]);
@@ -463,19 +482,12 @@ public partial class FrmMain : Form
             return;
         }
 
-        _options.LastUsedIdPersonality = selectedPersonality.Id;
+        _options.LastUsedPersonality = selectedPersonality.Id.ToString();
     }
 
-    private void TrvConversationHistory_AfterSelect(object sender, TreeViewEventArgs e)
+    private void TsmLastenHeftPflichtenHeftReengineering_Click(object sender, EventArgs e)
     {
-        if (e.Node?.Tag is not Conversation conversation)
-        {
-            return;
-        }
-
-        _currentNode = e.Node;
-
-        // We're updating the status bar:
-        UpdateStatusBar(conversation);
+        using var LastenHeftAgent = new FrmLastenheft();
+        LastenHeftAgent.ShowDialog();
     }
 }

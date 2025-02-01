@@ -2,7 +2,6 @@
 using CommunityToolkit.WinForms.ConversationView.Extensions;
 using Markdig;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -11,6 +10,18 @@ namespace CommunityToolkit.WinForms.Controls.Blazor;
 public partial class Conversation()
     : ObservableObject
 {
+    public Conversation(string title) : this()
+    {
+        _title = title;
+        _id = Guid.NewGuid();
+        _backColor = string.Empty;
+        _foreColor = string.Empty;
+        _dateCreated = DateTimeOffset.Now;
+        _dateLastEdited = DateTimeOffset.Now;
+        _backColor = string.Empty;
+        _foreColor = string.Empty;
+    }
+
     [ObservableProperty]
     private Guid _id;
 
@@ -19,11 +30,6 @@ public partial class Conversation()
 
     [ObservableProperty]
     private string _title = string.Empty;
-
-    partial void OnTitleChanging(string value)
-    {
-        Debug.Print($"Conversation.OnTitleChanging value={value}");
-    }
 
     [ObservableProperty]
     private string _summary = string.Empty;
@@ -53,28 +59,19 @@ public partial class Conversation()
     private string? _responseInProgress;
 
     [ObservableProperty]
-    private string? _currentListingInfo;
-
-    [ObservableProperty]
     private string? _responseInProgressBackColor;
 
     [ObservableProperty]
-    private string _model="- undefined -";
+    private string _model="gpt-4o";
 
     [ObservableProperty]
-    private Guid _idPersonality;
+    private string _personality= "default";
 
     [ObservableProperty]
     private ObservableCollection<ConversationItem> _conversationItems = [];
 
     [ObservableProperty]
     private TimeSpan _lastKickOffTime;
-
-    [ObservableProperty]
-    private TimeSpan _firstResponseDuration;
-
-    [ObservableProperty]
-    private TimeSpan _completeProcessDuration;
 
     public void WriteJSon(Stream stream)
     {
@@ -98,7 +95,7 @@ public partial class Conversation()
         writer.WriteString(nameof(Keywords), Keywords);
         writer.WriteNumber(nameof(TokenCount), TokenCount);
         writer.WriteString(nameof(Model), Model);
-        writer.WriteString(nameof(IdPersonality), IdPersonality);
+        writer.WriteString(nameof(Personality), Personality);
 
         writer.WriteStartArray(nameof(ConversationItems));
 
@@ -215,14 +212,6 @@ public partial class Conversation()
         }
     }
 
-    partial void OnResponseInProgressChanging(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            Debug.Print($"Response in progress changed: {value}");
-        }
-    }
-
     public static Conversation GetHeaderFromStream(Stream stream)
     {
         using JsonDocument document = JsonDocument.Parse(stream);
@@ -246,15 +235,8 @@ public partial class Conversation()
         conversation.Keywords = root.GetPropertyOrDefault(nameof(Keywords), conversation.Keywords);
         conversation.TokenCount = root.GetPropertyOrDefault(nameof(TokenCount), conversation.TokenCount);
         conversation.Model = root.GetPropertyOrDefault(nameof(Model), conversation.Model);
-        conversation.IdPersonality = root.GetPropertyOrDefault(nameof(IdPersonality), conversation.IdPersonality);
+        conversation.Personality = root.GetPropertyOrDefault(nameof(Personality), conversation.Personality);
 
         return conversation;
     }
-
-    /// <summary>
-    ///  Gets the default title for a conversation. IMPORTANT: $0200 is a zero-width space, 
-    ///  which is our marker for a new conversation and that the LLM has yet to come up with a new name.
-    /// </summary>
-    /// <returns></returns>
-    public static string GetDefaultTitle() => $"\u200B{DateTime.Now:MMM ddd dd, HH:mm}";
 }

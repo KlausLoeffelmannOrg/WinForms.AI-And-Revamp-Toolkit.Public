@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace WinFormsSkPlayGround.Controls;
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 [ToolboxBitmap(typeof(TrackBar))]
 public class FloatingPointSlider : TrackBar

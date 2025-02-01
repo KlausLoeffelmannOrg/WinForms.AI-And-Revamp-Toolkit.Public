@@ -1,6 +1,6 @@
-﻿namespace CommunityToolkit.WinForms.FluentUI;
+﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
-public class FluentCommandButton : Button
+public class FluentAsyncCommandButton : AsyncButton
 {
     private readonly Brush _standardForeColor;
     private readonly Brush _highLightedForeColor;
@@ -8,7 +8,7 @@ public class FluentCommandButton : Button
     private Font _iconFont = default!;
     private bool _requestHighlight;
 
-    public FluentCommandButton()
+    public FluentAsyncCommandButton()
     {
         _standardForeColor = new SolidBrush(ForeColor);
         _highLightedForeColor = new SolidBrush(SystemColors.HighlightText);
@@ -37,7 +37,12 @@ public class FluentCommandButton : Button
     protected override void OnFontChanged(EventArgs e)
     {
         base.OnFontChanged(e);
-        _iconFont = new Font("Segoe Fluent Icons", Font.Size, FontStyle.Regular, GraphicsUnit.Point);
+        _iconFont = new Font(
+            "Segoe Fluent Icons", 
+            Font.Size, 
+            FontStyle.Regular, 
+            GraphicsUnit.Point);
+
         Invalidate();
     }
 

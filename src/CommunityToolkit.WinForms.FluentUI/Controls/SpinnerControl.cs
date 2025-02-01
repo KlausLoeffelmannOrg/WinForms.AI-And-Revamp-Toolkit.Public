@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Text;
 
-namespace CommunityToolkit.WinForms.FluentUI;
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 /// <summary>
 ///  A control that displays a spinning animation using a special font.

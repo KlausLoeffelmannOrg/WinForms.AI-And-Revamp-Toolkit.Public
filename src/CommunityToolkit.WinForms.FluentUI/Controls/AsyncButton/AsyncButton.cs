@@ -1,24 +1,17 @@
-﻿using System.ComponentModel;
+﻿using CommunityToolkit.WinForms.AsyncSupport;
+using System.ComponentModel;
 using System.Runtime.ExceptionServices;
 
-namespace SemanticKernelDemo.Controls;
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 /// <summary>
-/// Represents the method that will handle the asynchronous click event of the <see cref="AsyncButton"/> control.
-/// </summary>
-/// <param name="sender">The source of the event.</param>
-/// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
-public delegate Task AsyncEventHandler(object? sender, EventArgs e);
-
-
-/// <summary>
-/// Represents a button control that supports asynchronous event handling.
+///  Represents a button control that supports asynchronous event handling.
 /// </summary>
 [DefaultEvent(nameof(AsyncClick))]
 public class AsyncButton : Button
 {
     /// <summary>
-    /// Occurs when the <see cref="AsyncButton"/> control is clicked asynchronously.
+    ///  Occurs when the <see cref="AsyncButton"/> control is clicked asynchronously.
     /// </summary>
     public event AsyncEventHandler? AsyncClick;
 

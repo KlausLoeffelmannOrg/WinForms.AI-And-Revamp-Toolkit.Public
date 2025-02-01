@@ -32,7 +32,7 @@ partial class ChatView
         _splitChatArea = new SplitContainer();
         _conversationView = new CommunityToolkit.WinForms.Controls.Blazor.ConversationView();
         _decoratorPanel = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
-        _promptControl = new SemanticKernelDemo.Controls.AsyncPromptControl();
+        _promptControl = new CommunityToolkit.WinForms.FluentUI.Controls.AutoCompleteEditor();
         _chatToolStrip = new ToolStrip();
         _newPrompt = new ToolStripButton();
         _tsbRefreshMetaData = new ToolStripButton();
@@ -68,8 +68,8 @@ partial class ChatView
         _splitChatArea.Panel2.Controls.Add(_decoratorPanel);
         _splitChatArea.Panel2.Controls.Add(_chatToolStrip);
         _splitChatArea.Panel2.Padding = new Padding(6);
-        _splitChatArea.Size = new Size(1223, 871);
-        _splitChatArea.SplitterDistance = 643;
+        _splitChatArea.Size = new Size(1325, 929);
+        _splitChatArea.SplitterDistance = 685;
         _splitChatArea.SplitterWidth = 5;
         _splitChatArea.TabIndex = 1;
         // 
@@ -80,7 +80,7 @@ partial class ChatView
         _conversationView.Location = new Point(6, 6);
         _conversationView.Margin = new Padding(4);
         _conversationView.Name = "_conversationView";
-        _conversationView.Size = new Size(1211, 631);
+        _conversationView.Size = new Size(1313, 673);
         _conversationView.TabIndex = 0;
         _conversationView.Text = "conversationView1";
         // 
@@ -92,20 +92,20 @@ partial class ChatView
         _decoratorPanel.Location = new Point(6, 48);
         _decoratorPanel.Margin = new Padding(4);
         _decoratorPanel.Name = "_decoratorPanel";
-        _decoratorPanel.Padding = new Padding(12);
-        _decoratorPanel.Size = new Size(1211, 169);
+        _decoratorPanel.Padding = new Padding(13);
+        _decoratorPanel.Size = new Size(1313, 185);
         _decoratorPanel.TabIndex = 0;
+        _decoratorPanel.VerticalContentAlignment = CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel.VerticalContentAlignments.Fill;
         // 
         // _promptControl
         // 
         _promptControl.BorderStyle = BorderStyle.None;
-        _promptControl.Dock = DockStyle.Fill;
-        _promptControl.Location = new Point(13, 12);
-        _promptControl.Margin = new Padding(4);
-        _promptControl.Multiline = true;
+        _promptControl.Location = new Point(14, 14);
+        _promptControl.MinTimeSuggestionRequestSensitivity = 1F;
         _promptControl.Name = "_promptControl";
-        _promptControl.Size = new Size(1185, 145);
+        _promptControl.Size = new Size(1285, 157);
         _promptControl.TabIndex = 0;
+        _promptControl.Text = "";
         // 
         // _chatToolStrip
         // 
@@ -113,7 +113,7 @@ partial class ChatView
         _chatToolStrip.Items.AddRange(new ToolStripItem[] { _newPrompt, _tsbRefreshMetaData, _tsbSaveConversation, toolStripSeparator, _tsbCut, _tsbCopy, _tsbPaste, toolStripSeparator1 });
         _chatToolStrip.Location = new Point(6, 6);
         _chatToolStrip.Name = "_chatToolStrip";
-        _chatToolStrip.Size = new Size(1211, 42);
+        _chatToolStrip.Size = new Size(1313, 42);
         _chatToolStrip.TabIndex = 1;
         _chatToolStrip.Text = "_promptToolStrip";
         // 
@@ -123,7 +123,7 @@ partial class ChatView
         _newPrompt.Image = (Image)resources.GetObject("_newPrompt.Image");
         _newPrompt.ImageTransparentColor = Color.Magenta;
         _newPrompt.Name = "_newPrompt";
-        _newPrompt.Size = new Size(40, 36);
+        _newPrompt.Size = new Size(46, 36);
         _newPrompt.Text = "&New";
         // 
         // _tsbRefreshMetaData
@@ -132,7 +132,7 @@ partial class ChatView
         _tsbRefreshMetaData.Image = (Image)resources.GetObject("_tsbRefreshMetaData.Image");
         _tsbRefreshMetaData.ImageTransparentColor = Color.Magenta;
         _tsbRefreshMetaData.Name = "_tsbRefreshMetaData";
-        _tsbRefreshMetaData.Size = new Size(40, 36);
+        _tsbRefreshMetaData.Size = new Size(46, 36);
         _tsbRefreshMetaData.Text = "Refresh MetaData";
         _tsbRefreshMetaData.Click += TsbRefreshMetaData_Click;
         // 
@@ -142,7 +142,7 @@ partial class ChatView
         _tsbSaveConversation.Image = (Image)resources.GetObject("_tsbSaveConversation.Image");
         _tsbSaveConversation.ImageTransparentColor = Color.Magenta;
         _tsbSaveConversation.Name = "_tsbSaveConversation";
-        _tsbSaveConversation.Size = new Size(40, 36);
+        _tsbSaveConversation.Size = new Size(46, 36);
         _tsbSaveConversation.Text = "&Save";
         // 
         // toolStripSeparator
@@ -156,7 +156,7 @@ partial class ChatView
         _tsbCut.Image = (Image)resources.GetObject("_tsbCut.Image");
         _tsbCut.ImageTransparentColor = Color.Magenta;
         _tsbCut.Name = "_tsbCut";
-        _tsbCut.Size = new Size(40, 36);
+        _tsbCut.Size = new Size(46, 36);
         _tsbCut.Text = "C&ut";
         // 
         // _tsbCopy
@@ -165,7 +165,7 @@ partial class ChatView
         _tsbCopy.Image = (Image)resources.GetObject("_tsbCopy.Image");
         _tsbCopy.ImageTransparentColor = Color.Magenta;
         _tsbCopy.Name = "_tsbCopy";
-        _tsbCopy.Size = new Size(40, 36);
+        _tsbCopy.Size = new Size(46, 36);
         _tsbCopy.Text = "&Copy";
         // 
         // _tsbPaste
@@ -174,7 +174,7 @@ partial class ChatView
         _tsbPaste.Image = (Image)resources.GetObject("_tsbPaste.Image");
         _tsbPaste.ImageTransparentColor = Color.Magenta;
         _tsbPaste.Name = "_tsbPaste";
-        _tsbPaste.Size = new Size(40, 36);
+        _tsbPaste.Size = new Size(46, 36);
         _tsbPaste.Text = "&Paste";
         // 
         // toolStripSeparator1
@@ -184,19 +184,18 @@ partial class ChatView
         // 
         // ChatView
         // 
-        AutoScaleDimensions = new SizeF(12F, 30F);
+        AutoScaleDimensions = new SizeF(13F, 32F);
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(_splitChatArea);
         Margin = new Padding(4);
         Name = "ChatView";
-        Size = new Size(1223, 871);
+        Size = new Size(1325, 929);
         _splitChatArea.Panel1.ResumeLayout(false);
         _splitChatArea.Panel2.ResumeLayout(false);
         _splitChatArea.Panel2.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)_splitChatArea).EndInit();
         _splitChatArea.ResumeLayout(false);
         _decoratorPanel.ResumeLayout(false);
-        _decoratorPanel.PerformLayout();
         _chatToolStrip.ResumeLayout(false);
         _chatToolStrip.PerformLayout();
         ResumeLayout(false);
@@ -207,7 +206,6 @@ partial class ChatView
     private SplitContainer _splitChatArea;
     private CommunityToolkit.WinForms.Controls.Blazor.ConversationView _conversationView;
     private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _decoratorPanel;
-    private SemanticKernelDemo.Controls.AsyncPromptControl _promptControl;
     private ToolStrip _chatToolStrip;
     private ToolStripButton _newPrompt;
     private ToolStripButton _tsbRefreshMetaData;
@@ -217,4 +215,5 @@ partial class ChatView
     private ToolStripButton _tsbCopy;
     private ToolStripButton _tsbPaste;
     private ToolStripSeparator toolStripSeparator1;
+    private CommunityToolkit.WinForms.FluentUI.Controls.AutoCompleteEditor _promptControl;
 }

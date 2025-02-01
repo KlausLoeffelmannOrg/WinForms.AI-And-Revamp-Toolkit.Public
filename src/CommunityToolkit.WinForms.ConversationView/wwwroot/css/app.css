@@ -104,6 +104,64 @@ body {
     margin: 0.5em;
 }
 
+/* Styling for code blocks */
+pre {
+    background-color: #000000; /* Dark background for code blocks */
+    color: #d4d4d4; /* Light text for contrast */
+    padding: 1em; /* Add some padding for better readability */
+    border-radius: 5px; /* Rounded corners */
+    overflow-x: auto; /* Allow horizontal scrolling for long lines */
+    margin: 1em 0; /* Add some spacing around the block */
+    font-family: 'Consolas', 'Courier New', monospace; /* Use a monospace font */
+    font-size: 1em; /* Slightly smaller font size */
+}
+
+code {
+    background-color: #000000; /* Slightly lighter background for inline code */
+    color: #c5c5c5; /* Light text for inline code */
+    padding: 0.2em 0.4em; /* Add padding to inline code */
+    border-radius: 3px; /* Rounded corners */
+    font-family: 'Consolas', 'Courier New', monospace; /* Monospace font */
+    font-size: 1em; /* Match font size with block code */
+}
+
+/* Highlight syntax */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #6a9955; /* Comments in green */
+}
+
+.token.punctuation {
+    color: #d4d4d4; /* Default text color */
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+    color: #569cd6; /* Keywords and numbers in blue */
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+    color: #ce9178; /* Strings in red */
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+    color: #dcdcaa; /* Operators in yellow */
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

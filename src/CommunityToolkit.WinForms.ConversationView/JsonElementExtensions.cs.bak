@@ -69,23 +69,22 @@ public static class JsonElementExtensions
     /// <returns>The value of the property as a <see cref="DateTime"/>, or the default value if the property does not exist.</returns>
     public static DateTime GetPropertyOrDefault(this JsonElement element, string propertyName, DateTime defaultValue)
     {
-        if (element.TryGetProperty(propertyName, out JsonElement property))
+        DateTime returnValue;
+
+        try
         {
-            if (property.TryGetDateTime(out DateTime dateTime))
-            {
-                return dateTime;
-            }
-
+            returnValue = element.TryGetProperty(propertyName, out JsonElement property)
+                ? property.GetDateTime()
+                : defaultValue;
+        }
+        catch (Exception)
+        {
             // Let's try it again by parsing the value as a string:
-            string? dateTimeString = property.GetString();
-
-            if (dateTimeString is not null)
-            {
-                return DateTime.Parse(dateTimeString);
-            }
+            string dateTimeString = element.GetPropertyOrDefault(propertyName, defaultValue.ToString());
+            returnValue = DateTime.Parse(dateTimeString);
         }
 
-        return defaultValue;
+        return returnValue;
     }
 
     /// <summary>

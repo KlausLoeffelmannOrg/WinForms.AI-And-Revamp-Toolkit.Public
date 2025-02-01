@@ -6,7 +6,7 @@ namespace CommunityToolkit.WinForms.AsyncSupport;
 public delegate Task AsyncEventHandler<TEventArgs>(object sender, TEventArgs e);
 
 /// <summary>
-/// Represents an awaitable event that can be used with the await keyword.
+///  Represents an awaitable event that can be used with the await keyword.
 /// </summary>
 /// <typeparam name="T">The type of the event arguments.</typeparam>
 public class AwaitableEvent<T> : IAwaitableComponent
@@ -52,12 +52,15 @@ public class AwaitableEvent<T> : IAwaitableComponent
     public T EArgs { get; private set; } = null!;
 
     /// <summary>
-    /// Gets the awaiter for the component.
+    ///  Gets the awaiter for the component.
     /// </summary>
-    /// <returns>An object that implements the <see cref="INotifyCompletion"/> interface.</returns>
+    /// <returns>
+    ///  An object that implements the <see cref="INotifyCompletion"/> interface.
+    /// </returns>
     INotifyCompletion IAwaitableComponent.GetAwaiter()
     {
         _eventCompletion = new TaskCompletionSource<AwaitableEvent<T>>();
+
         return EventCompletion.Task.GetAwaiter();
     }
 }

@@ -7,6 +7,11 @@ namespace CommunityToolkit.WinForms.Controls.Blazor;
 
 public partial class ConversationItem : ObservableObject
 {
+    public ConversationItem()
+    {
+        _dateCreated = DateTime.Now;
+    }
+
     [ObservableProperty]
     private string? _markdownContent;
 
@@ -23,14 +28,13 @@ public partial class ConversationItem : ObservableObject
     private string? _foreColor;
 
     [ObservableProperty]
-    private DateTimeOffset _dateCreated;
+    private DateTime _dateCreated;
 
     [ObservableProperty]
     private TimeSpan _firstResponseDuration;
 
     [ObservableProperty]
     private TimeSpan _completeProcessDuration;
-
 
     public override string? ToString() 
         => MarkdownContent ?? HtmlContent ?? base.ToString();

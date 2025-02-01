@@ -1,5 +1,4 @@
 ﻿using Chatty.DataProcessing;
-using Chatty.ViewModels;
 using Chatty.Views;
 using CommunityToolkit.WinForms.Controls.Blazor;
 
@@ -21,27 +20,18 @@ public partial class FrmMain
 
             // Let's get all the directories in the base path, and from there let's
             // get the .cjson file in the folder:
-            var conversations = new List<Conversation>();
             foreach (string folder in Directory.EnumerateDirectories(_options.BasePath))
             {
                 string[] files = Directory.GetFiles(folder, "*.cjson");
-
                 if (files.Length == 0)
                 {
                     continue;
                 }
 
-                Conversation conversation = Conversation.GetHeaderFromFile(files[0])!;
-                conversations.Add(conversation);
-            }
+                using FileStream fileStream = new(files[0], FileMode.Open, FileAccess.Read);
+                Conversation conversation = Conversation.FromJson(fileStream);
+                DateTimeOffset date = conversation.DateCreated;
 
-            // Sort conversations by DateLastEdited descending
-            var sortedConversations = conversations
-                .OrderByDescending(c => c.DateLastEdited);
-
-            foreach (var conversation in sortedConversations)
-            {
-                DateTimeOffset date = conversation.DateLastEdited;
                 TreeNode parentNode;
 
                 parentNode = date.Date switch
@@ -92,12 +82,23 @@ public partial class FrmMain
         }
     }
 
+    private void TrvConversationHistory_AfterSelect(object sender, TreeViewEventArgs e)
+    {
+        if (e.Node?.Tag is not Conversation conversation)
+        {
+            return;
+        }
+
+        _currentNode = e.Node;
+
+        // We're updating the status bar:
+        UpdateStatusBar(conversation);
+    }
+
     private void UpdateStatusBar(Conversation conversation)
     {
-        var idPersonality = conversation.IdPersonality;
-
         _tslItemDateInfo.Text = $"{conversation.DateCreated:g}";
-        _tslPersonality.Text = $"{GetPersonality(idPersonality)} with {conversation.Model}";
+        _tslPersonality.Text = $"{conversation.Personality} with {conversation.Model}";
         _txtSummary.Text = conversation.Summary;
 
         // Todo: We would need to load the conversation items.
@@ -139,19 +140,6 @@ public partial class FrmMain
             item.Click += (s, e) => _tsddKeywords.Text = keyword;
             _tsddKeywords.DropDownItems.Add(item);
         }
-    }
-
-    private PersonalityItemViewModel GetPersonality(Guid idPersonality)
-    {
-        if (idPersonality == Guid.Empty)
-        {
-            // We pick the first one from the list, since it's the default.
-            return _personalities.Personalities.First();
-        }
-
-        return _personalities
-            .Personalities
-            .First(_personalities => _personalities.Id == idPersonality);
     }
 
     private async void ConversationHistory_NodeMouseDoubleClick(

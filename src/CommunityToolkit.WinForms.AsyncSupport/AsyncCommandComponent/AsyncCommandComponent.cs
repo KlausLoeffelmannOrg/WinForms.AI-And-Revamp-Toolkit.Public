@@ -3,6 +3,13 @@ using System.Windows.Input;
 
 namespace CommunityToolkit.WinForms.AsyncSupport;
 
+/// <summary>
+/// Represents the method that will handle the asynchronous click event of the <see cref="AsyncButton"/> control.
+/// </summary>
+/// <param name="sender">The source of the event.</param>
+/// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
+public delegate Task AsyncEventHandler(object? sender, EventArgs e);
+
 public partial class AsyncCommandComponent : Component, ICommand
 {
     public event EventHandler? CanExecuteChanged;

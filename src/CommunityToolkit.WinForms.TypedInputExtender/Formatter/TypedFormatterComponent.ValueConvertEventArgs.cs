@@ -1,6 +1,7 @@
 ﻿
 
 using CommunityToolkit.WinForms.FluentUI;
+using CommunityToolkit.WinForms.FluentUI.Controls;
 
 namespace CommunityToolkit.WinForms.TypedInputExtenders;
 

@@ -7,7 +7,6 @@ public partial class FluentDecoratorPanel : Panel
     private int _controlPadding;
     private BorderStyles _borderStyle;
     private int _borderThickness;
-    private Orientation _orientation;
 
     public FluentDecoratorPanel()
     {
@@ -15,7 +14,6 @@ public partial class FluentDecoratorPanel : Panel
         _borderStyle = BorderStyles.Modern;
         _borderThickness = 1;
         _verticalContentAlignment = VerticalContentAlignments.Center;
-        _orientation = Orientation.Horizontal;
 
         // Enable double buffering to reduce flickering
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
@@ -88,22 +86,6 @@ public partial class FluentDecoratorPanel : Panel
         }
     }
 
-    /// <summary>
-    /// Gets or sets the orientation of the controls.
-    /// </summary>
-    [Category("Layout")]
-    [Description("Specifies the orientation of the controls.")]
-    [DefaultValue(Orientation.Horizontal)]
-    public Orientation Orientation
-    {
-        get => _orientation;
-        set
-        {
-            _orientation = value;
-            PerformLayout();
-        }
-    }
-
     protected override void OnPaddingChanged(EventArgs e)
     {
         base.OnPaddingChanged(e);
@@ -121,82 +103,53 @@ public partial class FluentDecoratorPanel : Panel
         // Get the first control
         Control firstControl = Controls[0];
 
-        // Calculate the total size of additional controls plus padding
-        int totalAdditionalSize = 0;
+        // Calculate the total width of additional controls plus padding
+        int totalAdditionalWidth = 0;
 
         for (int i = 1; i < Controls.Count; i++)
         {
             Control ctrl = Controls[i];
-            totalAdditionalSize += _orientation == Orientation.Horizontal ? ctrl.Width : ctrl.Height;
+            totalAdditionalWidth += ctrl.Width;
         }
 
         int totalControlPadding = (Controls.Count - 1) * ControlPadding;
 
-        totalAdditionalSize += totalControlPadding;
+        totalAdditionalWidth += totalControlPadding;
 
         // Adjust for border thickness and padding
         int adjustedWidth = Width - (2 * BorderThickness) - Padding.Left - Padding.Right;
         int adjustedHeight = Height - (2 * BorderThickness) - Padding.Top - Padding.Bottom;
 
         // Adjust first control's size
-        int firstControlSize = Math.Max(0, (_orientation == Orientation.Horizontal ? adjustedWidth : adjustedHeight) - totalAdditionalSize);
+        int firstControlWidth = Math.Max(0, adjustedWidth - totalAdditionalWidth);
 
-        // Calculate position based on alignment
-        int xPosition = BorderThickness + Padding.Left;
+        // Calculate vertical position based on VerticalContentAlignment
         int yPosition = BorderThickness + Padding.Top + GetVerticalOffset(firstControl.Height, adjustedHeight);
 
-        if (_orientation == Orientation.Vertical)
-        {
-            yPosition = BorderThickness + Padding.Top;
-            xPosition += GetHorizontalOffset(firstControl.Width, adjustedWidth);
-        }
-
         // Set first control position and size
+        int xPosition = BorderThickness + Padding.Left;
+
         firstControl.Location = new Point(xPosition, yPosition);
-        if (_orientation == Orientation.Horizontal)
-        {
-            firstControl.Size = new Size(firstControlSize, firstControl.Height);
-        }
-        else
-        {
-            firstControl.Size = new Size(firstControl.Width, firstControlSize);
-        }
+        firstControl.Size = new Size(firstControlWidth, firstControl.Height);
 
         // Position additional controls
-        int currentPosition = _orientation == Orientation.Horizontal 
-            ? xPosition + firstControlSize + ControlPadding 
-            : yPosition + firstControlSize + ControlPadding;
+        int currentX = xPosition + firstControlWidth + ControlPadding;
 
         for (int i = 1; i < Controls.Count; i++)
         {
             Control ctrl = Controls[i];
-            if (_orientation == Orientation.Horizontal)
-            {
-                ctrl.Location = new Point(currentPosition, yPosition);
-                ctrl.Height = firstControl.Height; // Ensure same height
-                currentPosition += ctrl.Width + ControlPadding;
-            }
-            else
-            {
-                ctrl.Location = new Point(xPosition, currentPosition);
-                ctrl.Width = firstControl.Width; // Ensure same width
-                currentPosition += ctrl.Height + ControlPadding;
-            }
+            ctrl.Location = new Point(currentX, yPosition);
+            ctrl.Height = firstControl.Height; // Ensure same height
+
+            currentX += ctrl.Width + ControlPadding;
         }
 
-        // Handle 'Fill' alignment
+        // Handle 'Fill' vertical alignment
         if (VerticalContentAlignment == VerticalContentAlignments.Fill)
         {
             foreach (Control ctrl in Controls)
             {
-                if (_orientation == Orientation.Horizontal)
-                {
-                    ctrl.Height = adjustedHeight;
-                }
-                else
-                {
-                    ctrl.Width = adjustedWidth;
-                }
+                ctrl.Height = adjustedHeight;
             }
         }
     }
@@ -208,16 +161,6 @@ public partial class FluentDecoratorPanel : Panel
                 VerticalContentAlignments.Bottom => containerHeight - contentHeight,
                 _ => 0, // Top and Fill don't require an offset.
             };
-
-    private int GetHorizontalOffset(int contentWidth, int containerWidth)
-    {
-        return VerticalContentAlignment switch
-        {
-            VerticalContentAlignments.Center => (containerWidth - contentWidth) / 2,
-            VerticalContentAlignments.Bottom => containerWidth - contentWidth,
-            _ => 0, // Top and Fill don't require an offset.
-        };
-    }
 
     // Ensure the layout updates when the control is resized
     protected override void OnSizeChanged(EventArgs e)

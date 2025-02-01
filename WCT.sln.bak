@@ -15,7 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_solution items", "_solutio
 		global.json = global.json
 		NuGet.config = NuGet.config
 		README.md = README.md
-		UsefullPrompts.md = UsefullPrompts.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chatty", "samples\cs\Chatty\Chatty.csproj", "{ED5BF976-41F7-FFED-45D1-B29774A37889}"
@@ -39,8 +38,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.AsyncSupport", "src\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj", "{DEA55576-E623-2FE0-0D69-5C7BDF7BE5F5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.FluentUI", "src\CommunityToolkit.WinForms.FluentUI\CommunityToolkit.WinForms.FluentUI.csproj", "{7DA2778C-0BE8-649D-8698-8082C408F089}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.Roslyn", "src\CommunityToolkit.WinForms.Roslyn\CommunityToolkit.WinForms.Roslyn.csproj", "{84733E6F-02DC-4029-B745-0DA3CEF73603}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -92,10 +89,6 @@ Global
 		{7DA2778C-0BE8-649D-8698-8082C408F089}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DA2778C-0BE8-649D-8698-8082C408F089}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DA2778C-0BE8-649D-8698-8082C408F089}.Release|Any CPU.Build.0 = Release|Any CPU
-		{84733E6F-02DC-4029-B745-0DA3CEF73603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{84733E6F-02DC-4029-B745-0DA3CEF73603}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{84733E6F-02DC-4029-B745-0DA3CEF73603}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{84733E6F-02DC-4029-B745-0DA3CEF73603}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,7 +105,6 @@ Global
 		{523F12F1-DF73-E8F9-83C9-641A2863DAC3} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
 		{DEA55576-E623-2FE0-0D69-5C7BDF7BE5F5} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
 		{7DA2778C-0BE8-649D-8698-8082C408F089} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
-		{84733E6F-02DC-4029-B745-0DA3CEF73603} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C29EC333-F508-4B96-AD8D-01F199315E0E}

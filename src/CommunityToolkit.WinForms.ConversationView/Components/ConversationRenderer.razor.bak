@@ -1,4 +1,4 @@
-﻿@page "/conversationview"
+﻿@page "/markdown-renderer"
 @using CommunityToolkit.WinForms.ConversationView.Components
 
 <div class="canvas" style="background-color: @(BackColor);">

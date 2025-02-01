@@ -10,11 +10,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj" />
     <ProjectReference Include="..\CommunityToolkit.WinForms.FormAndControlExtensions\CommunityToolkit.WinForms.Extensions.FormAndControlExtensions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Controls\FluentCommandButton.cs">
+    <Compile Update="Controls\AsyncButton\AsyncButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\FractionSlider\EditFloatingPointSlider.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\FractionSlider\FloatingPointSlider.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\FractionSlider\FloatingPointTrackBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\AsyncButton\FluentAsyncCommandButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Controls\FluentFollowUpControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="Controls\SpinnerControl.cs">
