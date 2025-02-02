@@ -2,13 +2,13 @@ using Chatty.DataEntities;
 using Chatty.DataProcessing;
 using Chatty.ViewModels;
 using Chatty.Views;
+using CommunityToolkit.WinForms.AI;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using CommunityToolkit.WinForms.Extensions;
+using CommunityToolkit.WinForms.FluentUI.Controls;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Runtime.ExceptionServices;
-using CommunityToolkit.WinForms.FluentUI.Controls;
-using CommunityToolkit.WinForms.AI;
 
 namespace Chatty;
 
@@ -83,8 +83,8 @@ public partial class FrmMain : Form
     {
         base.OnLoad(e);
 
-        _skCommunicator.ReceivedMetaData += ConversationView_ReceivedMetaData;
-        _skCommunicator.ReceivedNextParagraph += SKConversationView_ReceivedNextParagraph;
+        _skCommunicator.AsyncReceivedMetaData += AsyncConversationView_ReceivedMetaData;
+        _skCommunicator.AsyncReceivedNextParagraph += SKConversationView_ReceivedNextParagraph;
         _chatView.ConversationView.ConversationItemAdded += ConversationView_ConversationItemAdded;
         _chatView.PromptControl.AsyncSendCommand += PromptControl_AsyncSendCommand;
         _chatView.RefreshMetaData += ChatView_RefreshMetaData;
@@ -132,7 +132,6 @@ public partial class FrmMain : Form
     private async Task PromptControl_AsyncSendCommand(object sender, AsyncSendCommandEventArgs e)
     {
         string textToSend = e.CommandText;
-        _chatView.PromptControl.Clear();
         Conversation conversation = _chatView.ConversationView.Conversation;
 
         conversation.LastKickOffTime = TimeSpan.Zero;
@@ -189,12 +188,15 @@ public partial class FrmMain : Form
                 _currentNode = UpdateTreeView(_chatView.ConversationView.Conversation.Id);
                 UpdateStatusBar(conversation);
             });
+
+            _chatView.PromptControl.Clear();
         }
         catch (Exception ex)
         {
             var dispatchInfo = ExceptionDispatchInfo.Capture(ex);
             dispatchInfo.Throw();
         }
+
 
         // And this is actual pumping, which here does nothing.
         // This could be modified, for example to write logs or construct something.
@@ -242,7 +244,7 @@ public partial class FrmMain : Form
         e.ConversationItem.CompleteProcessDuration = DateTime.Now - conversation.DateCreated;
     }
 
-    private void ConversationView_ReceivedMetaData(object? sender, ReceivedMetaDataEventArgs e)
+    private Task AsyncConversationView_ReceivedMetaData(object? sender, AsyncReceivedMetaDataEventArgs e)
     {
         if (e.MetaData.Contains(':'))
         {
@@ -255,14 +257,16 @@ public partial class FrmMain : Form
 
         if (_conversationProcessor is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _conversationProcessor.CurrentListingDescription = _lastListingTitle ?? string.Empty;
         _conversationProcessor.CurrentListingFilename = _lastListingFilename ?? string.Empty;
+
+        return Task.CompletedTask;
     }
 
-    private void SKConversationView_ReceivedNextParagraph(object? sender, ReceivedNextParagraphEventArgs e)
+    private async Task SKConversationView_ReceivedNextParagraph(object? sender, AsyncReceivedNextParagraphEventArgs e)
     {
         string additionalResourceText = """
             By default, no prompt asked for an extended format of the listing headers in Mark Down.
@@ -281,15 +285,15 @@ public partial class FrmMain : Form
                 conversation: _chatView.ConversationView.Conversation,
                 _options.BasePath);
 
-            _conversationProcessor.ListingFileAdded += ConversationProcessor_ListingFileAdded;
+            _conversationProcessor.AsyncListingFileAdded += ConversationProcessor_ListingFileAdded;
         }
 
-        _conversationProcessor.HandleNewParagraph(
+        await _conversationProcessor.HandleNewParagraphAsync(
             paragraph: e.Paragraph,
             textPosition: e.TextPosition,
             isLastParagraph: e.IsLastParagraph);
 
-        async void ConversationProcessor_ListingFileAdded(object? sender, ListingFileAddedEventArgs e)
+        async Task ConversationProcessor_ListingFileAdded(object? sender, AsyncListingFileAddedEventArgs e)
         {
             // If we don't have a filename, it's likely the user picked a profile, which returned
             // a different format. In that case, the prompt is missing the ask to include
@@ -306,15 +310,20 @@ public partial class FrmMain : Form
 
             try
             {
-                // Let's add another Tab to the TabControl:
-                RoslynSourceView sourceViewer = new();
+                RoslynSourceView sourceViewer = null!;
 
-                _mainTabControl.AddTab(
-                    tabPageTitle: _lastListingFilename ?? throw new NullReferenceException(nameof(_lastListingFilename)),
-                    tabContent: sourceViewer);
+                await InvokeAsync(() =>
+                {
+                    // Let's add another Tab to the TabControl:
+                    sourceViewer = new();
 
-                e.ListingFile.FileName = _lastListingFilename;
-                e.ListingFile.ListingTitle = _lastListingTitle;
+                    _mainTabControl.AddTab(
+                        tabPageTitle: _lastListingFilename ?? throw new NullReferenceException(nameof(_lastListingFilename)),
+                        tabContent: sourceViewer);
+
+                    e.ListingFile.FileName = _lastListingFilename;
+                    e.ListingFile.ListingTitle = _lastListingTitle;
+                });
 
                 await sourceViewer.SetListingFileAsync(
                     listingFile: e.ListingFile);

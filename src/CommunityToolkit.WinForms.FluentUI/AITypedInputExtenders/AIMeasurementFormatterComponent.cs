@@ -1,6 +1,6 @@
-﻿using CommunityToolkit.WinForms.TypedInputExtenders;
+﻿using CommunityToolkit.WinForms.FluentUI.Controls.TypedInputExtenders;
 
-namespace CommunityToolkit.WinForms.AI.TypedInput;
+namespace CommunityToolkit.WinForms.FluentUI.Controls.AITypedInputExtenders;
 
 [ToolboxBitmap(typeof(AIDateFormatterComponent), "AIFormattedDecimalEntry.bmp")]
 public partial class AIMeasurementFormatterComponent

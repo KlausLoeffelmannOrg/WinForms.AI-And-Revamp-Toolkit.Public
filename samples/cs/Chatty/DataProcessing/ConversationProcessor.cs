@@ -1,4 +1,5 @@
 ﻿using Chatty.DataEntities;
+using CommunityToolkit.WinForms.AsyncSupport;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using System.ComponentModel;
 using System.Text;
@@ -17,11 +18,12 @@ public class ConversationProcessor
     /// <summary>
     /// Event triggered when a new listing file is added.
     /// </summary>
-    public event EventHandler<ListingFileAddedEventArgs>? ListingFileAdded;
+    public event AsyncEventHandler<AsyncListingFileAddedEventArgs>? AsyncListingFileAdded;
 
     private readonly List<ListingFile> _textFiles = [];
     private StringBuilder? _currentListingBuilder;
     private string? _currentListingType;
+    private readonly StringBuilder _currentConvItemMarkdown = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConversationProcessor"/> class.
@@ -200,8 +202,10 @@ public class ConversationProcessor
     /// <para>Adds the paragraph to the current listing if it is part of a code block.</para>
     /// <para>Creates a new <see cref="ConversationItem"/> for the paragraph if it is the last paragraph.</para>
     /// </remarks>
-    public void HandleNewParagraph(string paragraph, int textPosition, bool isLastParagraph)
+    public async Task HandleNewParagraphAsync(string paragraph, int textPosition, bool isLastParagraph)
     {
+        _currentConvItemMarkdown.Append(paragraph);
+
         string trimmedParagraph = paragraph.Trim();
 
         if (trimmedParagraph.StartsWith("```"))
@@ -218,7 +222,8 @@ public class ConversationProcessor
                 // This is the end of the current listing
                 string listingContent = _currentListingBuilder.ToString();
                 var listingFile = new ListingFile(BasePath, listingContent);
-                OnListingFileAdded(new(listingFile));
+
+                await OnListingFileAddedAsync(new(listingFile));
 
                 _currentListingBuilder = null;
                 _currentListingType = null;
@@ -239,15 +244,17 @@ public class ConversationProcessor
         {
             var conversationItem = new ConversationItem
             {
-                MarkdownContent = paragraph,
+                MarkdownContent = _currentConvItemMarkdown.ToString(),
                 HtmlContent = $"{Conversation.ResponseInProgress}",
                 IsResponse = true
             };
 
+            _currentConvItemMarkdown.Clear();
+            Conversation.ResponseInProgress = string.Empty;
             Conversation.ConversationItems.Add(conversationItem);
         }
     }
 
-    protected virtual void OnListingFileAdded(ListingFileAddedEventArgs e)
-        => ListingFileAdded?.Invoke(this, e);
+    protected virtual Task OnListingFileAddedAsync(AsyncListingFileAddedEventArgs e)
+        => AsyncListingFileAdded?.Invoke(this, e) ?? Task.CompletedTask;
 }

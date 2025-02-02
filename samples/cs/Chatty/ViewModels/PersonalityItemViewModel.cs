@@ -1,36 +1,45 @@
-﻿using System.Text.Json;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Text.Json;
 
 namespace Chatty.ViewModels;
 
 /// <summary>
 /// Represents a view model for a personality item.
 /// </summary>
-internal class PersonalityItemViewModel
+internal partial class PersonalityItemViewModel : ObservableObject
 {
     /// <summary>
     /// Gets or sets the unique identifier for the personality item.
     /// </summary>
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [ObservableProperty]
+    private Guid _id = Guid.NewGuid();
 
     /// <summary>
     /// Gets or sets the name of the personality item.
     /// </summary>
-    public string Name { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string _name = string.Empty;
 
     /// <summary>
     /// Gets or sets the system prompt associated with the personality item.
     /// </summary>
-    public string SystemPrompt { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string _systemPrompt = string.Empty;
 
     /// <summary>
     /// Gets or sets the date and time when the personality item was created.
     /// </summary>
-    public DateTime DateCreated { get; set; } = DateTime.Now;
+    [ObservableProperty]
+    private DateTime _dateCreated = DateTime.Now;
 
     /// <summary>
     /// Gets or sets the date and time when the personality item was last edited.
     /// </summary>
-    public DateTime DateLastEdited { get; set; } = DateTime.Now;
+    [ObservableProperty]
+    private DateTime _dateLastEdited = DateTime.Now;
+
+    [ObservableProperty]
+    private PersonalityFileExtractionSetting _fileExtractionSettings = PersonalityFileExtractionSetting.None;
 
     /// <summary>
     /// Returns a string that represents the current object.
@@ -54,6 +63,11 @@ internal class PersonalityItemViewModel
             DateLastEdited = jsonElement.GetProperty(nameof(DateLastEdited)).GetDateTime()
         };
 
+        if (jsonElement.TryGetProperty(nameof(FileExtractionSettings), out JsonElement fileExtractionSetting))
+        {
+            viewModel.FileExtractionSettings = (PersonalityFileExtractionSetting) fileExtractionSetting.GetInt32();
+        }
+
         return viewModel;
     }
 
@@ -66,6 +80,7 @@ internal class PersonalityItemViewModel
         writer.WriteString(nameof(Id), Id);
         writer.WriteString(nameof(Name), Name);
         writer.WriteString(nameof(SystemPrompt), SystemPrompt);
+        writer.WriteNumber(nameof(FileExtractionSettings), (int) FileExtractionSettings);
         writer.WriteString(nameof(DateCreated), DateCreated);
         writer.WriteString(nameof(DateLastEdited), DateLastEdited);
     }

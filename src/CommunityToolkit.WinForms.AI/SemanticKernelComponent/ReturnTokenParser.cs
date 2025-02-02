@@ -1,5 +1,4 @@
 ﻿using Microsoft.SemanticKernel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -22,14 +21,14 @@ internal static class ReturnTokenParser
     ///  </para>
     ///   <para>
     ///   The method also handles paragraph boundaries, yielding paragraphs when a newline character is encountered.
-    ///   Metadata is raised through the <see cref="ReceivedMetaDataEventArgs"/> event, and paragraphs are raised through
-    ///   the <see cref="ReceivedNextParagraphEventArgs"/> event.
+    ///   Metadata is raised through the <see cref="AsyncReceivedMetaDataEventArgs"/> event, and paragraphs are raised through
+    ///   the <see cref="AsyncReceivedNextParagraphEventArgs"/> event.
     ///  </para>
     /// </remarks>
     public static async IAsyncEnumerable<string> ProcessTokens(
         IAsyncEnumerable<StreamingChatMessageContent> asyncEnumerable,
-        Action<ReceivedMetaDataEventArgs> onReceivedMetaDataAction,
-        Action<ReceivedNextParagraphEventArgs> onReceivedNextParagraphAction)
+        Action<AsyncReceivedMetaDataEventArgs> onReceivedMetaDataAction,
+        Action<AsyncReceivedNextParagraphEventArgs> onReceivedNextParagraphAction)
     {
         var wordBuilder = new StringBuilder();
         var metaDataBuilder = new StringBuilder();
@@ -82,7 +81,7 @@ internal static class ReturnTokenParser
                         inMeta = false;
                         pendingClose = false;
 
-                        onReceivedMetaDataAction(new ReceivedMetaDataEventArgs(
+                        onReceivedMetaDataAction(new AsyncReceivedMetaDataEventArgs(
                             metaDataBuilder.ToString(),
                             positionCounter));
 
@@ -139,10 +138,11 @@ internal static class ReturnTokenParser
 
             if (lastChar is null or '\r' or '\n')
             {
-                onReceivedNextParagraphAction(new ReceivedNextParagraphEventArgs(
+                onReceivedNextParagraphAction(new AsyncReceivedNextParagraphEventArgs(
                     paragraph: paragraph,
                     textPosition: positionCounter,
                     isLastParagraph: lastChar is null));
+
                 paragraphBuilder.Clear();
             }
 

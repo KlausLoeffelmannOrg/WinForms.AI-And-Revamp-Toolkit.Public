@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace CommunityToolkit.WinForms.AI.TypedInput;
+namespace CommunityToolkit.WinForms.FluentUI.Controls.AITypedInputExtenders;
 
 public partial class AIDateFormatterComponent
 {

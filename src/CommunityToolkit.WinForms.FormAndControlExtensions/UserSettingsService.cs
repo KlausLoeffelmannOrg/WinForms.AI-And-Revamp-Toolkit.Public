@@ -12,7 +12,7 @@ public class WinFormsUserSettingsService : IUserSettingsService
 {
     private const string _settingsFileName = "UserSettings.json";
     private Dictionary<string, string> _settings = [];
-
+    private static IUserSettingsService? s_settings;
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
         WriteIndented = true
@@ -110,9 +110,9 @@ public class WinFormsUserSettingsService : IUserSettingsService
     /// <returns>A new instance of the <see cref="WinFormsUserSettingsService"/> class.</returns>
     public static IUserSettingsService CreateAndLoad()
     {
-        var settings = (IUserSettingsService)new WinFormsUserSettingsService();
-        settings.Load();
-        return settings;
+        s_settings = (IUserSettingsService)new WinFormsUserSettingsService();
+        s_settings.Load();
+        return s_settings;
     }
 
     /// <summary>
@@ -164,5 +164,15 @@ public class WinFormsUserSettingsService : IUserSettingsService
             string json = File.ReadAllText(settingsFile.FullName);
             _settings = JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
         }
+    }
+
+    public static IUserSettingsService GetOrThrow()
+    {
+        if (s_settings is null)
+        {
+            throw new InvalidOperationException("The settings service has not been created.");
+        }
+
+        return s_settings;
     }
 }

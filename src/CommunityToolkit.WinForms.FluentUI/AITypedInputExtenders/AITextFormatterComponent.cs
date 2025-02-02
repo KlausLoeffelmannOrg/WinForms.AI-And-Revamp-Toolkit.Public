@@ -1,6 +1,6 @@
-﻿using CommunityToolkit.WinForms.TypedInputExtenders;
+﻿using CommunityToolkit.WinForms.FluentUI.Controls.TypedInputExtenders;
 
-namespace CommunityToolkit.WinForms.AI.TypedInput;
+namespace CommunityToolkit.WinForms.FluentUI.Controls.AITypedInputExtenders;
 
 [ToolboxBitmap(typeof(AITextFormatterComponent), "AIFormattedTextEntry.bmp")]
 public partial class AITextFormatterComponent

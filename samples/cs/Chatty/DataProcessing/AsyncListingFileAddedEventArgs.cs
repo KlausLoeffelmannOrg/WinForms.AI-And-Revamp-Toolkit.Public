@@ -2,7 +2,7 @@
 
 namespace Chatty.DataProcessing;
 
-public class ListingFileAddedEventArgs(ListingFile listingFile) : EventArgs
+public class AsyncListingFileAddedEventArgs(ListingFile listingFile) : EventArgs
 {
     public ListingFile ListingFile { get; } = listingFile
         ?? throw new ArgumentNullException(nameof(listingFile));

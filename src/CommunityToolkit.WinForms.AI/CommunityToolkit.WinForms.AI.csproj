@@ -29,26 +29,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj" />
     <ProjectReference Include="..\CommunityToolkit.WinForms.ConsoleControl\CommunityToolkit.WinForms.Controls.ConsoleControl.csproj" />
-    <ProjectReference Include="..\CommunityToolkit.WinForms.TypedInputExtender\CommunityToolkit.WinForms.TypedInputExtenders.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="TypedInput\AIMeasurementFormatterComponent.AIMeasurementFormatter.cs" />
-    <Compile Update="TypedInput\AIMeasurementFormatterComponent.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TypedInput\AIDateFormatterComponent.AIDateFormatter.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TypedInput\AIDateFormatterComponent.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TypedInput\AITextFormatterComponent.AITextFormatter.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TypedInput\AITextFormatterComponent.cs">
-      <SubType>Component</SubType>
-    </Compile>
   </ItemGroup>
 
 </Project>

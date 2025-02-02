@@ -27,8 +27,8 @@ public partial class SemanticKernelComponent : BindableComponent
 
     public event AsyncEventHandler<AsyncRequestAssistantInstructionsEventArgs>? AsyncRequestAssistanceInstructions;
     public event AsyncEventHandler<AsyncRequestExecutionSettingsEventArgs>? AsyncRequestExecutionSettings;
-    public event EventHandler<ReceivedNextParagraphEventArgs>? ReceivedNextParagraph;
-    public event EventHandler<ReceivedMetaDataEventArgs>? ReceivedMetaData;
+    public event AsyncEventHandler<AsyncReceivedNextParagraphEventArgs>? AsyncReceivedNextParagraph;
+    public event AsyncEventHandler<AsyncReceivedMetaDataEventArgs>? AsyncReceivedMetaData;
 
     // The chat history. If you are using ChatGPT for example directly in the WebBrowser,
     // this equals the chat history, so, the things you've said and the responses you've received.
@@ -126,11 +126,11 @@ public partial class SemanticKernelComponent : BindableComponent
 
 
     /// <summary>
-    /// Raises the <see cref="ReceivedMetaData"/> event.
+    /// Raises the <see cref="AsyncReceivedMetaData"/> event.
     /// </summary>
     /// <param name="receivedMetaDataEventArgs">The event data.</param>
-    protected virtual void OnReceivedMetaData(ReceivedMetaDataEventArgs receivedMetaDataEventArgs)
-        => ReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
+    protected virtual void OnReceivedMetaData(AsyncReceivedMetaDataEventArgs receivedMetaDataEventArgs)
+        => AsyncReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
 
     private ChatHistory HandleChatHistory(string valueToProcess, bool keepChatHistory)
     {
@@ -466,19 +466,17 @@ public partial class SemanticKernelComponent : BindableComponent
         => SystemPrompt;
 
     protected virtual Task OnRequestAssistantInstructionsAsync(AsyncRequestAssistantInstructionsEventArgs eArgs)
-        => AsyncRequestAssistanceInstructions?.Invoke(this, eArgs)
-            ?? Task.CompletedTask;
+        => AsyncRequestAssistanceInstructions?.Invoke(this, eArgs) ?? Task.CompletedTask;
 
     protected virtual Task OnRequestExecutionSettingsAsync(AsyncRequestExecutionSettingsEventArgs eArgs)
-        => AsyncRequestExecutionSettings?.Invoke(this, eArgs)
-            ?? Task.CompletedTask;
+        => AsyncRequestExecutionSettings?.Invoke(this, eArgs) ?? Task.CompletedTask;
 
     /// <summary>
-    /// Raises the <see cref="ReceivedNextParagraph"/> event.
+    /// Raises the <see cref="AsyncReceivedNextParagraph"/> event.
     /// </summary>
     /// <param name="receivedNextParagraphEventArgs">The event data.</param>
-    protected virtual void OnReceivedNextParagraph(ReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
-        => ReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
+    protected virtual void OnReceivedNextParagraph(AsyncReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
+        => AsyncReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
 
     public void AddChatItem(bool isResponse, string message)
     {

@@ -1,8 +1,9 @@
-﻿using CommunityToolkit.WinForms.TypedInputExtenders;
+﻿using CommunityToolkit.WinForms.AI;
+using CommunityToolkit.WinForms.FluentUI.Controls.TypedInputExtenders;
 using System.ComponentModel;
 using System.Text.Json;
 
-namespace CommunityToolkit.WinForms.AI.TypedInput;
+namespace CommunityToolkit.WinForms.FluentUI.Controls.AITypedInputExtenders;
 
 public partial class AIMeasurementFormatterComponent
 {
