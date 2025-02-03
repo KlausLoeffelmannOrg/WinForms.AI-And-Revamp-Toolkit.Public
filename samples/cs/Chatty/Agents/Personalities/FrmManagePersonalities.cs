@@ -3,7 +3,7 @@ using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Extensions;
 using CommunityToolkit.WinForms.Extensions.FormAndControlExtensions;
 
-namespace Chatty.Views;
+namespace Chatty.Agents.Personalities;
 
 internal partial class FrmManagePersonalities: Form
 {

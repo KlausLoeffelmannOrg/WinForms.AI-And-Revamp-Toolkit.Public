@@ -43,7 +43,7 @@ public class ListingFile
             Point out any unique, unusual, or specific characteristics 
             found in the listing that might be noteworthy. This could be
             for example bugs you spotted in the code, or issues which would
-            slow down things considerable. Please provide them as Markdown and
+            slow down things considerably. Please provide them as Markdown and
             as formatted as a list.
             """;
 

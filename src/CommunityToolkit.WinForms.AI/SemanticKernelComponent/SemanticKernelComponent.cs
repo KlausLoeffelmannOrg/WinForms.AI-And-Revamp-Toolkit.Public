@@ -25,10 +25,49 @@ public partial class SemanticKernelComponent : BindableComponent
     private const string DefaultModelName = "gpt-4o-2024-11-20";
     private const string ApiEndpoint = "https://api.openai.com/v1/models";
 
+    /// <summary>
+    ///  Event triggered to request assistant instructions asynchronously.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This event is triggered to request assistant instructions asynchronously.
+    ///   It allows subscribers to provide custom instructions for the assistant.
+    ///  </para>
+    /// </remarks>
     public event AsyncEventHandler<AsyncRequestAssistantInstructionsEventArgs>? AsyncRequestAssistanceInstructions;
+
+    /// <summary>
+    ///  Event triggered to request execution settings asynchronously.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This event is triggered to request execution settings asynchronously.
+    ///   It allows subscribers to provide custom execution settings for the assistant.
+    ///  </para>
+    /// </remarks>
     public event AsyncEventHandler<AsyncRequestExecutionSettingsEventArgs>? AsyncRequestExecutionSettings;
+
+    /// <summary>
+    ///  Event triggered when the next paragraph is received asynchronously.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This event is triggered when the next paragraph is received asynchronously.
+    ///   It allows subscribers to handle the received paragraph data.
+    ///  </para>
+    /// </remarks>
     public event AsyncEventHandler<AsyncReceivedNextParagraphEventArgs>? AsyncReceivedNextParagraph;
-    public event AsyncEventHandler<AsyncReceivedMetaDataEventArgs>? AsyncReceivedMetaData;
+
+    /// <summary>
+    ///  Event triggered when inline metadata is received asynchronously.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This event is triggered when inline metadata is received asynchronously.
+    ///   It allows subscribers to handle the received metadata.
+    ///  </para>
+    /// </remarks>
+    public event AsyncEventHandler<AsyncReceivedInlineMetaDataEventArgs>? AsyncReceivedInlineMetaData;
 
     // The chat history. If you are using ChatGPT for example directly in the WebBrowser,
     // this equals the chat history, so, the things you've said and the responses you've received.
@@ -89,10 +128,27 @@ public partial class SemanticKernelComponent : BindableComponent
     ///  and the <see cref="SystemPrompt"/> property, which is the general description, what the Assistant is suppose to do.
     /// </summary>
     /// <param name="valueToProcess">The value as string which the model should process.</param>
+    /// <param name="keepChatHistory">Indicates whether to keep the chat history for the session.</param>
     /// <returns>
     ///  Returns an async stream of strings, which are the responses from the LLM model.
     /// </returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="InvalidOperationException">
+    ///  Thrown when the value to process is null or empty.
+    /// </exception>
+    /// <remarks>
+    ///  <para>
+    ///   This method sends a prompt to the OpenAI API and returns the responses as an asynchronous stream of strings.
+    ///   It ensures that the necessary properties, such as the API key and system prompt, are set before making the request.
+    ///  </para>
+    ///  <para>
+    ///   The method handles the chat history based on the keepChatHistory parameter. If keepChatHistory is false, the chat history is cleared,
+    ///   and the system prompt is queued for the next request. If keepChatHistory is true, the chat history is maintained across requests.
+    ///  </para>
+    ///  <para>
+    ///   The responses are processed as an asynchronous stream, allowing the caller to handle each response as it is received.
+    ///   The method also raises events for received metadata and paragraphs, enabling subscribers to handle these events accordingly.
+    ///  </para>
+    /// </remarks>
     public async IAsyncEnumerable<string> RequestPromptResponseStreamAsync(string valueToProcess, bool keepChatHistory)
     {
         if (string.IsNullOrWhiteSpace(valueToProcess))
@@ -124,13 +180,8 @@ public partial class SemanticKernelComponent : BindableComponent
         }
     }
 
-
-    /// <summary>
-    /// Raises the <see cref="AsyncReceivedMetaData"/> event.
-    /// </summary>
-    /// <param name="receivedMetaDataEventArgs">The event data.</param>
-    protected virtual void OnReceivedMetaData(AsyncReceivedMetaDataEventArgs receivedMetaDataEventArgs)
-        => AsyncReceivedMetaData?.Invoke(this, receivedMetaDataEventArgs);
+    protected virtual void OnReceivedMetaData(AsyncReceivedInlineMetaDataEventArgs receivedMetaDataEventArgs)
+        => AsyncReceivedInlineMetaData?.Invoke(this, receivedMetaDataEventArgs);
 
     private ChatHistory HandleChatHistory(string valueToProcess, bool keepChatHistory)
     {
@@ -282,7 +333,7 @@ public partial class SemanticKernelComponent : BindableComponent
         }
     }
 
-    public async Task<ModelInfo?> QueryOpenAiModelNameAsync(string modelName)
+    public async Task<ModelInfo?> QueryOpenAiModelInfoAsync(string modelName)
     {
         string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
 

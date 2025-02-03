@@ -1,13 +1,33 @@
 ﻿using CommunityToolkit.WinForms.AsyncSupport;
 using System.ComponentModel;
-
 using Timer = System.Windows.Forms.Timer;
 
 namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
+/// <summary>
+///  A RichTextBox control with auto-complete and suggestion capabilities.
+/// </summary>
+/// <remarks>
+///  <para>
+///   This control extends the RichTextBox to provide auto-complete suggestions and command
+///   sending functionality. It includes various properties to customize the behavior and
+///   appearance of the suggestions.
+///  </para>
+///  <para>
+///   The control uses a timer to manage the timing of suggestion requests and can display
+///   an overlay panel to indicate waiting states.
+///  </para>
+/// </remarks>
 public partial class AutoCompleteEditor : RichTextBox
 {
+    /// <summary>
+    ///  Event triggered to request auto-complete suggestions asynchronously.
+    /// </summary>
     public event AsyncEventHandler<AsyncRequestAutoCompleteSuggestionEventArgs>? AsyncRequestAutoCompleteSuggestion;
+
+    /// <summary>
+    ///  Event triggered to send commands asynchronously.
+    /// </summary>
     public event AsyncEventHandler<AsyncSendCommandEventArgs>? AsyncSendCommand;
 
     private int _minCharsSuggestionRequestSensitivity = 5;
@@ -36,7 +56,9 @@ public partial class AutoCompleteEditor : RichTextBox
     private static readonly Color DefaultDarkModeCorrectionCandidateColor = Color.OrangeRed;
     private ContentFreezePanel _overlayPanel = null!;
 
-    // Call InitializeOverlay in the constructor
+    /// <summary>
+    ///  Initializes a new instance of the <see cref="AutoCompleteEditor"/> class.
+    /// </summary>
     public AutoCompleteEditor()
     {
         _semanticKernel = new()
@@ -66,9 +88,18 @@ public partial class AutoCompleteEditor : RichTextBox
         InitializeOverlay();
     }
 
+    /// <summary>
+    ///  Gets or sets the minimum character count to trigger suggestion request.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the minimum number of characters that must be typed before
+    ///   a suggestion request is triggered.
+    ///  </para>
+    /// </remarks>
     [Description("Minimum character count to trigger suggestion request.")]
     [DefaultValue(5)]
-    [Category("Behavior")]
+    [Category("AI: prediction behavior")]
     public int MinPrecedingCharsSuggestionRequestSensitivity
     {
         get => _minCharsSuggestionRequestSensitivity;
@@ -83,9 +114,18 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Gets or sets the maximum character count to trigger suggestion request.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the maximum number of characters that can remain before
+    ///   a suggestion request is triggered.
+    ///  </para>
+    /// </remarks>
     [Description("Maximum character count to trigger suggestion request.")]
     [DefaultValue(10)]
-    [Category("Behavior")]
+    [Category("AI: prediction behavior")]
     public int MaxRemainingCharsSuggestionRequestSensitivity
     {
         get => _maxRemainingCharsSuggestionRequestSensitivity;
@@ -100,14 +140,34 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Gets or sets the minimum character changes before the next text review request.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the minimum number of character changes that must occur
+    ///   before the next text review request is triggered.
+    ///  </para>
+    /// </remarks>
     [DefaultValue(50)]
+    [Category("AI: prediction behavior")]
     public int MinCharChangedBeforeNextTextReviewRequest
     {
         get => _minCharChangedBeforeNextTextReviewRequest;
         set => _minCharChangedBeforeNextTextReviewRequest = value;
     }
 
+    /// <summary>
+    ///  Gets or sets the minimum time threshold for the next text review request.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the minimum time in seconds that must pass before the next
+    ///   text review request is triggered.
+    ///  </para>
+    /// </remarks>
     [DefaultValue(2f)]
+    [Category("AI: prediction behavior")]
     public float MinTimeThresholdForNextTextReviewRequest
     {
         get => _minTimeThresholdForNextTextReviewRequest;
@@ -143,9 +203,18 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Gets or sets the minimum time in seconds to trigger suggestion request.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the minimum time in seconds that must pass before a
+    ///   suggestion request is triggered.
+    ///  </para>
+    /// </remarks>
     [Description("Minimum time in seconds to trigger suggestion request.")]
     [DefaultValue(0f)]
-    [Category("Behavior")]
+    [Category("AI: prediction behavior")]
     public float MinTimeSuggestionRequestSensitivity
     {
         get => _minTimeSuggestionRequestSensitivity;
@@ -182,47 +251,95 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Gets or sets a value indicating whether to allow replacement of existing remaining text.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property determines whether the existing remaining text can be replaced by
+    ///   the auto-complete suggestions.
+    ///  </para>
+    /// </remarks>
     [Description("Allow replacement of existing remaining text.")]
     [DefaultValue(false)]
-    [Category("Behavior")]
+    [Category("AI: prediction behavior")]
     public bool AllowExistingRemainingTextReplacement
     {
         get => _allowExistingRemainingTextReplacement;
         set => _allowExistingRemainingTextReplacement = value;
     }
 
+    /// <summary>
+    ///  Gets or sets the color for standard text editing.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the color used for standard text editing in the control.
+    ///  </para>
+    /// </remarks>
     [Description("Color for standard text editing.")]
-    [Category("Appearance")]
+    [Category("AI: Appearance")]
     public Color StandardEditColor
     {
         get => _standardEditColor;
         set => _standardEditColor = value;
     }
 
+    /// <summary>
+    ///  Gets or sets the color for suggestions.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the color used for displaying suggestions in the control.
+    ///  </para>
+    /// </remarks>
     [Description("Color for suggestions.")]
-    [Category("Appearance")]
+    [Category("AI: Appearance")]
     public Color SuggestionColor
     {
         get => _suggestionColor;
         set => _suggestionColor = value;
     }
 
+    /// <summary>
+    ///  Gets or sets the color for auto-corrections.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the color used for displaying auto-corrections in the control.
+    ///  </para>
+    /// </remarks>
     [Description("Color for auto-corrections.")]
-    [Category("Appearance")]
+    [Category("AI: Appearance")]
     public Color AutoCorrectionColor
     {
         get => _autoCorrectionColor;
         set => _autoCorrectionColor = value;
     }
 
+    /// <summary>
+    ///  Gets or sets the color for correction candidates.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the color used for displaying correction candidates in the
+    ///   control.
+    ///  </para>
+    /// </remarks>
     [Description("Color for correction candidates.")]
-    [Category("Appearance")]
+    [Category("AI: Appearance")]
     public Color CorrectionCandidateColor
     {
         get => _correctionCandidateColor;
         set => _correctionCandidateColor = value;
     }
 
+    /// <summary>
+    ///  Determines whether the standard edit color should be serialized.
+    /// </summary>
+    /// <returns>
+    ///  <c>true</c> if the standard edit color should be serialized; otherwise, <c>false</c>.
+    /// </returns>
     private bool ShouldSerializeStandardEditColor()
     {
         return Application.IsDarkModeEnabled
@@ -230,6 +347,12 @@ public partial class AutoCompleteEditor : RichTextBox
             : _standardEditColor != DefaultLightModeStandardEditColor;
     }
 
+    /// <summary>
+    ///  Determines whether the suggestion color should be serialized.
+    /// </summary>
+    /// <returns>
+    ///  <c>true</c> if the suggestion color should be serialized; otherwise, <c>false</c>.
+    /// </returns>
     private bool ShouldSerializeSuggestionColor()
     {
         return Application.IsDarkModeEnabled
@@ -237,6 +360,12 @@ public partial class AutoCompleteEditor : RichTextBox
             : _suggestionColor != DefaultLightModeSuggestionColor;
     }
 
+    /// <summary>
+    ///  Determines whether the auto-correction color should be serialized.
+    /// </summary>
+    /// <returns>
+    ///  <c>true</c> if the auto-correction color should be serialized; otherwise, <c>false</c>.
+    /// </returns>
     private bool ShouldSerializeAutoCorrectionColor()
     {
         return Application.IsDarkModeEnabled
@@ -244,6 +373,12 @@ public partial class AutoCompleteEditor : RichTextBox
             : _autoCorrectionColor != DefaultLightModeAutoCorrectionColor;
     }
 
+    /// <summary>
+    ///  Determines whether the correction candidate color should be serialized.
+    /// </summary>
+    /// <returns>
+    ///  <c>true</c> if the correction candidate color should be serialized; otherwise, <c>false</c>.
+    /// </returns>
     private bool ShouldSerializeCorrectionCandidateColor()
     {
         return Application.IsDarkModeEnabled
@@ -251,11 +386,25 @@ public partial class AutoCompleteEditor : RichTextBox
             : _correctionCandidateColor != DefaultLightModeCorrectionCandidateColor;
     }
 
+    /// <summary>
+    ///  Raises the <see cref="AsyncRequestAutoCompleteSuggestion"/> event.
+    /// </summary>
+    /// <param name="e">The event data.</param>
     protected virtual void OnRequestAutoCompleteSuggestion(AsyncRequestAutoCompleteSuggestionEventArgs e)
     {
         AsyncRequestAutoCompleteSuggestion?.Invoke(this, e);
     }
 
+    /// <summary>
+    ///  Raises the <see cref="Control.ReadOnlyChanged"/> event.
+    /// </summary>
+    /// <param name="e">The event data.</param>
+    /// <remarks>
+    ///  <para>
+    ///   This method updates the background and foreground colors of the control based on
+    ///   the read-only state and the application's dark mode setting.
+    ///  </para>
+    /// </remarks>
     protected override void OnReadOnlyChanged(EventArgs e)
     {
         base.OnReadOnlyChanged(e);
@@ -288,6 +437,16 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Initializes the overlay panel.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This method sets up the overlay panel that is used to indicate waiting states.
+    ///   The overlay panel is resized to match the size of the RichTextBox and is added
+    ///   to the control's collection of child controls.
+    ///  </para>
+    /// </remarks>
     private void InitializeOverlay()
     {
         _overlayPanel = new ContentFreezePanel
@@ -306,6 +465,14 @@ public partial class AutoCompleteEditor : RichTextBox
         Controls.Add(_overlayPanel);
     }
 
+    /// <summary>
+    ///  Ensures that the overlay panel is initialized.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This method checks if the overlay panel is null and initializes it if necessary.
+    ///  </para>
+    /// </remarks>
     private void EnsureOverlayInitialized()
     {
         if (_overlayPanel is null)
@@ -314,6 +481,15 @@ public partial class AutoCompleteEditor : RichTextBox
         }
     }
 
+    /// <summary>
+    ///  Shows the overlay panel.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This method makes the overlay panel visible and freezes the content of the
+    ///   RichTextBox.
+    ///  </para>
+    /// </remarks>
     public void ShowOverlay()
     {
         EnsureOverlayInitialized();
@@ -321,6 +497,14 @@ public partial class AutoCompleteEditor : RichTextBox
         _overlayPanel.Visible = true;
     }
 
+    /// <summary>
+    ///  Hides the overlay panel.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This method hides the overlay panel.
+    ///  </para>
+    /// </remarks>
     public void HideOverlay()
     {
         EnsureOverlayInitialized();

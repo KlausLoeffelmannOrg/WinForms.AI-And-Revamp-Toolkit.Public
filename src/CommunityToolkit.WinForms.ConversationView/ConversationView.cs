@@ -165,7 +165,7 @@ public partial class ConversationView : BlazorWebView
                 if (listingCount == 0)
                 {
                     builtUpHtmlParagraphs.AppendLine($"<listing>{word[3..].Trim()}</listing>");
-                    builtUpHtmlParagraphs.AppendLine("<pre><code>");
+                    builtUpHtmlParagraphs.Append("<pre><code>");
                     lockHtmlParagraphs = true;
                 }
 
@@ -178,8 +178,7 @@ public partial class ConversationView : BlazorWebView
 
                 if (listingCount == 0)
                 {
-                    builtUpHtmlParagraphs.AppendLine("</code></pre>");
-                    lockHtmlParagraphs = true;
+                    builtUpHtmlParagraphs.Append("</code></pre>");
                     localHtml.Clear();
                 }
             }
@@ -196,7 +195,9 @@ public partial class ConversationView : BlazorWebView
             {
                 if (!lockHtmlParagraphs)
                 {
-                    localHtml.Append(word);
+                    // Watch out for special characters in the code block!
+                    string htmlFriendlyWord = word.Replace("<", "&lt;").Replace(">", "&gt;");
+                    localHtml.Append(htmlFriendlyWord);
                 }
                 else
                 {
@@ -206,8 +207,6 @@ public partial class ConversationView : BlazorWebView
 
             if (word.EndsWith('\n'))
             {
-                Debug.Print($"Next Paragraph: {localMarkdown}");
-
                 builtUpHtmlParagraphs.Append(localHtml);
                 builtUpMarkdown.Append(localMarkdown);
                 currentParagraph.Clear();
@@ -218,7 +217,7 @@ public partial class ConversationView : BlazorWebView
                 builtUpHtmlParagraphs.ToString()
                 + localHtml
                 + (listingCount > 0
-                    ? "\n</code></pre>"
+                    ? "</code></pre>"
                     : string.Empty);
         }
     }

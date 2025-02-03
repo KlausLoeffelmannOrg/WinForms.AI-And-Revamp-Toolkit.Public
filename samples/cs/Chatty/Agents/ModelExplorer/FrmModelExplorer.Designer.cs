@@ -1,6 +1,6 @@
-﻿namespace Chatty.Views.Approaches
+﻿namespace Chatty.Agents.ModelExplorer
 {
-    partial class FrmClassicApproach
+    partial class FrmModelExplorer
     {
         /// <summary>
         /// Required designer variable.
@@ -28,18 +28,29 @@
         /// </summary>
         private void InitializeComponent()
         {
+            chatView1 = new Chatty.Views.ChatView();
             SuspendLayout();
             // 
-            // FrmClassicApproach
+            // chatView1
+            // 
+            chatView1.Location = new Point(12, 12);
+            chatView1.Name = "chatView1";
+            chatView1.Size = new Size(991, 595);
+            chatView1.TabIndex = 0;
+            // 
+            // FrmModelExplorer
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1159, 818);
-            Name = "FrmClassicApproach";
-            Text = "WinForms LOB - Classic Approach";
+            ClientSize = new Size(1015, 619);
+            Controls.Add(chatView1);
+            Name = "FrmModelExplorer";
+            Text = "Model Explorer Agent";
             ResumeLayout(false);
         }
 
         #endregion
+
+        private Views.ChatView chatView1;
     }
 }

@@ -7,11 +7,15 @@ using System.Text;
 namespace Chatty.DataProcessing;
 
 /// <summary>
-/// Processes conversations and handles various operations related to conversation files and listings.
+///  Processes conversations and handles various operations related to conversation files and listings.
 /// </summary>
 /// <remarks>
-/// <para>This class is responsible for managing conversation data, including saving and loading conversations from files.</para>
-/// <para>It also handles the processing of paragraphs within a conversation, identifying and managing code listings.</para>
+///  <para>
+///   This class is responsible for managing conversation data, including saving and loading conversations from files.
+///  </para>
+///  <para>
+///   It also handles the processing of paragraphs within a conversation, identifying and managing code listings.
+///  </para>
 /// </remarks>
 public class ConversationProcessor
 {
@@ -168,6 +172,7 @@ public class ConversationProcessor
                 access: FileAccess.Write);
 
         Conversation.WriteJSon(fileStream);
+
         await fileStream.FlushAsync();
     }
 
@@ -249,9 +254,9 @@ public class ConversationProcessor
                 IsResponse = true
             };
 
+            Conversation.ConversationItems.Add(conversationItem);
             _currentConvItemMarkdown.Clear();
             Conversation.ResponseInProgress = string.Empty;
-            Conversation.ConversationItems.Add(conversationItem);
         }
     }
 

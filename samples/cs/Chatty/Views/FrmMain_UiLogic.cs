@@ -1,5 +1,4 @@
-﻿using Chatty.DataProcessing;
-using Chatty.ViewModels;
+﻿using Chatty.ViewModels;
 using Chatty.Views;
 using CommunityToolkit.WinForms.Controls.Blazor;
 
@@ -167,28 +166,13 @@ public partial class FrmMain
 
         _currentNode = e.Node;
 
-        _conversationProcessor = await ConversationProcessor.FromFileAsync(
-            _options.BasePath,
-            conversation.Filename);
-
-        conversation = _conversationProcessor.Conversation;
+        await _chatView.LoadConversationAsync(conversation.Filename);
 
         // This is a new instance which has now the conversation items.
         e.Node.Tag = conversation;
 
-        // And load it into the conversation view:
-        _chatView.ConversationView.Conversation = conversation;
-
-        _skCommunicator.ChatHistory?.Clear();
         _lblConversationTitle.Text = conversation.Title;
         _lblDate.Text = conversation.DateLastEdited.ToString("F");
-
-        foreach (ConversationItem item in conversation.ConversationItems)
-        {
-            _skCommunicator.AddChatItem(
-                item.IsResponse,
-                item.MarkdownContent!);
-        }
     }
 
     private void ReportToStatusBarInfo(string message,

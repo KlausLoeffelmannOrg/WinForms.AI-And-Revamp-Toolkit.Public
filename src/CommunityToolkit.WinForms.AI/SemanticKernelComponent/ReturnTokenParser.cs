@@ -21,13 +21,13 @@ internal static class ReturnTokenParser
     ///  </para>
     ///   <para>
     ///   The method also handles paragraph boundaries, yielding paragraphs when a newline character is encountered.
-    ///   Metadata is raised through the <see cref="AsyncReceivedMetaDataEventArgs"/> event, and paragraphs are raised through
+    ///   Metadata is raised through the <see cref="AsyncReceivedInlineMetaDataEventArgs"/> event, and paragraphs are raised through
     ///   the <see cref="AsyncReceivedNextParagraphEventArgs"/> event.
     ///  </para>
     /// </remarks>
     public static async IAsyncEnumerable<string> ProcessTokens(
         IAsyncEnumerable<StreamingChatMessageContent> asyncEnumerable,
-        Action<AsyncReceivedMetaDataEventArgs> onReceivedMetaDataAction,
+        Action<AsyncReceivedInlineMetaDataEventArgs> onReceivedMetaDataAction,
         Action<AsyncReceivedNextParagraphEventArgs> onReceivedNextParagraphAction)
     {
         var wordBuilder = new StringBuilder();
@@ -81,7 +81,7 @@ internal static class ReturnTokenParser
                         inMeta = false;
                         pendingClose = false;
 
-                        onReceivedMetaDataAction(new AsyncReceivedMetaDataEventArgs(
+                        onReceivedMetaDataAction(new AsyncReceivedInlineMetaDataEventArgs(
                             metaDataBuilder.ToString(),
                             positionCounter));
 

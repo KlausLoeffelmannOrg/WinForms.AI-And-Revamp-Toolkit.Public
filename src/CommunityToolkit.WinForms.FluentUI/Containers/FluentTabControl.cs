@@ -49,6 +49,8 @@ public partial class FluentTabControl : Panel
 
         set
         {
+            SuspendLayout();
+
             foreach (var item in _menuStrip.Items.OfType<ToolStripMenuItem>())
             {
                 item.Checked = item == _menuStrip.Items[value];
@@ -58,6 +60,8 @@ public partial class FluentTabControl : Panel
             {
                 page.Visible = page == _tabPages[value];
             }
+
+            ResumeLayout();
         }
     }
 
