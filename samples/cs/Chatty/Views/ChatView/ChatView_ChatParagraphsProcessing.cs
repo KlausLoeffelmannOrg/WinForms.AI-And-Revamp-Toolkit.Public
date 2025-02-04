@@ -7,6 +7,7 @@ public partial class ChatView : UserControl
 {
     private string? _lastListingTitle;
     private string? _lastListingFilename;
+    private readonly Lock _conversationLock = new();
 
     private Task ConversationView_ReceivedInlineMetaDataAsync(object? sender, AsyncReceivedInlineMetaDataEventArgs e)
     {
@@ -33,13 +34,16 @@ public partial class ChatView : UserControl
 
     private async Task SKConversationView_ReceivedNextParagraph(object? sender, AsyncReceivedNextParagraphEventArgs e)
     {
-        if (_conversationProcessor is null)
+        lock (_conversationLock)
         {
-            _conversationProcessor = new(
-                conversation: ConversationView.Conversation,
-                _options.BasePath ?? throw new InvalidOperationException("BasePath is not set."));
+            if (_conversationProcessor is null)
+            {
+                _conversationProcessor = new(
+                    conversation: ConversationView.Conversation,
+                    _options.BasePath ?? throw new InvalidOperationException("BasePath is not set."));
 
-            _conversationProcessor.AsyncListingFileAdded += ConversationProcessor_ListingFileAdded;
+                _conversationProcessor.AsyncListingFileProvided += ConversationProcessor_ListingFileProvided;
+            }
         }
 
         await _conversationProcessor.HandleNewParagraphAsync(
@@ -47,7 +51,7 @@ public partial class ChatView : UserControl
             textPosition: e.TextPosition,
             isLastParagraph: e.IsLastParagraph);
 
-        Task ConversationProcessor_ListingFileAdded(object? sender, AsyncListingFileAddedEventArgs e) 
+        Task ConversationProcessor_ListingFileProvided(object? sender, AsyncListingFileProvidedEventArgs e)
             => OnAsyncListingFileAddedAsync(e);
     }
 }

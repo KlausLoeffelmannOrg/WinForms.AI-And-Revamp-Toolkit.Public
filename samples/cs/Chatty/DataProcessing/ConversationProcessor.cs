@@ -22,11 +22,12 @@ public class ConversationProcessor
     /// <summary>
     /// Event triggered when a new listing file is added.
     /// </summary>
-    public event AsyncEventHandler<AsyncListingFileAddedEventArgs>? AsyncListingFileAdded;
+    public event AsyncEventHandler<AsyncListingFileProvidedEventArgs>? AsyncListingFileProvided;
 
     private readonly List<ListingFile> _textFiles = [];
     private StringBuilder? _currentListingBuilder;
     private string? _currentListingType;
+    private Lock _listingLock = new();
     private readonly StringBuilder _currentConvItemMarkdown = new();
 
     /// <summary>
@@ -104,6 +105,11 @@ public class ConversationProcessor
     /// </remarks>
     private void TryGetConversationBaseFolder(bool createNewName)
     {
+        if (string.IsNullOrEmpty(BasePath))
+        { 
+            return; 
+        }
+
         string uniqueFilename;
 
         if (createNewName)
@@ -166,6 +172,11 @@ public class ConversationProcessor
     /// </remarks>
     public async Task SaveConversationAsync()
     {
+        if (string.IsNullOrEmpty(BasePath))
+        {
+            return;
+        }
+
         using FileStream fileStream = new(
                 path: Path.Combine(ConversationBaseFolder!, Conversation.Filename),
                 mode: FileMode.Create,
@@ -224,14 +235,29 @@ public class ConversationProcessor
             }
             else if (_currentListingBuilder != null)
             {
-                // This is the end of the current listing
-                string listingContent = _currentListingBuilder.ToString();
-                var listingFile = new ListingFile(BasePath, listingContent);
+                ListingFile listingFile;
+
+                lock (_listingLock)
+                {
+                    // This is the end of the current listing
+                    string listingContent = _currentListingBuilder.ToString();
+
+                    listingFile = new(
+                        fullFilename: BasePath,
+                        content: listingContent,
+                        listingType: Enum.TryParse<ListingType>(_currentListingType, out var type)
+                            ? type
+                            : ListingType.Other)
+                    {
+                        ListingTitle = CurrentListingDescription,
+                        FileName = CurrentListingFilename
+                    };
+
+                    _currentListingBuilder = null;
+                    _currentListingType = null;
+                }
 
                 await OnListingFileAddedAsync(new(listingFile));
-
-                _currentListingBuilder = null;
-                _currentListingType = null;
             }
         }
         else
@@ -256,10 +282,11 @@ public class ConversationProcessor
 
             Conversation.ConversationItems.Add(conversationItem);
             _currentConvItemMarkdown.Clear();
-            Conversation.ResponseInProgress = string.Empty;
         }
     }
 
-    protected virtual Task OnListingFileAddedAsync(AsyncListingFileAddedEventArgs e)
-        => AsyncListingFileAdded?.Invoke(this, e) ?? Task.CompletedTask;
+    protected virtual Task OnListingFileAddedAsync(AsyncListingFileProvidedEventArgs e)
+    {
+        return AsyncListingFileProvided?.Invoke(this, e) ?? Task.CompletedTask;
+    }
 }

@@ -70,6 +70,16 @@ public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelCompon
         AsyncExtensions.RunAsync(this, OnSendCommandAsync, eArgs);
     }
 
+    public Task SendCommandAsync()
+    {
+        var eArgs = new AsyncSendCommandEventArgs(
+            this.Text,
+            this.Rtf);
+
+        _oldParagraph = CurrentParagraphSpan.ToString();
+        return OnSendCommandAsync(eArgs);
+    }
+
     private void RejectSuggestion()
     {
         if (_currentSuggestion.IsEmpty)

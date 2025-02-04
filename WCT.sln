@@ -14,8 +14,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_solution items", "_solutio
 		Directory.build.props = Directory.build.props
 		global.json = global.json
 		NuGet.config = NuGet.config
+		Pitch Script.md = Pitch Script.md
 		README.md = README.md
 		UsefullPrompts.md = UsefullPrompts.md
+		WCT_Introduction_Prompt.md = WCT_Introduction_Prompt.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chatty", "samples\cs\Chatty\Chatty.csproj", "{ED5BF976-41F7-FFED-45D1-B29774A37889}"
@@ -41,6 +43,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.Roslyn", "src\CommunityToolkit.WinForms.Roslyn\CommunityToolkit.WinForms.Roslyn.csproj", "{84733E6F-02DC-4029-B745-0DA3CEF73603}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCompleteEditorTest", "samples\cs\AutoCompleteEditorTest\AutoCompleteEditorTest.csproj", "{0EA90230-F0D4-48AF-886C-CFF097C1ADC0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{85E5EB54-282C-4388-A6A2-27495CE7EE33}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WinForms.CommunityToolKit", "WinForms.CommunityToolKit", "{111CD1C8-5F97-4F5C-9C94-022241693A08}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.BasicTests", "tests\cs\CommunityToolkit.WinForms.BasicTests\CommunityToolkit.WinForms.BasicTests.csproj", "{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -96,6 +104,10 @@ Global
 		{0EA90230-F0D4-48AF-886C-CFF097C1ADC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EA90230-F0D4-48AF-886C-CFF097C1ADC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0EA90230-F0D4-48AF-886C-CFF097C1ADC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,6 +125,8 @@ Global
 		{7DA2778C-0BE8-649D-8698-8082C408F089} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
 		{84733E6F-02DC-4029-B745-0DA3CEF73603} = {55C536A0-7C89-4D4D-A561-5D5B7D9A83D8}
 		{0EA90230-F0D4-48AF-886C-CFF097C1ADC0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{111CD1C8-5F97-4F5C-9C94-022241693A08} = {85E5EB54-282C-4388-A6A2-27495CE7EE33}
+		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D} = {111CD1C8-5F97-4F5C-9C94-022241693A08}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C29EC333-F508-4B96-AD8D-01F199315E0E}

@@ -1,3 +1,4 @@
+using Chatty.Agents.ModelExplorer;
 using Chatty.Agents.Personalities;
 using Chatty.ViewModels;
 using Chatty.Views;
@@ -43,9 +44,9 @@ public partial class FrmMain : Form
 
         _chatView = new();
         _chatView.AsyncNotifyRefreshedMetaData += ChatView_AsyncNotifyRefreshedMetaData;
-        _chatView.AsyncListingFileAdded += ChatView_AsyncListingFileAdded;
+        _chatView.AsyncListingFileProvided += ChatView_AsyncListingFileProvided;
         _chatView.AsyncRequestFileExtractingSettings += ChatView_AsyncRequestFileExtractingSettings;
-        _chatView.AsyncNotifySaveChat += ChatView_AsyncNotifySaveChat;
+        _chatView.AsyncNotifySaveChat += ChatView_AsyncNotifySaveChatAsync;
         _chatView.RequestChatViewOptions += ChatView_RequestChatViewOptions;
 
         _settingsService = WinFormsUserSettingsService.CreateAndLoad();
@@ -86,7 +87,7 @@ public partial class FrmMain : Form
         await Task.CompletedTask;
     }
 
-    private async Task ChatView_AsyncNotifySaveChat(object sender, AsyncRequestFileContextEventArgs e)
+    private async Task ChatView_AsyncNotifySaveChatAsync(object sender, AsyncRequestFileContextEventArgs e)
     {
         // Iterate through any additional open tabs and save the respective listing files:
         foreach (Panel tabPage in _mainTabControl.Tabs)
@@ -101,7 +102,7 @@ public partial class FrmMain : Form
         }
     }
 
-    private async Task ChatView_AsyncListingFileAdded(object sender, DataProcessing.AsyncListingFileAddedEventArgs e)
+    private async Task ChatView_AsyncListingFileProvided(object sender, DataProcessing.AsyncListingFileProvidedEventArgs e)
     {
         string additionalResourceText = """
             By default, no prompt asked for an extended format of the listing headers in Mark Down.
@@ -260,7 +261,7 @@ public partial class FrmMain : Form
         _tscModels.SelectedItem = _options.LastUsedModel;
     }
 
-    private void BtnStartNewChat_Click(object sender, EventArgs e) 
+    private void BtnStartNewChat_Click(object sender, EventArgs e)
         => _chatView.StartNewChat();
 
     private void RebuildPersonalitiesDropDown(Guid lastUsedIdPersonality)

@@ -19,7 +19,7 @@ public partial class ChatView : UserControl
     public const string DefaultMetaDataProcessorModel = "gpt-3.5-turbo";
 
     public event AsyncEventHandler<AsyncNotifyRefreshedMetaDataEventArgs>? AsyncNotifyRefreshedMetaData;
-    public event AsyncEventHandler<AsyncListingFileAddedEventArgs>? AsyncListingFileAdded;
+    public event AsyncEventHandler<AsyncListingFileProvidedEventArgs>? AsyncListingFileProvided;
     public event AsyncEventHandler<AsyncRequestFileContextEventArgs>? AsyncRequestFileExtractingSettings;
     public event AsyncEventHandler<AsyncRequestFileContextEventArgs>? AsyncNotifySaveChat;
 
@@ -95,6 +95,17 @@ public partial class ChatView : UserControl
         }
     }
 
+    [Bindable(true)]
+    [Browsable(true)]
+    [Category("Model Parameter")]
+    [Description("Gets or sets the Format in which human readable, non-structured Text is requested to be returned from the Model.")]
+    [DefaultValue(ReturnStringsFormat.PlainText)]
+    public ReturnStringsFormat ReturnStringsFormat
+    {
+        get => _skCommunicator.ReturnStringsFormat;
+        set => _skCommunicator.ReturnStringsFormat = value;
+    }
+
     protected virtual void OnModelNameChanged(EventArgs e)
         => ModelNameChanged?.Invoke(this, e);
 
@@ -158,7 +169,7 @@ public partial class ChatView : UserControl
         ConversationView.Conversation.Title = Conversation.GetDefaultTitle();
     }
 
-    public void AddChatItem(bool isResponse, string message) 
+    public void AddChatItem(bool isResponse, string message)
         => _skCommunicator.AddChatItem(isResponse, message);
 
     public async Task LoadConversationAsync(string filename)
@@ -184,6 +195,12 @@ public partial class ChatView : UserControl
         }
 
         PromptControl.Clear();
+    }
+
+    public Task SendRequestAsync(string verbalRequest)
+    {
+        PromptControl.Text = verbalRequest;
+        return PromptControl.SendCommandAsync();
     }
 
     public Task<IEnumerable<string>?> QueryOpenAiModelNamesAsync()
@@ -326,8 +343,8 @@ public partial class ChatView : UserControl
     protected virtual Task OnAsyncNotifyRefreshMetaDataAsync(AsyncNotifyRefreshedMetaDataEventArgs e)
         => AsyncNotifyRefreshedMetaData?.Invoke(this, e) ?? Task.CompletedTask;
 
-    protected virtual Task OnAsyncListingFileAddedAsync(AsyncListingFileAddedEventArgs e)
-        => AsyncListingFileAdded?.Invoke(this, e) ?? Task.CompletedTask;
+    protected virtual Task OnAsyncListingFileAddedAsync(AsyncListingFileProvidedEventArgs e)
+        => AsyncListingFileProvided?.Invoke(this, e) ?? Task.CompletedTask;
 
     protected virtual Task OnAsyncRequestFileExtractingSettingsAsync(AsyncRequestFileContextEventArgs e)
         => AsyncRequestFileExtractingSettings?.Invoke(this, e) ?? Task.CompletedTask;

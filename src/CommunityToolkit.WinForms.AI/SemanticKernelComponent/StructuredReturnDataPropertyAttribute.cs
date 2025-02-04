@@ -5,4 +5,3 @@ public class StructuredReturnDataPropertyAttribute(string? prompt = null) : Attr
 {
     public string? Prompt { get; } = prompt;
 }
-

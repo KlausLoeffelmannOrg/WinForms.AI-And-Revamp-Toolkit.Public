@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.WinForms.AsyncSupport;
+﻿using CommunityToolkit.WinForms.AI.ConverterLogic;
+using CommunityToolkit.WinForms.AsyncSupport;
 using CommunityToolkit.WinForms.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -241,27 +242,22 @@ public partial class SemanticKernelComponent : BindableComponent
                 JsonSchemaName,
                 JsonSchemaDescription);
 
-            EffectiveSystemPrompt = string.IsNullOrWhiteSpace(JsonSchema)
-                ? eArgs.AssistantInstructions
-                : $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
+            EffectiveSystemPrompt = $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
                   $"\n\nThe Json Schema is as follows:\n{JsonSchema}";
         }
         else
         {
             string formatRequestString = $"\n\nIMPORTANT: Please make sure that you format your replies consistently "
                 + ReturnStringsFormat switch
-            {
-                ReturnStringsFormat.Markdown => "as Markdown (MD) format.",
-                ReturnStringsFormat.PlainText => "as plain text without any additional formatting.",
-                ReturnStringsFormat.Html => "as HTML.",
-                ReturnStringsFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
-                _ => "Plain text."
-            };
+                {
+                    ReturnStringsFormat.Markdown => "Markdown formatted.",
+                    ReturnStringsFormat.PlainText => "as plain text without any additional formatting.",
+                    ReturnStringsFormat.Html => "as HTML.",
+                    ReturnStringsFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
+                    _ => "Plain text."
+                };
 
-            EffectiveSystemPrompt = string.IsNullOrWhiteSpace(JsonSchema)
-                ? eArgs.AssistantInstructions
-                : $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
-                  $"{formatRequestString}";
+            EffectiveSystemPrompt = $"{eArgs.AssistantInstructions}\n" + $"{formatRequestString}";
         }
 
         AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
@@ -296,7 +292,7 @@ public partial class SemanticKernelComponent : BindableComponent
     public async Task<IEnumerable<string>?> QueryOpenAiModelNamesAsync()
     {
         string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
-        
+
         using HttpClient client = new();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
@@ -324,7 +320,7 @@ public partial class SemanticKernelComponent : BindableComponent
             ExceptionDispatchInfo dispatchInfo = ExceptionDispatchInfo.Capture(ex);
 
             // Marshal to the UI thread
-            _syncContext?.Post(_ => 
+            _syncContext?.Post(_ =>
                 {
                     dispatchInfo.Throw();
                 }, null);
@@ -451,7 +447,13 @@ public partial class SemanticKernelComponent : BindableComponent
 
             try
             {
-                T typedReturnValue = JsonSerializer.Deserialize<T>(jsonReturnData)!;
+                var options = new JsonSerializerOptions
+                {
+                    AllowTrailingCommas = true
+                };
+
+                T typedReturnValue = JsonSerializer.Deserialize<T>(jsonReturnData, options)!;
+
                 return typedReturnValue;
             }
 
@@ -471,6 +473,129 @@ public partial class SemanticKernelComponent : BindableComponent
             SystemPrompt = previousSystemPrompt;
         }
     }
+
+    public class ParentArray<T>
+    {
+        public T[]? Items { get; set; }
+    }
+
+    public async Task<string[]> RequestStructuredStringListResponseAsync(string request, CancellationToken token)
+    {
+        string prompt = $"{request}\n\nPlease provide the requested information and return Json as an Array of string.";
+        string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
+
+        return JsonSerializer.Deserialize<string[]>(jsonReturnData!)!;
+    }
+
+    public async Task<T[]> RequestStructuredListResponseAsync<T>(string request, CancellationToken token)
+    {
+        string? jsonSchema = PromptFromTypeProcessor.GetJSonSchema<ParentArray<T>>();
+        StructuredReturnDataAttribute promptInfo = PromptFromTypeProcessor.GetTypePromptInfo<T>();
+
+        string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
+
+        StringBuilder stringBuilder = new();
+
+        if (promptInfo.ProvideDate)
+        {
+            stringBuilder.AppendLine($"Today is {DateTime.Now:d}.");
+        }
+
+        if (promptInfo.ProvideTime)
+        {
+            stringBuilder.AppendLine($"The current time is {DateTime.Now:T}.");
+        }
+
+        if (promptInfo.ProvideTimeZone)
+        {
+            stringBuilder.AppendLine($"The current time zone is {TimeZoneInfo.Local.DisplayName}.");
+        }
+
+        if (promptInfo.LanguageCulture is not null)
+        {
+            stringBuilder.AppendLine($"The user requested assistance for the following language: {promptInfo.LanguageCulture.DisplayName}.");
+        }
+
+        stringBuilder.AppendLine("Please provide the requested information and return Json as an Array according to the provided Json Schema.");
+        stringBuilder.AppendLine("Please provide the following information:");
+
+        IEnumerable<string> propertiesRequests = PromptFromTypeProcessor.GetTypePropertyPrompts<T>();
+
+        foreach (string propertyRequest in propertiesRequests)
+        {
+            stringBuilder.AppendLine(propertyRequest);
+        }
+
+        stringBuilder.AppendLine();
+        stringBuilder.AppendLine("Please include Markdown formatting only for the inner json content " +
+            "where it applies, but not to the json envelope itself!");
+
+        stringBuilder.AppendLine("The Data to work with is as follow:");
+        stringBuilder.AppendLine();
+        stringBuilder.AppendLine(request);
+
+        string prompt = stringBuilder.ToString();
+
+        string? previousJSonSchema = JsonSchema;
+        string? previousSystemPrompt = SystemPrompt;
+
+        JsonSchema = jsonSchema;
+        SystemPrompt = systemPrompt;
+
+        try
+        {
+            string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
+
+            if (string.IsNullOrEmpty(jsonReturnData))
+            {
+                throw new InvalidOperationException("Trying to parse the text input failed for unknown reasons.");
+            }
+
+            // Let's see, if we have to eliminate "```..." in the first line and
+            // "```" in the last line, as this is markdown formatting.
+            if (jsonReturnData.StartsWith("```"))
+            {
+                // The complete first line has to go:
+                int firstLineEnd = jsonReturnData.IndexOf('\n');
+                if (firstLineEnd > 0)
+                {
+                    jsonReturnData = jsonReturnData[firstLineEnd..];
+                }
+            }
+
+            if (jsonReturnData.EndsWith("```"))
+            {
+                // The complete last line has to go:
+                int lastLineStart = jsonReturnData.LastIndexOf('\n');
+                if (lastLineStart > 0)
+                {
+                    jsonReturnData = jsonReturnData[..lastLineStart];
+                }
+            }
+
+            try
+            {
+                T[] typedReturnValue = JsonSerializer.Deserialize<T[]>(jsonReturnData)!;
+                return typedReturnValue;
+            }
+
+            catch (Exception innerException)
+            {
+                if (innerException is FormatException)
+                {
+                    throw;
+                }
+
+                throw new FormatException("There was a problem constructing the type from the response data.", innerException);
+            }
+        }
+        finally
+        {
+            JsonSchema = previousJSonSchema;
+            SystemPrompt = previousSystemPrompt;
+        }
+    }
+
 
     private static ILoggerFactory CreateTelemetryLogger()
     {

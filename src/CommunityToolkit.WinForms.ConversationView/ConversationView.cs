@@ -118,7 +118,22 @@ public partial class ConversationView : BlazorWebView
     ///  Clears the conversation history.
     /// </summary>
     public void ClearHistory()
-        => _conversation?.ConversationItems.Clear();
+    {
+        if (_conversation is not null)
+        {
+            _conversation.ConversationItems.Clear();
+            _conversation.Id = Guid.NewGuid();
+            _conversation.BackColor = SystemColors.ControlLightLight.ToWebColor();
+            _conversation.ForeColor = SystemColors.ControlText.ToWebColor();
+            _conversation.Title = Conversation.GetDefaultTitle();
+            _conversation.DateCreated = DateTimeOffset.Now;
+            _conversation.DateLastEdited = DateTimeOffset.Now;
+            _conversation.Summary = string.Empty;
+            _conversation.Keywords = string.Empty;
+            _conversation.TokenCount = 0;
+            _conversation.ResponseInProgress = string.Empty;
+        }
+    }
 
     /// <summary>
     ///  Converts the conversation items to a JSON string.
@@ -139,6 +154,12 @@ public partial class ConversationView : BlazorWebView
         }
     }
 
+    /// <summary>
+    ///  Builds the current response asynchronously, which is MVVM'd to the Blazor component.
+    ///  Doesn't process anything, just controls the Token-by-Token rendering in the Blazor component.
+    /// </summary>
+    /// <param name="asyncEnumerable"></param>
+    /// <returns></returns>
     public async IAsyncEnumerable<string> UpdateCurrentResponseAsync(
         IAsyncEnumerable<string> asyncEnumerable)
     {
@@ -164,7 +185,8 @@ public partial class ConversationView : BlazorWebView
             {
                 if (listingCount == 0)
                 {
-                    builtUpHtmlParagraphs.AppendLine($"<listing>{word[3..].Trim()}</listing>");
+                    string listingTag = $"<listing>{word[3..].Trim()}</listing>";
+                    builtUpHtmlParagraphs.AppendLine(listingTag);
                     builtUpHtmlParagraphs.Append("<pre><code>");
                     lockHtmlParagraphs = true;
                 }
@@ -180,6 +202,7 @@ public partial class ConversationView : BlazorWebView
                 {
                     builtUpHtmlParagraphs.Append("</code></pre>");
                     localHtml.Clear();
+                    lockHtmlParagraphs = true;
                 }
             }
 
@@ -188,8 +211,15 @@ public partial class ConversationView : BlazorWebView
 
             if (listingCount == 0)
             {
-                localHtml.Clear();
-                localHtml.Append(Markdown.ToHtml(localMarkdown));
+                if(!lockHtmlParagraphs)
+                {
+                    localHtml.Clear();
+                    localHtml.Append(Markdown.ToHtml(localMarkdown));
+                }
+                else
+                {
+                    lockHtmlParagraphs = false;
+                }
             }
             else
             {

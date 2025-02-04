@@ -1,7 +1,7 @@
 ﻿namespace Chatty.Views;
 
 /// <summary>
-///  Provides data for the various events that are raised when a file needs to be serialized.
+///  Provides data for the various events that are raised when a file needs to be extracted.
 /// </summary>
 public class AsyncRequestFileContextEventArgs(
     string? basePath,

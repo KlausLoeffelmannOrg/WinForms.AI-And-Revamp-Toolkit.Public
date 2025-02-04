@@ -2,10 +2,15 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace CommunityToolkit.WinForms.AI;
+namespace CommunityToolkit.WinForms.AI.ConverterLogic;
 
 internal static class ReturnTokenParser
 {
+
+#if COLLECT_TEST_DATA
+    private static List<string> s_testDataCollector = [];
+#endif
+
     /// <summary>
     ///  Processes tokens from an async enumerable of StreamingChatMessageContent.
     /// </summary>
@@ -34,6 +39,16 @@ internal static class ReturnTokenParser
         var metaDataBuilder = new StringBuilder();
         var paragraphBuilder = new StringBuilder();
         int positionCounter = 0;
+
+#if COLLECT_TEST_DATA
+        // We need to iterate through the entire async enumerable to collect the test data.
+        s_testDataCollector.Clear();
+        await foreach (var token in asyncEnumerable)
+        {
+            s_testDataCollector.Add(token.Content.ToCSharpLiteral());
+        }
+#endif
+
         bool inMeta = false;
         bool pendingOpen = false;   // waiting for second '{'
         bool pendingClose = false;  // waiting for second '}'

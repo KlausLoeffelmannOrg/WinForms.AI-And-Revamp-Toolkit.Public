@@ -101,8 +101,6 @@ namespace Chatty
             _mainTabControl = new CommunityToolkit.WinForms.FluentUI.FluentTabControl();
             _lblConversationTitle = new Label();
             _lblDate = new Label();
-            _skCommunicator = new SemanticKernelComponent();
-            _skMetaDataProcessor = new SemanticKernelComponent();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -243,14 +241,8 @@ namespace Chatty
             toolStripSeparator6.Size = new Size(498, 6);
             // 
 <<<<<<< HEAD
-            // modelOverviewToolStripMenuItem
-            // 
-            modelOverviewToolStripMenuItem.Name = "modelOverviewToolStripMenuItem";
-            modelOverviewToolStripMenuItem.Size = new Size(501, 38);
-            modelOverviewToolStripMenuItem.Text = "Model learner...";
-            // 
 =======
->>>>>>> 6b67212 (Solve merge conflict.)
+>>>>>>> 45b55fe (Fixed a formatting bug and completed first draft of Model Trainer.)
             // _tsmPromptBuilder
             // 
             _tsmPromptBuilder.Name = "_tsmPromptBuilder";
@@ -670,14 +662,6 @@ namespace Chatty
             _lblDate.Text = "#dateTime";
             _lblDate.TextAlign = ContentAlignment.MiddleRight;
             // 
-            // _skCommunicator
-            // 
-            _skCommunicator.TopP = null;
-            // 
-            // _skMetaDataProcessor
-            // 
-            _skMetaDataProcessor.TopP = null;
-            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
@@ -735,7 +719,6 @@ namespace Chatty
         private ToolStripSeparator toolStripSeparator3;
         private ToolStripMenuItem _tsmTools;
         private ToolStripMenuItem _tsmOptions;
-        private SemanticKernelComponent _skMetaDataProcessor;
         private ToolStripMenuItem _tsmAgents;
         private TableLayoutPanel _tlpHeader;
         private CommunityToolkit.WinForms.FluentUI.FluentTabControl _mainTabControl;
@@ -764,7 +747,6 @@ namespace Chatty
         private ToolStripMenuItem filterKeywordsToolStripMenuItem;
         private ToolStripMenuItem filterChatsWithFilesToolStripMenuItem;
         private ToolStripMenuItem chatSummaryToolStripMenuItem;
-        public SemanticKernelComponent _skCommunicator;
         private ToolStripStatusLabel _tslPersonalityCaption;
         private ToolStripStatusLabel _tslPersonality;
         private ToolStripStatusLabel _tslStatusCaption;

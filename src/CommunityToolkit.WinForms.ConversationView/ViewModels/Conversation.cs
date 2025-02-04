@@ -133,36 +133,129 @@ public partial class Conversation()
         }
     }
 
+    /// <summary>
+    /// Processes markdown content into HTML, handling nested code blocks using a counter.
+    /// Assumes that code blocks always start with a line like "```something" and end
+    /// with a line that is exactly "```".
+    /// </summary>
+    /// <param name="conversation">The conversation containing markdown items.</param>
     private static void ProcessMarkdownToHTML(Conversation conversation)
     {
-        bool listingInProgress = false;
-
         foreach (var item in conversation.ConversationItems)
         {
-            string currentTrimmedLine = item.MarkdownContent!.Trim();
-            if (currentTrimmedLine.StartsWith("```") && currentTrimmedLine.Length > 3)
-            {
-                item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
-                listingInProgress = true;
-                continue;
-            }
+            int index = 0;
 
-            if (listingInProgress)
+            StringBuilder htmlContent = new();
+            StringBuilder listingContent = new();
+            int listingCounter = 0;
+
+            while (true)
             {
-                if (currentTrimmedLine == ("```"))
+                ReadOnlySpan<char> paragraph = GetNextParagraph(item.MarkdownContent.AsSpan(), ref index);
+
+                if (paragraph.Length == 0)
                 {
-                    item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
-                    listingInProgress = false;
-                    continue;
+                    break;
                 }
 
-                item.HtmlContent = $"<pre>{currentTrimmedLine}</pre>";
-                continue;
+                string currentParagraph = paragraph.ToString();
+                string trimmed = currentParagraph.Trim();
+
+                // Check for an opening fence with a language specifier.
+                if (trimmed.StartsWith("```") && trimmed.Length > 3)
+                {
+                    if (listingCounter == 0)
+                    {
+                        // For the outermost listing, output a header with the listing type.
+                        string listingType = trimmed[3..].Trim();
+                        htmlContent.Append($"<listing>{listingType}</listing>\n");
+                    }
+
+                    listingContent.Append(currentParagraph);
+                    listingCounter++;
+
+                    continue;
+                }
+                else if (trimmed == "```" && listingCounter > 0)
+                {
+                    // Found a closing fence.
+                    listingContent.Append(currentParagraph);
+                    listingCounter--;
+
+                    if (listingCounter == 0)
+                    {
+                        // When the outermost listing is closed, process the accumulated content.
+                        htmlContent.Append(Markdown.ToHtml(listingContent.ToString()));
+                        listingContent.Clear();
+                    }
+
+                    continue;
+                }
+                else
+                {
+                    // If we're inside a listing, accumulate content; otherwise, process normally.
+                    if (listingCounter > 0)
+                    {
+                        listingContent.Append(currentParagraph);
+                    }
+                    else
+                    {
+                        htmlContent.Append(Markdown.ToHtml(currentParagraph));
+                    }
+                }
             }
 
-            string currentHTML = Markdown.ToHtml(item.MarkdownContent!);
-            item.HtmlContent = $"<p>{currentHTML}</p>";
+            item.HtmlContent = htmlContent.ToString();
         }
+    }
+
+    /// <summary>
+    /// Returns the next "paragraph" (line) from the given text starting at <paramref name="offset"/>.
+    /// Handles different newline conventions: LF, CR, and CRLF.
+    /// Advances <paramref name="offset"/> to the start of the following line.
+    /// </summary>
+    /// <param name="text">The text to read from.</param>
+    /// <param name="offset">
+    /// The starting index in <paramref name="text"/>. On return, it points to the beginning of the next line.
+    /// </param>
+    /// <returns>
+    /// A <see cref="ReadOnlySpan{Char}"/> containing the next paragraph, or an empty span if the offset is at the end.
+    /// </returns>
+    private static ReadOnlySpan<char> GetNextParagraph(ReadOnlySpan<char> text, ref int offset)
+    {
+        if (offset >= text.Length)
+        {
+            return [];
+        }
+
+        int start = offset;
+
+        while (offset < text.Length)
+        {
+            char c = text[offset];
+
+            if (c is '\n' or '\r')
+            {
+                // Handle CRLF: if current char is CR and next char is LF.
+                if (c == '\r' && offset + 1 < text.Length 
+                    && text[offset + 1] == '\n')
+                {
+                    offset += 2;
+                }
+                else
+                {
+                    offset++;
+                }
+
+                ReadOnlySpan<char> paragraph = text[start..offset];
+                return paragraph;
+            }
+
+            offset++;
+        }
+
+        // No newline found; return the remaining text.
+        return text[start..];
     }
 
     public static Conversation FromJson(Stream stream)

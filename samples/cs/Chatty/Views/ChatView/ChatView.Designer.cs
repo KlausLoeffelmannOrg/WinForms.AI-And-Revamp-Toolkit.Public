@@ -224,6 +224,6 @@ partial class ChatView
     private ToolStripButton _tsbPaste;
     private ToolStripSeparator toolStripSeparator1;
     private CommunityToolkit.WinForms.FluentUI.Controls.AutoCompleteEditor _promptControl;
-    public CommunityToolkit.WinForms.AI.SemanticKernelComponent _skCommunicator;
+    private CommunityToolkit.WinForms.AI.SemanticKernelComponent _skCommunicator;
     private CommunityToolkit.WinForms.AI.SemanticKernelComponent _skMetaDataProcessor;
 }

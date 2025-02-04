@@ -6,14 +6,25 @@
     font-size: 12pt;
 }
 
-p, h1, h2, h3, h4, h5, h6 {
-    margin-bottom: 0.5em;
+/* Increase spacing before headers */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0.5em; /* Increase distance from the previous element */
+    margin-bottom: 1em; /* Keep reasonable space below */
+}
+
+/* Increase spacing before horizontal rule */
+hr {
+    border: none;
+    border-top: 2px solid #ccc; /* Make sure the <hr> is visible */
+    margin-top: 1em; /* More space above */
+    margin-bottom: 1em; /* More space below */
+    color: blue;
 }
 
 h1 {
     font-size: 1.2em;
     font-weight: bold;
-    margin-top: 0.5em;
+    margin-top: 0.75em;
     margin-bottom: 1em;
 }
 

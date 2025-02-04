@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
+using static CommunityToolkit.WinForms.AI.SemanticKernelComponent;
 
 namespace CommunityToolkit.WinForms.AI;
 
@@ -11,9 +12,28 @@ public static class PromptFromTypeProcessor
         WriteIndented = true
     };
 
-    public static string GetJSonSchema<T>()
+    public static string GetJSonArraySchema<T>()
     {
         var targetType = typeof(T);
+        var schema = new Dictionary<string, object>
+        {
+            ["$schema"] = "http://json-schema.org/draft-07/schema#",
+            ["type"] = "array",
+            ["items"] = new Dictionary<string, object>
+            {
+                ["type"] = "object",
+                ["properties"] = GetPropertiesSchema(targetType),
+                ["required"] = GetRequiredProperties(targetType),
+                ["additionalProperties"] = false
+            }
+        };
+        return JsonSerializer.Serialize(schema, s_options);
+    }
+
+    public static string GetJSonSchema<T>()
+    {
+        Type targetType = typeof(T);
+
         var schema = new Dictionary<string, object>
         {
             ["$schema"] = "http://json-schema.org/draft-07/schema#",
@@ -95,18 +115,45 @@ public static class PromptFromTypeProcessor
         var properties = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.GetCustomAttribute<StructuredReturnDataPropertyAttribute>() is not null);
 
-        if (properties is null)
+        // Let's also get a list with all the properties with the StructuredReturnDataTypeAttribute.
+        var propertiesIndirect = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetCustomAttribute<StructuredReturnDataTypeAttribute>() is not null);
+
+        // If propertiesIndirect is not null.
+        // we get all the properties from the type which are of the type of the StructuredReturnDataTypeAttribute.
+        if (propertiesIndirect.Any())
         {
-            throw new InvalidOperationException($"The type {targetType.Name} does not have any properties with the {nameof(StructuredReturnDataPropertyAttribute)} attribute.");
+            foreach (var property in propertiesIndirect)
+            {
+                var attribute = property.GetCustomAttribute<StructuredReturnDataTypeAttribute>()!;
+                var propertyType = attribute.Type;
+
+                // Let's get a list of all the properties with the StructuredReturnDataPropertyAttribute.
+                var propertiesIndirectProperties = propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.GetCustomAttribute<StructuredReturnDataPropertyAttribute>() is not null);
+
+                foreach (var indirectProperty in propertiesIndirectProperties)
+                {
+                    var indirectAttribute = indirectProperty.GetCustomAttribute<StructuredReturnDataPropertyAttribute>()!;
+                    yield return "* " + indirectAttribute.Prompt + $" The property name to store the result for this request is {indirectProperty.Name}.";
+                }
+            }
         }
-
-        // Iterate through the properties and build the prompt:
-        foreach (var property in properties)
+        else
         {
-            // Get the Attribute for that property:
-            var attribute = property.GetCustomAttribute<StructuredReturnDataPropertyAttribute>()!;
+            if (properties is null)
+            {
+                throw new InvalidOperationException($"The type {targetType.Name} does not have any properties with the {nameof(StructuredReturnDataPropertyAttribute)} attribute.");
+            }
 
-            yield return "* " + attribute.Prompt + $" The property name to store the result for this request is {property.Name}.";
+            // Iterate through the properties and build the prompt:
+            foreach (var property in properties)
+            {
+                // Get the Attribute for that property:
+                var attribute = property.GetCustomAttribute<StructuredReturnDataPropertyAttribute>()!;
+
+                yield return "* " + attribute.Prompt + $" The property name to store the result for this request is {property.Name}.";
+            }
         }
     }
 }
