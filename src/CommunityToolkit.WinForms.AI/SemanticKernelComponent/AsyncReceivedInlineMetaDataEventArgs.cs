@@ -1,7 +1,8 @@
-﻿namespace CommunityToolkit.WinForms.AI;
+﻿using CommunityToolkit.WinForms.AI.ConverterLogic;
 
-public class AsyncReceivedInlineMetaDataEventArgs(string metaData, int textPosition) : EventArgs
+namespace CommunityToolkit.WinForms.AI;
+
+public class AsyncReceivedInlineMetaDataEventArgs(ReturnStreamMetaData metaData) : EventArgs
 {
-    public string MetaData { get; } = metaData;
-    public int TextPosition { get; } = textPosition;
+    public ReturnStreamMetaData MetaData { get; } = metaData;
 }

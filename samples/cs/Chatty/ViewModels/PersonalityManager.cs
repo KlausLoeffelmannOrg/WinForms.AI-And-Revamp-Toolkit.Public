@@ -1,43 +1,29 @@
-﻿using System.Text.Json;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Newtonsoft.Json;
+using System.Collections.ObjectModel;
+using System.Text.Json;
 
 namespace Chatty.ViewModels;
 
 /// <summary>
 /// Represents the view model for managing personalities.
 /// </summary>
-internal class PersonalityViewModel
+internal partial class PersonalityManager : ObservableObject
 {
     private const string PersonalitiesFileName = "personalities.json";
 
     /// <summary>
     /// Gets or sets the list of personality items.
     /// </summary>
-    public List<PersonalityItemViewModel> Personalities { get; set; } = [];
+    [ObservableProperty()]
+    public ObservableCollection<Personality> _personalities  = [];
 
     /// <summary>
     /// Gets or sets the selected personality item.
     /// </summary>
-    public PersonalityItemViewModel? SelectedPersonality { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the personality is new.
-    /// </summary>
-    public bool IsNew { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the personality has unsaved changes.
-    /// </summary>
-    public bool IsDirty { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets the name being edited.
-    /// </summary>
-    public string? EditName { get; set; } = null;
-
-    /// <summary>
-    /// Gets or sets the description being edited.
-    /// </summary>
-    public string? EditDescription { get; set; } = null;
+    [ObservableProperty()]
+    [JsonIgnore]
+    public Personality? _selectedPersonality;
 
     /// <summary>
     /// Writes the current instance to a JSON stream.
@@ -55,7 +41,7 @@ internal class PersonalityViewModel
         writer.WriteStartObject();
         writer.WriteStartArray(nameof(Personalities));
 
-        foreach (PersonalityItemViewModel item in Personalities)
+        foreach (Personality item in Personalities)
         {
             writer.WriteStartObject();
             item.WriteJSon(writer);
@@ -69,27 +55,27 @@ internal class PersonalityViewModel
     /// <summary>
     /// Gets the default personality templates.
     /// </summary>
-    /// <returns>A new instance of <see cref="PersonalityViewModel"/> with default templates.</returns>
-    public static PersonalityViewModel GetTemplates() =>
+    /// <returns>A new instance of <see cref="PersonalityManager"/> with default templates.</returns>
+    public static PersonalityManager GetTemplates() =>
         new()
         {
             Personalities = [.. s_personalities
-                    .Select(
-                        kv => new PersonalityItemViewModel
-                        {
-                            Name = kv.Key,
-                            SystemPrompt = kv.Value
-                        })]
+                .Select(
+                    (Func<KeyValuePair<string, string>, Personality>)(                    kv => new Personality
+                    {
+                        Name = kv.Key,
+                        SystemPrompt = kv.Value
+                    }))]
         };
 
     /// <summary>
-    /// Creates a new instance of <see cref="PersonalityViewModel"/> from a JSON stream.
+    /// Creates a new instance of <see cref="PersonalityManager"/> from a JSON stream.
     /// </summary>
     /// <param name="stream">The stream to read from.</param>
-    /// <returns>A new instance of <see cref="PersonalityViewModel"/>.</returns>
-    public static PersonalityViewModel FromJSon(Stream stream)
+    /// <returns>A new instance of <see cref="PersonalityManager"/>.</returns>
+    public static PersonalityManager FromJSon(Stream stream)
     {
-        PersonalityViewModel personality = new();
+        PersonalityManager personality = new();
 
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
@@ -98,7 +84,7 @@ internal class PersonalityViewModel
         {
             foreach (JsonElement itemElement in personalitiesItemElement.EnumerateArray())
             {
-                var item = PersonalityItemViewModel.FromJson(itemElement);
+                var item = Personality.FromJson(itemElement);
                 personality.Personalities.Add(item);
             }
         }
@@ -110,25 +96,31 @@ internal class PersonalityViewModel
     /// Gets the personalities from the specified base path or returns the default templates if the file does not exist.
     /// </summary>
     /// <param name="basePath">The base path to look for the personalities file.</param>
-    /// <returns>A new instance of <see cref="PersonalityViewModel"/>.</returns>
-    internal static PersonalityViewModel GetPersonalitiesOrDefault(string basePath)
+    /// <returns>A new instance of <see cref="PersonalityManager"/>.</returns>
+    internal static PersonalityManager GetPersonalitiesOrDefault(string basePath)
     {
-        PersonalityViewModel personalities;
+        PersonalityManager personalities;
 
         string fileName = Path.Combine(basePath, PersonalitiesFileName);
         if (File.Exists(fileName))
         {
             using FileStream readerStream = File.OpenRead(fileName);
-            personalities = PersonalityViewModel.FromJSon(readerStream);
+            personalities = PersonalityManager.FromJSon(readerStream);
 
             return personalities;
         }
 
-        personalities = PersonalityViewModel.GetTemplates();
+        personalities = PersonalityManager.GetTemplates();
+        personalities.SavePersonalities(basePath);
 
-        using FileStream writerStream = File.OpenWrite(fileName);
-        personalities.WriteJSon(writerStream);
         return personalities;
+    }
+
+    internal void SavePersonalities(string basePath)
+    {
+        string fileName = Path.Combine(basePath, PersonalitiesFileName);
+        using FileStream writerStream = File.Create(fileName);
+        WriteJSon(writerStream);
     }
 
     private static readonly Dictionary<string, string> s_personalities = new()

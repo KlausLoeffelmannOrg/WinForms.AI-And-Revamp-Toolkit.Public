@@ -1,3 +1,16 @@
+[Preamble]: Designer Refactoring:
+=================================
+Hey, can you please refactor this Designer code? 
+Please keep in mind, that when refactor WinForms Designer Code, that you 
+cannot use Loops, local Functions, creating new Methods or define local 
+variables, as the Designer code is limited to a certain coding style, 
+which you certainly know about.
+
+Now the ask:
+
+
+
+
 Ask for XML (IMPORTANT: Do NOT use listing tags right now in Co-Pilot!)
 ==========================================================================
 Can you please add XML Comments to this class? 

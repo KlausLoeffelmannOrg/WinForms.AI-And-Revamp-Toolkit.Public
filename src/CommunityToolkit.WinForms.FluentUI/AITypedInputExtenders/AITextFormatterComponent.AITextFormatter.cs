@@ -44,7 +44,7 @@ public partial class AITextFormatterComponent
                 ?? throw new InvalidOperationException("The AI:OpenAI:ApiKey environment variable is not set.");
 
             _skComponent.SystemPrompt = SystemPrompt;
-            _skComponent.JsonSchema =
+            _skComponent.JsonSchemaString =
                """
                 {
                   "$schema": "http://json-schema.org/draft-07/schema#",

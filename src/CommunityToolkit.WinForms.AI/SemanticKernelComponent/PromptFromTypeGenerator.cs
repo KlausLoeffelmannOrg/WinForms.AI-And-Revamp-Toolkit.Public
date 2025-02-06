@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
-using static CommunityToolkit.WinForms.AI.SemanticKernelComponent;
 
 namespace CommunityToolkit.WinForms.AI;
 
-public static class PromptFromTypeProcessor
+public static class PromptFromTypeSupport
 {
     private static readonly JsonSerializerOptions s_options = new()
     {

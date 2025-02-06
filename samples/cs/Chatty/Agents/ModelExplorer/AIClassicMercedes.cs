@@ -27,5 +27,5 @@ public class AIClassicMercedes
     public int Cylinders { get; set; }
 
     [StructuredReturnDataProperty("* The horse Power")]
-    public string? HorsePower { get; set; }
+    public int? HorsePower { get; set; }
 }

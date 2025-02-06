@@ -27,6 +27,18 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      # Build the solution
-      - name: Build solution
+      # Build the solution (Release)
+      - name: Build solution (Release)
         run: dotnet build --configuration Release --no-restore
+
+      # Build the solution (Debug)
+      - name: Build solution (Debug)
+        run: dotnet build --configuration Debug --no-restore
+
+      # Run unit tests (Release)
+      - name: Run unit tests (Release)
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # Run unit tests (Debug)
+      - name: Run unit tests (Debug)
+        run: dotnet test --configuration Debug --no-build --verbosity normal

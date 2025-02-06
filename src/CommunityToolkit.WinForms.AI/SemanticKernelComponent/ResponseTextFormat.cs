@@ -1,6 +1,6 @@
 ﻿namespace CommunityToolkit.WinForms.AI;
 
-public enum ReturnStringsFormat
+public enum ResponseTextFormat
 {
     PlainText,
     Html,

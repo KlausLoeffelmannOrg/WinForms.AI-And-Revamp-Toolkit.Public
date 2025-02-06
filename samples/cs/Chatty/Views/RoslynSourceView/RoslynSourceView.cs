@@ -1,4 +1,5 @@
 ﻿using Chatty.DataEntities;
+using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.Controls;
 using System.ComponentModel;
 
@@ -18,7 +19,7 @@ internal partial class RoslynSourceView : UserControl
     /// Gets the listing file.
     /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ListingFile? ListingFile { get; private set; }
+    public CodeBlockInfo? CodeBlockInfo { get; private set; }
 
     /// <summary>
     /// Gets the source code viewer.
@@ -32,32 +33,32 @@ internal partial class RoslynSourceView : UserControl
     /// <exception cref="InvalidOperationException">Thrown when no listing file is set.</exception>
     public async Task SaveFileAsync(string basePath)
     {
-        if (string.IsNullOrEmpty(ListingFile?.FileName))
+        if (string.IsNullOrEmpty(CodeBlockInfo?.Filename))
         {
             throw new InvalidOperationException("No listing file set.");
         }
 
-        string filename = Path.Combine(basePath, ListingFile.FileName)
+        string filename = Path.Combine(basePath, CodeBlockInfo.Value.Filename)
             ?? throw new InvalidOperationException("No filename set.");
 
         // Let's save the file:
-        await File.WriteAllTextAsync(filename, ListingFile.Content);
+        await File.WriteAllTextAsync(filename, CodeBlockInfo.Value.Code);
     }
 
     /// <summary>
     /// Sets the listing file asynchronously.
     /// </summary>
-    /// <param name="listingFile">The listing file to set.</param>
+    /// <param name="codeBlockInfo">The listing file to set.</param>
     /// <returns>A task that represents the asynchronous set operation.</returns>
-    public async Task SetListingFileAsync(ListingFile listingFile)
+    public async Task SetCodeBlockInfoAsync(CodeBlockInfo codeBlockInfo)
     {
         // Let's save the file:
-        ListingFile = listingFile;
+        CodeBlockInfo = codeBlockInfo;
 
-        _lblListingTitel.Text = listingFile.ListingTitle;
+        _lblListingTitel.Text = codeBlockInfo.Title;
 
         await SourceCodeViewer.SetSourceCodeAsync(
-            sourceCode: listingFile.Content,
-            filename: listingFile.FileName);
+            sourceCode: codeBlockInfo.Code,
+            filename: codeBlockInfo.Filename);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using System.Text.Json;
 
 namespace CommunityToolkit.WinForms.AI;
 
@@ -46,7 +47,7 @@ public static class OpenAIPromptExecutionSettingsExtensions
 #pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     public static OpenAIPromptExecutionSettings WithJsonReturnSchema(
         this OpenAIPromptExecutionSettings settings,
-        string returnSchema,
+        JsonElement returnSchema,
         string? schemaName,
         string? schemaDescription)
     {

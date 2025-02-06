@@ -58,7 +58,7 @@ public partial class AIMeasurementFormatterComponent
 
             _skComponent.SystemPrompt = SystemPrompt;
 
-            _skComponent.JsonSchema =
+            _skComponent.JsonSchemaString =
                """
                 {
                   "$schema": "http://json-schema.org/draft-07/schema#",

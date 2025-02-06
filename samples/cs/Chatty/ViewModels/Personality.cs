@@ -6,8 +6,22 @@ namespace Chatty.ViewModels;
 /// <summary>
 /// Represents a view model for a personality item.
 /// </summary>
-internal partial class PersonalityItemViewModel : ObservableObject
+internal partial class Personality : ObservableObject
 {
+    public Personality()
+    {
+    }
+
+    public Personality(Personality personality)
+    {
+        Id = personality.Id;
+        Name = personality.Name;
+        SystemPrompt = personality.SystemPrompt;
+        DateCreated = personality.DateCreated;
+        DateLastEdited = DateTime.Now;
+        FileExtractionSettings = personality.FileExtractionSettings;
+    }
+
     /// <summary>
     /// Gets or sets the unique identifier for the personality item.
     /// </summary>
@@ -48,13 +62,13 @@ internal partial class PersonalityItemViewModel : ObservableObject
     public override string ToString() => $"{Name}";
 
     /// <summary>
-    /// Creates a new instance of <see cref="PersonalityItemViewModel"/> from a JSON element.
+    /// Creates a new instance of <see cref="Personality"/> from a JSON element.
     /// </summary>
     /// <param name="jsonElement">The JSON element to parse.</param>
-    /// <returns>A new instance of <see cref="PersonalityItemViewModel"/>.</returns>
-    public static PersonalityItemViewModel FromJson(JsonElement jsonElement)
+    /// <returns>A new instance of <see cref="Personality"/>.</returns>
+    public static Personality FromJson(JsonElement jsonElement)
     {
-        PersonalityItemViewModel viewModel = new()
+        Personality viewModel = new()
         {
             Id = jsonElement.GetProperty(nameof(Id)).GetGuid(),
             Name = jsonElement.GetProperty(nameof(Name)).GetString() ?? string.Empty,

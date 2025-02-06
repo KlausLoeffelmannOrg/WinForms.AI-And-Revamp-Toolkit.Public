@@ -1,10 +1,11 @@
 ﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
-public static partial class SegoeSymbols
+public static partial class FluentSymbols
 {
     /// <summary>
     /// Enum representing Segoe UI Symbol icons filtered for TreeView scenarios. 
     /// </summary>
+    [SourceFontName("Segoe Fluent Icons")]
     public enum TreeViewSymbols
     {
         /// <summary>

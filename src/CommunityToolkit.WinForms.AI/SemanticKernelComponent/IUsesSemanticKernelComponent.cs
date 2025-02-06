@@ -15,8 +15,8 @@ public interface IUsesSemanticKernelComponent
 
     public string ModelName
     {
-        get => SemanticKernel.ModelName;
-        set => SemanticKernel.ModelName = value;
+        get => SemanticKernel.ModelId;
+        set => SemanticKernel.ModelId = value;
     }
 
     private void Initialize()
@@ -26,7 +26,7 @@ public interface IUsesSemanticKernelComponent
         SemanticKernel.TopP = 1.0;
         SemanticKernel.FrequencyPenalty = 0.0;
         SemanticKernel.PresencePenalty = 0.0;
-        SemanticKernel.JsonSchema = string.Empty;
+        SemanticKernel.JsonSchemaString = string.Empty;
         SemanticKernel.SystemPrompt = string.Empty;
     }
 

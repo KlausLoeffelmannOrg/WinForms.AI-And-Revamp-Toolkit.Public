@@ -1,13 +1,12 @@
 ﻿using CommunityToolkit.DesktopGeneric.Mvvm;
-using System.ComponentModel;
-using DialogResult = CommunityToolkit.DesktopGeneric.Mvvm.DialogResult;
 
 namespace CommunityToolkit.WinForms.Extensions;
 
-public class ModalDialogResult<T>(T? result, DialogResult dialogResult) : IModalDialogResult<T>
-    where T : class, INotifyPropertyChanged
+public class ModalDialogResult<T>(T? result, DialogCloseReason dialogCloseReason) 
+    : IModalDialogResult<T>
+    where T : class
 {
     public T? ReturnValue => result;
 
-    DialogResult IModalDialogResult<T>.DialogResult => dialogResult;
+    DialogCloseReason IModalDialogResult<T>.DialogCloseReason => dialogCloseReason;
 }

@@ -63,7 +63,7 @@ public partial class AutoCompleteEditor : RichTextBox
     {
         _semanticKernel = new()
         {
-            ModelName = "gpt-3.5-turbo",
+            ModelId = "gpt-3.5-turbo",
             MaxTokens = 4096
         };
 

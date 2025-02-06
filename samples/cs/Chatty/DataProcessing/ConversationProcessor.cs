@@ -1,4 +1,5 @@
 ﻿using Chatty.DataEntities;
+using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.AsyncSupport;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using System.ComponentModel;
@@ -19,15 +20,7 @@ namespace Chatty.DataProcessing;
 /// </remarks>
 public class ConversationProcessor
 {
-    /// <summary>
-    /// Event triggered when a new listing file is added.
-    /// </summary>
-    public event AsyncEventHandler<AsyncListingFileProvidedEventArgs>? AsyncListingFileProvided;
-
-    private readonly List<ListingFile> _textFiles = [];
-    private StringBuilder? _currentListingBuilder;
-    private string? _currentListingType;
-    private Lock _listingLock = new();
+    private readonly List<CodeBlockInfo> _codeBlockInfoItems = [];
     private readonly StringBuilder _currentConvItemMarkdown = new();
 
     /// <summary>
@@ -222,55 +215,6 @@ public class ConversationProcessor
     {
         _currentConvItemMarkdown.Append(paragraph);
 
-        string trimmedParagraph = paragraph.Trim();
-
-        if (trimmedParagraph.StartsWith("```"))
-        {
-            // Handle listing start or end
-            if (trimmedParagraph.Length > 3 && _currentListingBuilder == null)
-            {
-                // This is a start of a new listing with a specific type
-                _currentListingType = trimmedParagraph[3..].Trim();
-                _currentListingBuilder = new StringBuilder();
-            }
-            else if (_currentListingBuilder != null)
-            {
-                ListingFile listingFile;
-
-                lock (_listingLock)
-                {
-                    // This is the end of the current listing
-                    string listingContent = _currentListingBuilder.ToString();
-
-                    listingFile = new(
-                        fullFilename: BasePath,
-                        content: listingContent,
-                        listingType: Enum.TryParse<ListingType>(_currentListingType, out var type)
-                            ? type
-                            : ListingType.Other)
-                    {
-                        ListingTitle = CurrentListingDescription,
-                        FileName = CurrentListingFilename
-                    };
-
-                    _currentListingBuilder = null;
-                    _currentListingType = null;
-                }
-
-                await OnListingFileAddedAsync(new(listingFile));
-            }
-        }
-        else
-        {
-            if (_currentListingBuilder is not null)
-            {
-                // Add paragraph to the current listing
-                // Note: The paragraph is not trimmed, so we only Append
-                // to not add additional whitespace.
-                _currentListingBuilder?.Append(paragraph);
-            }
-        }
-
         if (isLastParagraph)
         {
             var conversationItem = new ConversationItem
@@ -283,10 +227,5 @@ public class ConversationProcessor
             Conversation.ConversationItems.Add(conversationItem);
             _currentConvItemMarkdown.Clear();
         }
-    }
-
-    protected virtual Task OnListingFileAddedAsync(AsyncListingFileProvidedEventArgs e)
-    {
-        return AsyncListingFileProvided?.Invoke(this, e) ?? Task.CompletedTask;
     }
 }

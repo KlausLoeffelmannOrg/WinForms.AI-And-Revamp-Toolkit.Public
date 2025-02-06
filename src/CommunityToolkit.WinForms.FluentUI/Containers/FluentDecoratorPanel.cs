@@ -18,7 +18,8 @@ public partial class FluentDecoratorPanel : Panel
         _orientation = Orientation.Horizontal;
 
         // Enable double buffering to reduce flickering
-        SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.OptimizedDoubleBuffer 
+            | ControlStyles.ResizeRedraw, true);
     }
 
     /// <summary>
@@ -71,6 +72,8 @@ public partial class FluentDecoratorPanel : Panel
     }
 
     private VerticalContentAlignments _verticalContentAlignment;
+    private CancellationTokenSource _signalingTokenSource;
+    private Color _originalForeColor;
 
     /// <summary>
     /// Gets or sets the vertical alignment of the content.
@@ -101,6 +104,83 @@ public partial class FluentDecoratorPanel : Panel
         {
             _orientation = value;
             PerformLayout();
+        }
+    }
+
+    public async void StartSignalError()
+    {
+        try
+        {
+            if (_signalingTokenSource is not null)
+            {
+                _signalingTokenSource.Cancel();
+                _signalingTokenSource.Dispose();
+                _signalingTokenSource = null!;
+                ForeColor = _originalForeColor;
+
+                return;
+            }
+
+            _signalingTokenSource = new CancellationTokenSource();
+
+            _originalForeColor = ForeColor;
+            await Signaling(Color.Red, Color.White, _signalingTokenSource.Token);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    public void ResetSignal()
+    {
+        _signalingTokenSource?.Cancel();
+    }
+
+    private async Task Signaling(
+        Color blendStartColor, 
+        Color blendTargetColor, 
+        CancellationToken cancellation)
+    {
+        // We are repainting the control's frame starting with the
+        // blendStartColor and ending with the blendTargetColor.
+        // And then we are doing the same in reverse order.
+        do
+        {
+            await BlendColorsAsync(blendStartColor, blendTargetColor, cancellation);
+            await BlendColorsAsync(blendTargetColor, blendStartColor, cancellation);
+        } while (!cancellation.IsCancellationRequested);
+
+        async Task BlendColorsAsync(Color startColor, Color targetColor, CancellationToken cancellation)
+        {
+            // The number of steps to blend the colors
+            const int steps = 25;
+
+            // The delay between each step
+            const int delay = 20;
+
+            // Calculate the color step
+            float rStep = (targetColor.R - startColor.R) / (float)steps;
+            float gStep = (targetColor.G - startColor.G) / (float)steps;
+            float bStep = (targetColor.B - startColor.B) / (float)steps;
+
+            for (int i = 0; i < steps; i++)
+            {
+                if (cancellation.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                // Calculate the new color
+                int r = (int)(startColor.R + (rStep * i));
+                int g = (int)(startColor.G + (gStep * i));
+                int b = (int)(startColor.B + (bStep * i));
+
+                // Set the new color
+                ForeColor = Color.FromArgb(r, g, b);
+
+                // Wait for the next step
+                await Task.Delay(delay, cancellation);
+            }
         }
     }
 
@@ -241,8 +321,6 @@ public partial class FluentDecoratorPanel : Panel
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        base.OnPaint(e);
-
         if (BorderStyle == BorderStyles.None || BorderThickness <= 0)
             return;
 

@@ -1,4 +1,4 @@
-﻿namespace CommunityToolkit.WinForms.BasicTests.Helper;
+﻿namespace CommunityToolkit.WinForms.BasicTests.TestSupport;
 
 internal static class AsyncHelperExtensions
 {

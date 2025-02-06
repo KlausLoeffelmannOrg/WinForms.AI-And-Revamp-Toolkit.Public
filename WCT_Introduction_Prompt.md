@@ -131,11 +131,11 @@ Thank you for your interest in the Windows Community Toolkit. We hope you find t
 valuable and look forward to helping you modernize your WinForms applications.
 This is the detailed prompt for the introduction to the WCT.
 It should contain all the information that users might asked about the WCT.
-Also, it should suggest usres to ask about follow-up questions, to the history of WinForms,
+Also, it should suggest users to ask about follow-up questions, to the history of WinForms,
 why it is so difficult to do AI and LLMs stuff, because we only introduced Async support in .NET 9.
 
 Also, that slow rendering is a problem in WinForms, which is why the WCT wants to introduce Direct2D/DirectWrite,
-not inly for performance, but also we have always issues with GDI/GDI+ on newer graphics cards, AND with rendering
+not only for performance, but also we have always issues with GDI/GDI+ on newer graphics cards, AND with rendering
 fonts for example for the Chinese language, let alone the colored fonts that are used in modern applications.
 
 Most important is, that we want to introduce AI and LLMs into WinForms, because we want to modernize WinForms
@@ -145,7 +145,7 @@ We also think, especially in the European Union area, that we need to kind of sl
 for the Developers there, since there mentality is very different from the US mentality, and they are very careful with
 introducing new technologies, especially when it comes to AI and LLMs.
 
-It would be cool, if there fore the prompt would encourage further questions about the WCT, bu presenting numbers
+It would be cool, if there fore the prompt would encourage further questions about the WCT, by presenting numbers
 from 1 to 4, and then the user just needs to press the number in the chat-text-box, and the bot will lead the further discussion
 in the direction the user wants to go, again with then the option to suggest further questions, or to ask about the history of WinForms,
 

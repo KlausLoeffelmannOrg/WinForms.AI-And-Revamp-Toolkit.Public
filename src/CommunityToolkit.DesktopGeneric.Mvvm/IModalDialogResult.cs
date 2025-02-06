@@ -3,9 +3,9 @@
 namespace CommunityToolkit.DesktopGeneric.Mvvm;
 
 public interface IModalDialogResult<TViewModel>
-    where TViewModel : class, INotifyPropertyChanged
+    where TViewModel : class
 {
     TViewModel? ReturnValue { get; }
 
-    DialogResult DialogResult { get; }
+    DialogCloseReason DialogCloseReason { get; }
 }

@@ -19,7 +19,7 @@ public partial class ChatView : UserControl
     public const string DefaultMetaDataProcessorModel = "gpt-3.5-turbo";
 
     public event AsyncEventHandler<AsyncNotifyRefreshedMetaDataEventArgs>? AsyncNotifyRefreshedMetaData;
-    public event AsyncEventHandler<AsyncListingFileProvidedEventArgs>? AsyncListingFileProvided;
+    public event AsyncEventHandler<AsyncCodeBlockInfoProvidedEventArgs>? AsyncCodeBlockInfoProvided;
     public event AsyncEventHandler<AsyncRequestFileContextEventArgs>? AsyncRequestFileExtractingSettings;
     public event AsyncEventHandler<AsyncRequestFileContextEventArgs>? AsyncNotifySaveChat;
 
@@ -45,8 +45,8 @@ public partial class ChatView : UserControl
 
         // We are wiring up the second one exactly like that.
         _skMetaDataProcessor.ApiKeyGetter = _skCommunicator.ApiKeyGetter;
-        _skMetaDataProcessor.ModelName = DefaultMetaDataProcessorModel;
-        _skCommunicator.ModelName = DefaultCommunicatorModel;
+        _skMetaDataProcessor.ModelId = DefaultMetaDataProcessorModel;
+        _skCommunicator.ModelId = DefaultCommunicatorModel;
     }
 
     protected override void OnLoad(EventArgs e)
@@ -57,8 +57,9 @@ public partial class ChatView : UserControl
         OnRequestChatViewOptions(eArgs);
         _options = new ChatViewOptions(eArgs.BasePath, eArgs.LastUsedModel, eArgs.LastUsedConfigurationId);
 
-        _skCommunicator.AsyncReceivedInlineMetaData += ConversationView_ReceivedInlineMetaDataAsync;
-        _skCommunicator.AsyncReceivedNextParagraph += SKConversationView_ReceivedNextParagraph;
+        _skCommunicator.AsyncReceivedInlineMetaData += SKCommunikator_ReceivedInlineMetaDataAsync;
+        _skCommunicator.AsyncReceivedNextParagraph += SKCommunicator_ReceivedNextParagraph;
+        _skCommunicator.AsyncCodeBlockInfoProvided += SKCommunicator_AsyncCodeBlockInfoProvided;
     }
 
     [DefaultValue(null)]
@@ -83,14 +84,14 @@ public partial class ChatView : UserControl
     [DefaultValue(DefaultCommunicatorModel)]
     public string ModelName
     {
-        get => _skCommunicator.ModelName;
+        get => _skCommunicator.ModelId;
         set
         {
-            if (_skCommunicator.ModelName == value)
+            if (_skCommunicator.ModelId == value)
             {
                 return;
             }
-            _skCommunicator.ModelName = value;
+            _skCommunicator.ModelId = value;
             OnModelNameChanged(EventArgs.Empty);
         }
     }
@@ -99,11 +100,11 @@ public partial class ChatView : UserControl
     [Browsable(true)]
     [Category("Model Parameter")]
     [Description("Gets or sets the Format in which human readable, non-structured Text is requested to be returned from the Model.")]
-    [DefaultValue(ReturnStringsFormat.PlainText)]
-    public ReturnStringsFormat ReturnStringsFormat
+    [DefaultValue(ResponseTextFormat.PlainText)]
+    public ResponseTextFormat ReturnStringsFormat
     {
-        get => _skCommunicator.ReturnStringsFormat;
-        set => _skCommunicator.ReturnStringsFormat = value;
+        get => _skCommunicator.ResponseTextFormat;
+        set => _skCommunicator.ResponseTextFormat = value;
     }
 
     protected virtual void OnModelNameChanged(EventArgs e)
@@ -340,11 +341,16 @@ public partial class ChatView : UserControl
         }
     }
 
+    private Task SKCommunicator_AsyncCodeBlockInfoProvided(object sender, AsyncCodeBlockInfoProvidedEventArgs e)
+    {
+        return OnAsyncCodeBlockInfoProvidedAsync(e);
+    }
+
+    protected virtual Task OnAsyncCodeBlockInfoProvidedAsync(AsyncCodeBlockInfoProvidedEventArgs e)
+        => AsyncCodeBlockInfoProvided?.Invoke(this, e) ?? Task.CompletedTask;
+
     protected virtual Task OnAsyncNotifyRefreshMetaDataAsync(AsyncNotifyRefreshedMetaDataEventArgs e)
         => AsyncNotifyRefreshedMetaData?.Invoke(this, e) ?? Task.CompletedTask;
-
-    protected virtual Task OnAsyncListingFileAddedAsync(AsyncListingFileProvidedEventArgs e)
-        => AsyncListingFileProvided?.Invoke(this, e) ?? Task.CompletedTask;
 
     protected virtual Task OnAsyncRequestFileExtractingSettingsAsync(AsyncRequestFileContextEventArgs e)
         => AsyncRequestFileExtractingSettings?.Invoke(this, e) ?? Task.CompletedTask;

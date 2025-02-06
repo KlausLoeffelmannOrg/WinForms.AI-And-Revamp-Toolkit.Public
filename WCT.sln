@@ -50,6 +50,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WinForms.CommunityToolKit",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.BasicTests", "tests\cs\CommunityToolkit.WinForms.BasicTests\CommunityToolkit.WinForms.BasicTests.csproj", "{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflow", "Workflow", "{FA775DF7-945F-4DC6-87D4-D99DAD5499C0}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +132,7 @@ Global
 		{0EA90230-F0D4-48AF-886C-CFF097C1ADC0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{111CD1C8-5F97-4F5C-9C94-022241693A08} = {85E5EB54-282C-4388-A6A2-27495CE7EE33}
 		{63890AF8-EFFF-4782-97C3-5D9F1EA2346D} = {111CD1C8-5F97-4F5C-9C94-022241693A08}
+		{FA775DF7-945F-4DC6-87D4-D99DAD5499C0} = {69C008BF-8646-4F41-AF40-FA79FB9AC566}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C29EC333-F508-4B96-AD8D-01F199315E0E}

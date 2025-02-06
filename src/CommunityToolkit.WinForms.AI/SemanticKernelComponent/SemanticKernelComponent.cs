@@ -59,6 +59,8 @@ public partial class SemanticKernelComponent : BindableComponent
     /// </remarks>
     public event AsyncEventHandler<AsyncReceivedNextParagraphEventArgs>? AsyncReceivedNextParagraph;
 
+    public event AsyncEventHandler<AsyncCodeBlockInfoProvidedEventArgs>? AsyncCodeBlockInfoProvided;
+
     /// <summary>
     ///  Event triggered when inline metadata is received asynchronously.
     /// </summary>
@@ -69,6 +71,9 @@ public partial class SemanticKernelComponent : BindableComponent
     ///  </para>
     /// </remarks>
     public event AsyncEventHandler<AsyncReceivedInlineMetaDataEventArgs>? AsyncReceivedInlineMetaData;
+
+    public event EventHandler? JsonSchemaStringChanged;
+    public event EventHandler? JsonSchemaChanged;
 
     // The chat history. If you are using ChatGPT for example directly in the WebBrowser,
     // this equals the chat history, so, the things you've said and the responses you've received.
@@ -87,6 +92,7 @@ public partial class SemanticKernelComponent : BindableComponent
     private readonly SynchronizationContext? _syncContext = WindowsFormsSynchronizationContext.Current;
     private string? _systemPrompt;
     private bool _queueSystemPrompt;
+    private JsonElement? _jsonSchema;
 
     /// <summary>
     ///  Requests a prompt response from the OpenAI API. Make sure, you set at least the <see cref="ApiKeyGetter"/> property,
@@ -155,7 +161,8 @@ public partial class SemanticKernelComponent : BindableComponent
         if (string.IsNullOrWhiteSpace(valueToProcess))
             throw new InvalidOperationException("You requested to process a prompt, but did not provide any content to process.");
 
-        (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
+        (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) 
+            = await GetOrCreateChatServiceAsync();
 
         var chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
 
@@ -170,7 +177,8 @@ public partial class SemanticKernelComponent : BindableComponent
         await foreach (var response in ReturnTokenParser.ProcessTokens(
             asyncEnumerable: responses,
             onReceivedMetaDataAction: OnReceivedMetaData,
-            onReceivedNextParagraphAction: OnReceivedNextParagraph))
+            onReceivedNextParagraphAction: OnReceivedNextParagraph,
+            onCodeBlockInfoProvidedAction: OnCodeBlockInfoProvided))
         {
             if (string.IsNullOrEmpty(response))
             {
@@ -221,10 +229,10 @@ public partial class SemanticKernelComponent : BindableComponent
 
         OpenAIPromptExecutionSettings executionSettings = new()
         {
-            ModelId = ModelName
+            ModelId = ModelId
         };
 
-        if (!ModelName.StartsWith("o1") && !ModelName.StartsWith("o3"))
+        if (!ModelId.StartsWith("o1") && !ModelId.StartsWith("o3"))
         {
             executionSettings = executionSettings
             .WithDefaultModelParameters(
@@ -235,25 +243,29 @@ public partial class SemanticKernelComponent : BindableComponent
                 presencePenalty: _presencePenalty);
         }
 
-        if (!string.IsNullOrEmpty(JsonSchema))
+        if (!string.IsNullOrEmpty(JsonSchemaString))
         {
+            // We have a JsonSchema, but we need to convert this into a JsonElement internally:
+            JsonElement jsonElement = JsonSerializer.Deserialize<JsonElement?>(JsonSchemaString) 
+                ?? throw new InvalidOperationException("The Json Schema could not be deserialized.");
+
             executionSettings = executionSettings.WithJsonReturnSchema(
-                JsonSchema,
+                jsonElement,
                 JsonSchemaName,
                 JsonSchemaDescription);
 
             EffectiveSystemPrompt = $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
-                  $"\n\nThe Json Schema is as follows:\n{JsonSchema}";
+                  $"\n\nThe Json Schema is as follows:\n{JsonSchemaString}";
         }
         else
         {
             string formatRequestString = $"\n\nIMPORTANT: Please make sure that you format your replies consistently "
-                + ReturnStringsFormat switch
+                + ResponseTextFormat switch
                 {
-                    ReturnStringsFormat.Markdown => "Markdown formatted.",
-                    ReturnStringsFormat.PlainText => "as plain text without any additional formatting.",
-                    ReturnStringsFormat.Html => "as HTML.",
-                    ReturnStringsFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
+                    ResponseTextFormat.Markdown => "Markdown formatted.",
+                    ResponseTextFormat.PlainText => "as plain text without any additional formatting.",
+                    ResponseTextFormat.Html => "as HTML.",
+                    ResponseTextFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
                     _ => "Plain text."
                 };
 
@@ -268,7 +280,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
         IKernelBuilder kernelBuilder = Kernel
             .CreateBuilder()
-            .AddOpenAIChatCompletion(ModelName, apiKey);
+            .AddOpenAIChatCompletion(ModelId, apiKey);
 
         if (LogConsole is not null)
         {
@@ -362,8 +374,8 @@ public partial class SemanticKernelComponent : BindableComponent
 
     public async Task<T> RequestStructuredResponseAsync<T>(string request, CancellationToken token)
     {
-        string? jsonSchema = PromptFromTypeProcessor.GetJSonSchema<T>();
-        StructuredReturnDataAttribute promptInfo = PromptFromTypeProcessor.GetTypePromptInfo<T>();
+        string? jsonSchema = PromptFromTypeSupport.GetJSonSchema<T>();
+        StructuredReturnDataAttribute promptInfo = PromptFromTypeSupport.GetTypePromptInfo<T>();
         string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
 
         StringBuilder stringBuilder = new();
@@ -391,7 +403,7 @@ public partial class SemanticKernelComponent : BindableComponent
         stringBuilder.AppendLine("Please provide the requested information and return Json according to the provided Json Schema.");
         stringBuilder.AppendLine("Please provide the following information:");
 
-        IEnumerable<string> propertiesRequests = PromptFromTypeProcessor.GetTypePropertyPrompts<T>();
+        IEnumerable<string> propertiesRequests = PromptFromTypeSupport.GetTypePropertyPrompts<T>();
 
         foreach (string propertyRequest in propertiesRequests)
         {
@@ -408,10 +420,16 @@ public partial class SemanticKernelComponent : BindableComponent
 
         string prompt = stringBuilder.ToString();
 
-        string? previousJSonSchema = JsonSchema;
+        string? previousJSonSchema = JsonSchemaString;
+
+        if (string.IsNullOrWhiteSpace(previousJSonSchema))
+        {
+            previousJSonSchema = null;
+        }
+
         string? previousSystemPrompt = SystemPrompt;
 
-        JsonSchema = jsonSchema;
+        JsonSchemaString = jsonSchema;
         SystemPrompt = systemPrompt;
 
         try
@@ -469,7 +487,7 @@ public partial class SemanticKernelComponent : BindableComponent
         }
         finally
         {
-            JsonSchema = previousJSonSchema;
+            JsonSchemaString = previousJSonSchema;
             SystemPrompt = previousSystemPrompt;
         }
     }
@@ -489,8 +507,8 @@ public partial class SemanticKernelComponent : BindableComponent
 
     public async Task<T[]> RequestStructuredListResponseAsync<T>(string request, CancellationToken token)
     {
-        string? jsonSchema = PromptFromTypeProcessor.GetJSonSchema<ParentArray<T>>();
-        StructuredReturnDataAttribute promptInfo = PromptFromTypeProcessor.GetTypePromptInfo<T>();
+        string? jsonSchema = PromptFromTypeSupport.GetJSonSchema<ParentArray<T>>();
+        StructuredReturnDataAttribute promptInfo = PromptFromTypeSupport.GetTypePromptInfo<T>();
 
         string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
 
@@ -519,7 +537,7 @@ public partial class SemanticKernelComponent : BindableComponent
         stringBuilder.AppendLine("Please provide the requested information and return Json as an Array according to the provided Json Schema.");
         stringBuilder.AppendLine("Please provide the following information:");
 
-        IEnumerable<string> propertiesRequests = PromptFromTypeProcessor.GetTypePropertyPrompts<T>();
+        IEnumerable<string> propertiesRequests = PromptFromTypeSupport.GetTypePropertyPrompts<T>();
 
         foreach (string propertyRequest in propertiesRequests)
         {
@@ -536,10 +554,10 @@ public partial class SemanticKernelComponent : BindableComponent
 
         string prompt = stringBuilder.ToString();
 
-        string? previousJSonSchema = JsonSchema;
+        string? previousJSonSchema = JsonSchemaString;
         string? previousSystemPrompt = SystemPrompt;
 
-        JsonSchema = jsonSchema;
+        JsonSchemaString = jsonSchema;
         SystemPrompt = systemPrompt;
 
         try
@@ -591,7 +609,7 @@ public partial class SemanticKernelComponent : BindableComponent
         }
         finally
         {
-            JsonSchema = previousJSonSchema;
+            JsonSchemaString = previousJSonSchema;
             SystemPrompt = previousSystemPrompt;
         }
     }
@@ -654,6 +672,20 @@ public partial class SemanticKernelComponent : BindableComponent
     protected virtual void OnReceivedNextParagraph(AsyncReceivedNextParagraphEventArgs receivedNextParagraphEventArgs)
         => AsyncReceivedNextParagraph?.Invoke(this, receivedNextParagraphEventArgs);
 
+    protected virtual void OnCodeBlockInfoProvided(AsyncCodeBlockInfoProvidedEventArgs codeBlockInfoProvidedEventArgs)
+        => AsyncCodeBlockInfoProvided?.Invoke(this, codeBlockInfoProvidedEventArgs);
+
+    /// <summary>
+    ///  Adds a chat item to the chat history.
+    /// </summary>
+    /// <param name="isResponse">Indicates whether the message is a response from the assistant.</param>
+    /// <param name="message">The message to add to the chat history.</param>
+    /// <remarks>
+    ///  <para>
+    ///   This method adds a message to the chat history, distinguishing between user messages 
+    ///   and assistant responses.
+    ///  </para>
+    /// </remarks>
     public void AddChatItem(bool isResponse, string message)
     {
         _chatHistory ??= [];
@@ -663,40 +695,175 @@ public partial class SemanticKernelComponent : BindableComponent
             message);
     }
 
+    /// <summary>
+    ///  Gets or sets the format in which human-readable, non-structured text is requested to be returned from the model.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the format for the text returned by the model, such as plain text, HTML, 
+    ///   Markdown, or Microsoft Rich Text.
+    ///  </para>
+    /// </remarks>
     [Bindable(true)]
     [Browsable(true)]
     [Category("Model Parameter")]
-    [Description("Gets or sets the Format in which human readable, non-structured Text is requested to be returned from the Model.")]
-    [DefaultValue(ReturnStringsFormat.PlainText)]
-    public ReturnStringsFormat ReturnStringsFormat { get; set; } = ReturnStringsFormat.PlainText;
+    [Description("Gets or sets the format in which human readable, non-structured Text is requested to be returned from the Model.")]
+    [DefaultValue(ResponseTextFormat.Markdown)]
+    public ResponseTextFormat ResponseTextFormat { get; set; } = ResponseTextFormat.Markdown;
 
     /// <summary>
-    ///  Gets or sets a Func that returns the API key to use for the OpenAI API. 
-    ///  Don't ever store the key in the source code! Rather put it for example in a environment variable, or even better,
-    ///  get it from a secure storage like Azure Key Vault.
+    ///  Gets or sets the function to retrieve the API key for OpenAI.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property holds a delegate function that returns the API key required for accessing OpenAI services.
+    ///  </para>
+    ///  <para>
+    ///   To set, for example, the API key in the Environment Variables on Windows, follow these steps:
+    ///   <list type="number">
+    ///     <item>
+    ///       <description>Open the Start Menu and search for "Environment Variables".</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>Select "Edit the system environment variables".</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>In the System Properties window, click on the "Environment Variables" button.</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>In the Environment Variables window, click "New" under the "User variables" section.</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>Enter the variable name (e.g., "OPENAI_API_KEY") and the API key as the variable value.</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>Click "OK" to save the new environment variable.</description>
+    ///     </item>
+    ///     <item>
+    ///       <description>Log off and log back on to ensure the environment variable is recognized by the system.</description>
+    ///     </item>
+    ///   </list>
+    ///  </para>
+    ///  <para>
+    ///   Here is an example of how to create an ApiKeyGetter Func in C#:
+    ///   <code language="csharp">
+    ///    public Func<string> ApiKeyGetter = () => Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+    ///   </code>
+    ///  </para>
+    ///  <para>
+    ///   Here is an example of how to create an ApiKeyGetter Func in VB:
+    ///   <code language="vb">
+    ///    Public ApiKeyGetter As Func(Of String) = Function() Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    ///   </code>
+    ///  </para>
+    /// </remarks>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [Browsable(false)]
     public Func<string>? ApiKeyGetter { get; set; }
 
+    /// <summary>
+    ///  Gets or sets the console control for logging.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property allows setting a console control to capture and display log output.
+    ///  </para>
+    /// </remarks>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public ConsoleControl? LogConsole { get; set; }
 
     /// <summary>
-    ///  Gets or sets the JSon schema for the return format. In that case, the SystemPrompt will be automatically amended to 
-    ///  instruct the model to return the result in JSon. Make sure, though, your system prompt includes the description of 
-    ///  the return value schema for the LLM model.
+    ///  Gets or sets the JSON schema for the return value.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property defines the JSON schema for the return value. It can be set at design-time 
+    ///   if the schema is known and constant, or dynamically using the PromptFromTypeSupport methods 
+    ///   for flexible scenarios.
+    ///  </para>
+    /// </remarks>
     [Bindable(true)]
     [Browsable(true)]
     [DefaultValue(null)]
     [Category("Model Parameter")]
-    [Description("Gets or sets JSon schema for the return value. The easiest way to create this is, well, with a LLM!")]
-    public string? JsonSchema { get; set; } = null;
+    [Description($"Gets or sets JSon schema for the return value. If you are sure that the schema in your " +
+        $"scenario never changes, you can put it here already at design-time. But " +
+        $"consider using the {nameof(PromptFromTypeSupport)} methods for flexible scenarios.")]
+    public string? JsonSchemaString
+    {
+        get => _jsonSchema is null ? null : $"{_jsonSchema}";
+        set
+        {
+            if (value == $"{_jsonSchema}")
+            {
+                // Nothing has changed - we're good.
+                return;
+            }
 
+            try
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    _jsonSchema = null;
+                    return;
+                }
+
+                _jsonSchema = JsonSerializer.Deserialize<JsonElement?>(value);
+            }
+            catch (Exception ex)
+            {
+                // We need to pack whatever exception we got into a beginner's friendly message:
+                string outerExceptionMessage = "The Json Schema could not be deserialized. Please check the schema for errors.\n" +
+                    "The inner exception message will give you more details.";
+
+                throw new InvalidOperationException(outerExceptionMessage, ex);
+            }
+            finally
+            {
+                OnJsonSchemaStringChanged(EventArgs.Empty);
+                OnJsonSchemaChanged(EventArgs.Empty);
+            }
+        }
+    }
+
+    /// <summary>
+    ///  Gets the JSON schema as a JsonElement.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This property returns the JSON schema as a JsonElement, which can be used for further processing 
+    ///   or validation.
+    ///  </para>
+    /// </remarks>
+    public JsonElement? JsonSchema => _jsonSchema;
+
+    /// <summary>
+    ///  Raises the JsonSchemaStringChanged event.
+    /// </summary>
+    /// <param name="e">The event data.</param>
+    /// <remarks>
+    ///  <para>
+    ///   This method is called when the JsonSchemaString property changes, raising the JsonSchemaStringChanged event.
+    ///  </para>
+    /// </remarks>
+    protected virtual void OnJsonSchemaStringChanged(EventArgs e)
+        => JsonSchemaStringChanged?.Invoke(this, e);
+
+    /// <summary>
+    ///  Raises the JsonSchemaChanged event.
+    /// </summary>
+    /// <param name="e">The event data.</param>
+    /// <remarks>
+    ///  <para>
+    ///   This method is called when the JsonSchema property changes, raising the JsonSchemaChanged event.
+    ///  </para>
+    /// </remarks>
+    protected virtual void OnJsonSchemaChanged(EventArgs e)
+        => JsonSchemaChanged?.Invoke(this, e);
     /// <summary>
     ///  Gets or sets the JSon schema name for the return format.
     /// </summary>
+
     [Bindable(true)]
     [Browsable(true)]
     [DefaultValue(null)]
@@ -774,7 +941,7 @@ public partial class SemanticKernelComponent : BindableComponent
     [Category("Model Parameter")]
     [DefaultValue(DefaultModelName)]
     [Description("The model name to use for chat completion - for example 'chat-gpt4o'.")]
-    public string ModelName { get; set; } = DefaultModelName;
+    public string ModelId { get; set; } = DefaultModelName;
 
     /// <summary>
     ///  Gets or sets the frequency penalty to apply during chat completion.

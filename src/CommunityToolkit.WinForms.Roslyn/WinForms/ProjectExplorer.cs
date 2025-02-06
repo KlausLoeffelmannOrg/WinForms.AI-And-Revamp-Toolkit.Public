@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis.MSBuild;
 using System.ComponentModel;
 
-namespace CommunityToolkit.WinForms.Roslyn.Explorer;
+namespace CommunityToolkit.WinForms.Roslyn.WinForms;
 
 public class ProjectExplorer : TreeView
 {

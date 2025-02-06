@@ -1,4 +1,5 @@
-﻿namespace CommunityToolkit.WinForms.FluentUI;
+﻿
+namespace CommunityToolkit.WinForms.FluentUI;
 
 public partial class FluentDecoratorPanel
 {

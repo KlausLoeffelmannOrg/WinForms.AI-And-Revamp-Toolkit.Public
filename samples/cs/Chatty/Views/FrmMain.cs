@@ -2,6 +2,8 @@ using Chatty.Agents.ModelExplorer;
 using Chatty.Agents.Personalities;
 using Chatty.ViewModels;
 using Chatty.Views;
+using CommunityToolkit.WinForms.AI;
+using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Controls.Blazor;
 using CommunityToolkit.WinForms.Extensions;
@@ -17,7 +19,7 @@ public partial class FrmMain : Form
     private readonly IUserSettingsService _settingsService;
 
     private OptionsViewModel _options = null!;
-    private PersonalityViewModel _personalities = null!;
+    private PersonalityManager _personalities = null!;
     private IEnumerable<string>? _openAIModels;
     private TreeNode? _currentNode;
     private readonly CancellationTokenSource _shutDownCancellation = new();
@@ -44,7 +46,7 @@ public partial class FrmMain : Form
 
         _chatView = new();
         _chatView.AsyncNotifyRefreshedMetaData += ChatView_AsyncNotifyRefreshedMetaData;
-        _chatView.AsyncListingFileProvided += ChatView_AsyncListingFileProvided;
+        _chatView.AsyncCodeBlockInfoProvided += ChatView_AsyncCodeBlockInfoProvided;
         _chatView.AsyncRequestFileExtractingSettings += ChatView_AsyncRequestFileExtractingSettings;
         _chatView.AsyncNotifySaveChat += ChatView_AsyncNotifySaveChatAsync;
         _chatView.RequestChatViewOptions += ChatView_RequestChatViewOptions;
@@ -59,7 +61,7 @@ public partial class FrmMain : Form
         _tscPersonalities.SelectedIndexChanged += (s, e) =>
         {
             // Lookup the selected personality:
-            PersonalityItemViewModel selectedPersonality = _tscPersonalities.SelectedItem as PersonalityItemViewModel
+            Personality selectedPersonality = _tscPersonalities.SelectedItem as Personality
                 ?? throw new NullReferenceException("Personality disorder exception!");
 
             _chatView.SystemPrompt = selectedPersonality.SystemPrompt;
@@ -102,7 +104,7 @@ public partial class FrmMain : Form
         }
     }
 
-    private async Task ChatView_AsyncListingFileProvided(object sender, DataProcessing.AsyncListingFileProvidedEventArgs e)
+    private async Task ChatView_AsyncCodeBlockInfoProvided(object sender, AsyncCodeBlockInfoProvidedEventArgs e)
     {
         string additionalResourceText = """
             By default, no prompt asked for an extended format of the listing headers in Mark Down.
@@ -118,7 +120,7 @@ public partial class FrmMain : Form
         // If we don't have a filename, it's likely the user picked a profile, which returned
         // a different format. In that case, the prompt is missing the ask to include
         // meta-information in the response like {{filename:myfilename.cs}} or {{title:My Title}}.
-        if (string.IsNullOrEmpty(e.ListingFile.FileName))
+        if (string.IsNullOrEmpty(e.CodeBlock.Filename))
         {
             // We now report that as a warning to the user:
             ReportToStatusBarInfo(
@@ -134,8 +136,7 @@ public partial class FrmMain : Form
         {
             RoslynSourceView sourceViewer = null!;
 
-            var lastListingFilename = e.ListingFile.FileName;
-            var lastListingTitle = e.ListingFile.ListingTitle;
+            CodeBlockInfo codeBlockInfo = e.CodeBlock;
 
             await InvokeAsync(() =>
             {
@@ -143,15 +144,12 @@ public partial class FrmMain : Form
                 sourceViewer = new();
 
                 _mainTabControl.AddTab(
-                    tabPageTitle: lastListingFilename ?? throw new NullReferenceException(nameof(lastListingFilename)),
+                    tabPageTitle: codeBlockInfo.Filename,
                     tabContent: sourceViewer);
-
-                e.ListingFile.FileName = lastListingFilename;
-                e.ListingFile.ListingTitle = lastListingTitle;
             });
 
-            await sourceViewer.SetListingFileAsync(
-                listingFile: e.ListingFile);
+            await sourceViewer.SetCodeBlockInfoAsync(
+                codeBlockInfo);
         }
         catch (Exception)
         {
@@ -205,7 +203,7 @@ public partial class FrmMain : Form
 
         Bounds = bounds;
 
-        _personalities = PersonalityViewModel
+        _personalities = PersonalityManager
             .GetPersonalitiesOrDefault(_options.BasePath);
 
         RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
@@ -267,7 +265,7 @@ public partial class FrmMain : Form
     private void RebuildPersonalitiesDropDown(Guid lastUsedIdPersonality)
     {
         // Let's remember the currently selected ID:
-        Guid selectedId = _tscPersonalities.SelectedItem is PersonalityItemViewModel selectedPersonality
+        Guid selectedId = _tscPersonalities.SelectedItem is Personality selectedPersonality
             ? selectedPersonality.Id
             : lastUsedIdPersonality;
 
@@ -285,7 +283,7 @@ public partial class FrmMain : Form
         {
             // And select the one we had before:
             _tscPersonalities.SelectedItem = _tscPersonalities.Items
-                .OfType<PersonalityItemViewModel>()
+                .OfType<Personality>()
                 .FirstOrDefault(item => item.Id == selectedId);
         }
         catch (Exception)
@@ -306,7 +304,7 @@ public partial class FrmMain : Form
 
     private void TscPersonalities_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (_tscPersonalities.SelectedItem is not PersonalityItemViewModel selectedPersonality)
+        if (_tscPersonalities.SelectedItem is not Personality selectedPersonality)
         {
             return;
         }
@@ -327,15 +325,35 @@ public partial class FrmMain : Form
         UpdateStatusBar(conversation);
     }
 
-    private void PersonalitiesMenuItem_Click(object sender, EventArgs e)
+    private async void PersonalitiesMenuItem_Click(object sender, EventArgs e)
     {
-        // Let's open the personality editor:
-        FrmManagePersonalities editor = new(_personalities);
+        // We toggle the menu item:
+        var mItem = (ToolStripMenuItem)sender!;
 
-        if (editor.ShowDialog(this) == DialogResult.OK)
+        if (mItem.Checked) 
         {
-            _personalities = editor.Personalities;
-            RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
+            return;
         }
+
+        mItem.Checked = !mItem.Checked;
+
+        // Let's open the personality editor:
+        FrmManagePersonalities personalitiesEditor = new(_personalities);
+        personalitiesEditor.PersonalitiesChanged += PersonalitiesChanged;
+
+#pragma warning disable WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        await personalitiesEditor.ShowAsync();
+#pragma warning restore WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    
+        mItem.Checked = !mItem.Checked;
+    }
+
+    private void PersonalitiesChanged(object? sender, EventArgs e)
+    {
+        // We're saving the changes:
+        _personalities.SavePersonalities(_options.BasePath);
+
+        // Rebuild the ComboBox:
+        RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
     }
 }

@@ -1,12 +1,13 @@
 ﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
-public static partial class SegoeSymbols
+public static partial class FluentSymbols
 {
     /// <summary>
     /// Enum representing Segoe UI Symbol icons typically used for buttons,
     /// such as Send, Accept, Cancel, etc.
     /// </summary>
-    public enum ButtonSymbols
+    [SourceFontName("Segoe Fluent Icons")]
+    public enum CommonToolStripSymbols
     {
         /// <summary>
         /// Send
@@ -33,10 +34,16 @@ public static partial class SegoeSymbols
         Cancel = 0xE711,
 
         /// <summary>
-        /// Add
+        /// AddBold
+        /// Hex: F8AA, Decimal: 63658
+        /// </summary>
+        AddBold = 0xF8AA,
+
+        /// <summary>
+        /// New
         /// Hex: E710, Decimal: 59152
         /// </summary>
-        Add = 0xE710,
+        New = AddBold,
 
         /// <summary>
         /// Edit
@@ -45,28 +52,22 @@ public static partial class SegoeSymbols
         Edit = 0xE70F,
 
         /// <summary>
-        /// Delete
-        /// Hex: E74D, Decimal: 59213
+        /// Open (OpenFile)
+        /// Hex: E8E5, Decimal: 59621
         /// </summary>
-        Delete = 0xE74D,
+        Open = OpenFile,
 
         /// <summary>
-        /// Refresh
-        /// Hex: E72C, Decimal: 59180
+        /// OpenFile
+        /// Hex: E8E5, Decimal: 59621
         /// </summary>
-        Refresh = 0xE72C,
+        OpenFile = 0xE8E5,
 
         /// <summary>
-        /// Share
-        /// Hex: E72D, Decimal: 59181
+        /// OpenLocal
+        /// Hex: E8DA, Decimal: 59610
         /// </summary>
-        Share = 0xE72D,
-
-        /// <summary>
-        /// More
-        /// Hex: E712, Decimal: 59154
-        /// </summary>
-        More = 0xE712,
+        OpenLocal = 0xE8DA,
 
         /// <summary>
         /// Save
@@ -75,9 +76,27 @@ public static partial class SegoeSymbols
         Save = 0xE74E,
 
         /// <summary>
-        /// Print
-        /// Hex: E749, Decimal: 59209
+        /// Delete
+        /// Hex: E74D, Decimal: 59213
         /// </summary>
-        Print = 0xE749,
+        Delete = 0xE74D,
+
+        /// <summary>
+        /// Cut
+        /// Hex: E8C6, Decimal: 59590
+        /// </summary>
+        Cut = 0xE8C6,
+
+        /// <summary>
+        /// Copy
+        /// Hex: E8C8, Decimal: 59592
+        /// </summary>
+        Copy = 0xE8C8,
+
+        /// <summary>
+        /// Paste
+        /// Hex: E77F, Decimal: 59263
+        /// </summary>
+        Paste = 0xE77F,
     }
 }

@@ -1,29 +1,50 @@
 ﻿using Chatty.ViewModels;
+using CommunityToolkit.DesktopGeneric.Mvvm;
 using CommunityToolkit.WinForms.ComponentModel;
 using CommunityToolkit.WinForms.Extensions;
 using CommunityToolkit.WinForms.Extensions.FormAndControlExtensions;
+using CommunityToolkit.WinForms.FluentUI.Controls;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace Chatty.Agents.Personalities;
 
-internal partial class FrmManagePersonalities: Form
+// TODO: Clean-up hacky and embarrassing Form control.
+internal partial class FrmManagePersonalities : Form
 {
+    public event EventHandler? PersonalitiesChanged;
+
     private const string Key_Personalities_Bounds = nameof(Key_Personalities_Bounds);
 
-    private readonly PersonalityViewModel _personalityViewModel = null!;
+    private readonly PersonalityManager _personalityManager = null!;
     private readonly IUserSettingsService _settingsService = null!;
+
+    public PersonalityManager? PersonalitiesManager => _personalityManager;
 
     public FrmManagePersonalities()
     {
         InitializeComponent();
         _settingsService = WinFormsUserSettingsService.GetOrThrow();
+
+        _tsbNewPersonality.Image = _mainToolStrip.GetSymbolImage(FluentSymbols.CommonToolStripSymbols.New);
+        _tsbEditPersonality.Image = _mainToolStrip.GetSymbolImage(FluentSymbols.CommonToolStripSymbols.Edit);
+        _tsbDeletePersonality.Image = _mainToolStrip.GetSymbolImage(FluentSymbols.CommonToolStripSymbols.Delete);
+        _tsbCompactPrompt.Image = _mainToolStrip.GetSymbolImage(FluentSymbols.AllSymbols.Crop);
     }
 
-    public FrmManagePersonalities(PersonalityViewModel personalities) : this()
+    public FrmManagePersonalities(PersonalityManager personalityManager) : this()
     {
-        _personalityViewModel = personalities;
+        _personalityManager = personalityManager;
+
+        _personalityManager.Personalities.CollectionChanged
+            += Personalities_Changed;
+
         InitializeDataGridView();
         PopulateDataGridView();
     }
+
+    private void Personalities_Changed(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        => PersonalitiesChanged?.Invoke(this, EventArgs.Empty);
 
     protected override void OnLoad(EventArgs e)
     {
@@ -42,11 +63,12 @@ internal partial class FrmManagePersonalities: Form
     {
         base.OnFormClosing(e);
 
+        _personalityManager.Personalities.CollectionChanged
+            -= Personalities_Changed;
+
         _settingsService.SetInstance(Key_Personalities_Bounds, Bounds);
         _settingsService.Save();
     }
-
-    public PersonalityViewModel Personalities => _personalityViewModel;
 
     private void InitializeDataGridView()
     {
@@ -70,8 +92,6 @@ internal partial class FrmManagePersonalities: Form
         _dgvPersonalities.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _dgvPersonalities.ReadOnly = true;
         _dgvPersonalities.CellDoubleClick += DataGridView_CellDoubleClick;
-        _btnOK.Click += BtnOK_Click;
-        _btnCancel.Click += BtnCancel_Click;
 
         // Set the column header width weight to 30%/70%:
         _dgvPersonalities.Columns[0].FillWeight = 30;
@@ -92,96 +112,94 @@ internal partial class FrmManagePersonalities: Form
 
     private void PopulateDataGridView()
     {
-        foreach (var personality in _personalityViewModel.Personalities)
+        foreach (var personality in _personalityManager.Personalities)
         {
             _dgvPersonalities.Rows.Add(personality.Name, personality.SystemPrompt, personality.DateCreated, personality.DateLastEdited);
         }
     }
 
-    private void DataGridView_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+    private async void DataGridView_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
     {
-        if (e.RowIndex >= 0)
+        if (GetCurrentPersonality() is Personality personality)
         {
-            _dgvPersonalities.Enabled = false;
-            _tlpEditPersonality.Enabled = true;
-            var selectedPersonality = _personalityViewModel.Personalities[e.RowIndex];
-            _txtPersonalityName.Text = selectedPersonality.Name; // Updated reference
-            _txtPersonalityDescription.Text = selectedPersonality.SystemPrompt; // Updated reference
-            ApplyPersonalityFileExtractionSetting(selectedPersonality.FileExtractionSettings); // Apply settings to form controls
+            Personality? editedPersonality = await EditPersonalityAsync(personality);
+
+            if (editedPersonality is not null)
+            {
+                _personalityManager.Personalities[_dgvPersonalities.CurrentRow!.Index] = editedPersonality;
+
+                // Update the data in the row:
+                _dgvPersonalities.Rows[_dgvPersonalities.CurrentRow.Index].SetValues(
+                    editedPersonality.Name,
+                    editedPersonality.SystemPrompt,
+                    editedPersonality.DateCreated,
+                    editedPersonality.DateLastEdited);
+            }
         }
     }
 
-    private void BtnOK_Click(object? sender, EventArgs e)
+    private async void TsbNewPersonality_Click(object? sender, EventArgs e)
     {
-        var selectedPersonality = _personalityViewModel.SelectedPersonality;
-        if (selectedPersonality != null)
+        Personality? newPersonality = await AddNewPersonalityAsync();
+
+        if (newPersonality is not null)
         {
-            selectedPersonality.Name = _txtPersonalityName.Text; // Updated reference
-            selectedPersonality.SystemPrompt = _txtPersonalityDescription.Text; // Updated reference
-            selectedPersonality.FileExtractionSettings = GetPersonalityFileExtractionSetting(); // Read settings from form controls
-            _personalityViewModel.IsDirty = true;
+            _personalityManager.Personalities.Add(newPersonality);
+        }
+    }
+
+    private async void TsbEditPersonality_Click(object? sender, EventArgs e)
+    {
+        if (GetCurrentPersonality() is Personality personality)
+        {
+            var editedPersonality = await EditPersonalityAsync(personality);
+            if (editedPersonality is not null)
+            {
+                _personalityManager.Personalities[_dgvPersonalities.CurrentRow!.Index] = editedPersonality;
+            }
+        }
+    }
+
+    public async Task<Personality?> AddNewPersonalityAsync()
+    {
+        Personality personality = new();
+        FrmAddEditPersonality addEditForm = new();
+
+        IModalDialogResult<Personality> result 
+            = await addEditForm.ShowDialogAsync(personality);
+
+        if (result.DialogCloseReason == DialogCloseReason.OK)
+        {
+            _personalityManager.Personalities.Add(result.ReturnValue!);
+            return result.ReturnValue;
         }
 
-        _dgvPersonalities.Enabled = true;
-        _tlpEditPersonality.Enabled = false;
+        return null;
     }
 
-    private void BtnCancel_Click(object? sender, EventArgs e)
+    public async Task<Personality?> EditPersonalityAsync(Personality personality)
     {
-        _dgvPersonalities.Enabled = true;
-        _tlpEditPersonality.Enabled = false;
+        Personality editedPersonality = new(personality);
+        FrmAddEditPersonality addEditForm = new();
+
+        IModalDialogResult<Personality> result 
+            = await addEditForm.ShowDialogAsync(editedPersonality);
+
+        if (result.DialogCloseReason == DialogCloseReason.First)
+        {
+            return result.ReturnValue;
+        }
+
+        return null;
     }
 
-    private void ApplyPersonalityFileExtractionSetting(PersonalityFileExtractionSetting settings)
+    public Personality? GetCurrentPersonality()
     {
-        _optExtractCodeAutomatically.Checked = settings.HasFlag(PersonalityFileExtractionSetting.ExtractCodeBlocksAutomatically);
-        _chkSaveExtractedFilesAutomatically.Checked = settings.HasFlag(PersonalityFileExtractionSetting.SaveExtractedFilesAutomatically);
-        _chkStoreInDedicatedFolders.Checked = settings.HasFlag(PersonalityFileExtractionSetting.StoreInDedicatedFolders);
-        _optSelectFolderAtRuntime.Checked = settings.HasFlag(PersonalityFileExtractionSetting.SelectFolderAtRuntime);
-        _optDontDoFileExtractions.Checked = settings == PersonalityFileExtractionSetting.None;
+        if (_dgvPersonalities.CurrentRow != null)
+        {
+            return _personalityManager.Personalities[_dgvPersonalities.CurrentRow.Index];
+        }
+
+        return null;
     }
-
-    //private PersonalityFileExtractionSetting GetPersonalityFileExtractionSetting()
-    //{
-    //    PersonalityFileExtractionSetting settings = PersonalityFileExtractionSetting.None;
-
-    //    if (_optExtractCodeAutomatically.Checked)
-    //    {
-    //        settings |= PersonalityFileExtractionSetting.ExtractCodeBlocksAutomatically;
-    //    }
-    //    if (_chkSaveExtractedFilesAutomatically.Checked)
-    //    {
-    //        settings |= PersonalityFileExtractionSetting.SaveExtractedFilesAutomatically;
-    //    }
-    //    if (_chkStoreInDedicatedFolders.Checked)
-    //    {
-    //        settings |= PersonalityFileExtractionSetting.StoreInDedicatedFolders;
-    //    }
-    //    if (_optSelectFolderAtRuntime.Checked)
-    //    {
-    //        settings |= PersonalityFileExtractionSetting.SelectFolderAtRuntime;
-    //    }
-
-    //    return settings;
-    //}
-
-    // I asked o3-mini-high to review the above code, which was generated by Copilot-Edits with 4o.
-    // This is the feedback I received.
-    /// <summary>
-    /// Gets the personality file extraction settings based on the current UI selections.
-    /// </summary>
-    private PersonalityFileExtractionSetting GetPersonalityFileExtractionSetting() =>
-        (_optExtractCodeAutomatically.Checked
-            ? PersonalityFileExtractionSetting.ExtractCodeBlocksAutomatically
-            : PersonalityFileExtractionSetting.None)
-        | (_chkSaveExtractedFilesAutomatically.Checked
-            ? PersonalityFileExtractionSetting.SaveExtractedFilesAutomatically
-            : PersonalityFileExtractionSetting.None)
-        | (_chkStoreInDedicatedFolders.Checked
-            ? PersonalityFileExtractionSetting.StoreInDedicatedFolders
-            : PersonalityFileExtractionSetting.None)
-        | (_optSelectFolderAtRuntime.Checked
-            ? PersonalityFileExtractionSetting.SelectFolderAtRuntime
-            : PersonalityFileExtractionSetting.None);
-
 }

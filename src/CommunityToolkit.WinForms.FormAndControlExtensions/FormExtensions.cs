@@ -2,7 +2,6 @@
 using CommunityToolkit.WinForms.ComponentModel;
 using System.ComponentModel;
 using System.Globalization;
-using DialogResult = CommunityToolkit.DesktopGeneric.Mvvm.DialogResult;
 using WinFormsDialogResult = System.Windows.Forms.DialogResult;
 
 namespace CommunityToolkit.WinForms.Extensions;
@@ -58,31 +57,52 @@ public static class FormExtensions
     ///  the updated data context.
     /// </returns>
     public async static Task<IModalDialogResult<T>> ShowDialogAsync<T>(this Form form, T? dialogDataContext)
-        where T : class, INotifyPropertyChanged
+        where T : class
     {
         if (dialogDataContext is not null)
         {
             form.DataContext = dialogDataContext;
         }
 
+        form.FormClosing += Form_FormClosing;
+
 #pragma warning disable WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        var winFormsDialogResult = await form.ShowDialogAsync();
+        var dialogResult = await form.ShowDialogAsync();
 #pragma warning restore WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
         dialogDataContext = (T?)form.DataContext;
 
-        DialogResult dialogResult = winFormsDialogResult switch
+        DialogCloseReason dialogCloseReason = dialogResult switch
         {
-            WinFormsDialogResult.OK => DialogResult.First,
-            WinFormsDialogResult.Cancel => DialogResult.Second,
-            WinFormsDialogResult.Yes => DialogResult.First,
-            WinFormsDialogResult.No => DialogResult.Second,
-            WinFormsDialogResult.Abort => DialogResult.First,
-            WinFormsDialogResult.Retry => DialogResult.Second,
-            WinFormsDialogResult.Ignore => DialogResult.Third,
-            _ => DialogResult.None
+            WinFormsDialogResult.OK => DialogCloseReason.OK,
+            WinFormsDialogResult.Cancel => DialogCloseReason.Cancel,
+            WinFormsDialogResult.Yes => DialogCloseReason.Yes,
+            WinFormsDialogResult.No => DialogCloseReason.No,
+            WinFormsDialogResult.Abort => DialogCloseReason.Abort,
+            WinFormsDialogResult.Retry => DialogCloseReason.Retry,
+            WinFormsDialogResult.Ignore => DialogCloseReason.Ignore,
+            _ => DialogCloseReason.None
         };
 
-        return new ModalDialogResult<T>(dialogDataContext, dialogResult);
+        return new ModalDialogResult<T>(dialogDataContext, dialogCloseReason);
+
+        static void Form_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            Form form = (Form)sender!;
+
+            if (form.DialogResult != WinFormsDialogResult.OK)
+            {
+                return;
+            }
+
+            bool validationResult = form.ValidateChildren();
+            e.Cancel = !validationResult;
+
+            if (!e.Cancel)
+            {
+                // unwire event handler
+                form.FormClosing -= Form_FormClosing;
+            }
+        }
     }
 
     /// <summary>

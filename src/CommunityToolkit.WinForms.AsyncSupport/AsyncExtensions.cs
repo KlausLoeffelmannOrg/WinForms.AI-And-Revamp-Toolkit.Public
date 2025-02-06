@@ -1,4 +1,5 @@
 ﻿using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
 
 namespace CommunityToolkit.WinForms.AsyncSupport;
 
@@ -36,7 +37,9 @@ public static class AsyncExtensions
 
         var tcs = new TaskCompletionSource();
 
-        context.Post(async _ =>
+        Task.Run(() => 
+        {
+            context.Post(async _ =>
             {
                 try
                 {
@@ -49,8 +52,9 @@ public static class AsyncExtensions
                 }
             },
             state: null);
+        });
 
-        while (!tcs.Task.Wait(50))
+        while (!tcs.Task.Wait(25))
         {
             Application.DoEvents();
         }

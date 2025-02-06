@@ -140,7 +140,7 @@ public partial class FrmMain
         }
     }
 
-    private PersonalityItemViewModel GetPersonality(Guid idPersonality)
+    private Personality GetPersonality(Guid idPersonality)
     {
         if (idPersonality == Guid.Empty)
         {
