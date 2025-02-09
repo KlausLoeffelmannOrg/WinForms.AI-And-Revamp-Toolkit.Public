@@ -12,7 +12,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
+    <Compile Remove="TestData\Roslyn\CSharp\Class_with_every_member_type_relevant.cs" />
+    <Compile Remove="TestData\Roslyn\CSharp\Modernization\ToolStripDesigner.cs" />
+    <Compile Remove="TestData\Roslyn\CSharp\Modernization\ToolStripDesignerUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" />
+	  <PackageReference Include="coverlet.collector" Version="6.0.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -31,6 +38,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.AI\CommunityToolkit.WinForms.AI.csproj" />
+    <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.Roslyn\CommunityToolkit.WinForms.Roslyn.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,8 +46,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="TestData\Roslyn\" />
-    <Folder Include="UnitTests\Roslyn\" />
+    <None Include="TestData\Roslyn\CSharp\Class_with_every_member_type_relevant.cs" />
+    <None Include="TestData\Roslyn\CSharp\Modernization\ToolStripDesigner.cs" />
+    <None Include="TestData\Roslyn\CSharp\Modernization\ToolStripDesignerUtils.cs" />
   </ItemGroup>
 
 </Project>

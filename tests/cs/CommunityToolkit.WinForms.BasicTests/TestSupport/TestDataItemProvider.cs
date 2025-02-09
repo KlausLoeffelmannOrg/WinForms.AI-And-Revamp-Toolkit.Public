@@ -1,6 +1,7 @@
-using CommunityToolkit.WinForms.BasicTests.TestSupport;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+
+namespace CommunityToolkit.WinForms.BasicTests.TestSupport;
 
 /// <summary>
 ///  Provides data items for testing purposes.
@@ -41,7 +42,7 @@ public class TestDataItemProvider
         ExpectedContent = File.Exists(ExpectedFilePath) ? File.ReadAllText(ExpectedFilePath) : string.Empty;
 
         LiteralContent = File.ReadAllText(filename);
-        Literals = LiteralContent.Split(new[] { '\n' }, StringSplitOptions.TrimEntries);
+        Literals = LiteralContent.Split(['\n'], StringSplitOptions.TrimEntries);
     }
 
     public IAsyncEnumerable<StreamingChatMessageContent> GetStreamingChatMessageContents(AuthorRole role)

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace CommunityToolkit.WinForms.BasicTests.TestSupport;
 
@@ -24,6 +23,16 @@ internal static class TestDataDiscovery
         ArgumentException.ThrowIfNullOrEmpty(baseFilePath);
         return GetTestDataFiles("*.csLiterals", baseFilePath, "Roslyn");
     }
+
+    public static TheoryData<string> GetCsRoslynTestDataFiles(
+        IEnumerable<string> testDataFiles,
+        string baseFilePath = TestDataDirectoryName,
+        string? subFolder = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(baseFilePath);
+        return GetTestDataFiles("*.csLiterals", baseFilePath, "Roslyn");
+    }
+
 
 
     /// <summary>
@@ -59,5 +68,36 @@ internal static class TestDataDiscovery
         }
 
         return data;
+    }
+
+    public static string GetTestDataDirectoryPath(
+        [CallerFilePath] string? baseFilePath = default, 
+        string? subDirectoryPath = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(baseFilePath);
+
+        var currentDirectory = Path.GetDirectoryName(baseFilePath);
+
+        while (currentDirectory != null)
+        {
+            if (Path.GetFileName(currentDirectory) == UnitTestsDirectoryName)
+            {
+                string targetDirectory = Path.Combine(
+                    Path.GetDirectoryName(currentDirectory)!,
+                    Path.Combine(TestDataDirectoryName, subDirectoryPath ?? string.Empty));
+
+                if (!Directory.Exists(targetDirectory))
+                {
+                    // We fail fast.
+                    throw new InvalidOperationException($"Could not find the test data directory at '{targetDirectory}'.");
+                }
+
+                return targetDirectory;
+            }
+
+            currentDirectory = Path.GetDirectoryName(currentDirectory);
+        }
+
+        throw new InvalidOperationException("Could not find the test data directory.");
     }
 }
