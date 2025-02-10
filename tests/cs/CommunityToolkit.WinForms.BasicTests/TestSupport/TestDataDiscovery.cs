@@ -100,4 +100,26 @@ internal static class TestDataDiscovery
 
         throw new InvalidOperationException("Could not find the test data directory.");
     }
+
+    internal static TheoryData<string> GetTheoryDataFromFiles(List<string> files, string targetDirectory)
+    {
+        var data = new TheoryData<string>();
+
+        // Iterate through all the files in the directory and make sure
+        // that they exist. If they do, add them to the test data.
+        // If they don't, we fail fast.
+        foreach (string file in files)
+        {
+            string filePath = Path.Combine(targetDirectory, file);
+
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException($"We have been trying to find the file '{filePath}', but it does not exist.");
+            }
+
+            data.Add(filePath);
+        }
+
+        return data;
+    }
 }

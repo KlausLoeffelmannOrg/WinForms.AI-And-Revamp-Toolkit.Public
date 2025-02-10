@@ -120,13 +120,6 @@
   <metadata name="_menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <data name="_tsmLastenHeftPflichtenHeftReengineering.ToolTipText" xml:space="preserve">
-    <value>Reengineer and maintain your project’s requirement documents
-
-Select this option to review or update the project’s initial (Lastenheft)
- and detailed (Pflichtenheft) specifications, ensuring your requirements
- and technical scope remain aligned throughout development.</value>
-  </data>
   <metadata name="_statusStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>214, 17</value>
   </metadata>

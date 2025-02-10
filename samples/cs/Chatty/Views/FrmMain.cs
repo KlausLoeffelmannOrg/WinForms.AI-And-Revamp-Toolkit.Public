@@ -1,5 +1,3 @@
-using Chatty.Agents.ModelExplorer;
-using Chatty.Agents.Personalities;
 using Chatty.ViewModels;
 using Chatty.Views;
 using CommunityToolkit.WinForms.AI;
@@ -323,29 +321,6 @@ public partial class FrmMain : Form
 
         // We're updating the status bar:
         UpdateStatusBar(conversation);
-    }
-
-    private async void PersonalitiesMenuItem_Click(object sender, EventArgs e)
-    {
-        // We toggle the menu item:
-        var mItem = (ToolStripMenuItem)sender!;
-
-        if (mItem.Checked) 
-        {
-            return;
-        }
-
-        mItem.Checked = !mItem.Checked;
-
-        // Let's open the personality editor:
-        FrmManagePersonalities personalitiesEditor = new(_personalities);
-        personalitiesEditor.PersonalitiesChanged += PersonalitiesChanged;
-
-#pragma warning disable WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        await personalitiesEditor.ShowAsync();
-#pragma warning restore WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-    
-        mItem.Checked = !mItem.Checked;
     }
 
     private void PersonalitiesChanged(object? sender, EventArgs e)

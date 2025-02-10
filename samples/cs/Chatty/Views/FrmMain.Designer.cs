@@ -48,19 +48,6 @@ namespace Chatty
             soThatWithAIToolStripMenuItem = new ToolStripMenuItem();
             fineButWhatAboutToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator5 = new ToolStripSeparator();
-            _tsmPersonalityBuilder = new ToolStripMenuItem();
-            toolStripSeparator7 = new ToolStripSeparator();
-            _tsmLastenHeftPflichtenHeftReengineering = new ToolStripMenuItem();
-            toolStripSeparator6 = new ToolStripSeparator();
-            _tsmPromptBuilder = new ToolStripMenuItem();
-            toolStripMenuItem4 = new ToolStripMenuItem();
-            toolStripMenuItem3 = new ToolStripSeparator();
-            _tsmLanguageConverter = new ToolStripMenuItem();
-            _classDocumenter = new ToolStripMenuItem();
-            _vsProjectRampUpper = new ToolStripMenuItem();
-            toolStripMenuItem2 = new ToolStripSeparator();
-            formLocalizerToolStripMenuItem = new ToolStripMenuItem();
-            winFormsBestPracticesQuizzerToolStripMenuItem = new ToolStripMenuItem();
             _tsmTools = new ToolStripMenuItem();
             _tsmOptions = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
@@ -91,16 +78,13 @@ namespace Chatty
             _tscModels = new ToolStripComboBox();
             _splitMain = new SplitContainer();
             _tlpNavigatorLayout = new TableLayoutPanel();
-            fluentDecoratorPanel1 = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _tlpHeader = new TableLayoutPanel();
+            _lblConversationTitle = new Label();
+            _lblDate = new Label();
             _txtSummary = new TextBox();
-            _treeViewSearchDecorator = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
             tableLayoutPanel1 = new TableLayoutPanel();
             _cmbNavigatorSearch = new ComboBox();
             _trvConversationHistory = new TreeView();
-            _tlpHeader = new TableLayoutPanel();
-            _mainTabControl = new CommunityToolkit.WinForms.FluentUI.FluentTabControl();
-            _lblConversationTitle = new Label();
-            _lblDate = new Label();
             _menuStrip.SuspendLayout();
             _statusStrip.SuspendLayout();
             _toolStrip.SuspendLayout();
@@ -108,11 +92,8 @@ namespace Chatty
             _splitMain.Panel1.SuspendLayout();
             _splitMain.Panel2.SuspendLayout();
             _splitMain.SuspendLayout();
-            _tlpNavigatorLayout.SuspendLayout();
-            fluentDecoratorPanel1.SuspendLayout();
-            _treeViewSearchDecorator.SuspendLayout();
-            tableLayoutPanel1.SuspendLayout();
             _tlpHeader.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // _menuStrip
@@ -137,19 +118,19 @@ namespace Chatty
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(252, 38);
+            toolStripMenuItem1.Size = new Size(270, 38);
             toolStripMenuItem1.Text = "Start new chat";
             toolStripMenuItem1.Click += BtnStartNewChat_Click;
             // 
             // toolStripSeparator3
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(249, 6);
+            toolStripSeparator3.Size = new Size(267, 6);
             // 
             // _tsmQuit
             // 
             _tsmQuit.Name = "_tsmQuit";
-            _tsmQuit.Size = new Size(252, 38);
+            _tsmQuit.Size = new Size(270, 38);
             _tsmQuit.Text = "Quit";
             // 
             // toolStripMenuItem5
@@ -181,7 +162,7 @@ namespace Chatty
             // 
             // _tsmAgents
             // 
-            _tsmAgents.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuItem6, toolStripSeparator5, _tsmPersonalityBuilder, toolStripSeparator7, _tsmLastenHeftPflichtenHeftReengineering, toolStripSeparator6, _tsmPromptBuilder, toolStripMenuItem4, toolStripMenuItem3, _tsmLanguageConverter, _classDocumenter, _vsProjectRampUpper, toolStripMenuItem2, formLocalizerToolStripMenuItem, winFormsBestPracticesQuizzerToolStripMenuItem });
+            _tsmAgents.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuItem6, toolStripSeparator5 });
             _tsmAgents.Name = "_tsmAgents";
             _tsmAgents.Size = new Size(96, 34);
             _tsmAgents.Text = "Agents";
@@ -190,7 +171,7 @@ namespace Chatty
             // 
             toolStripMenuItem6.DropDownItems.AddRange(new ToolStripItem[] { classicApproachToolStripMenuItem, soThatWithAIToolStripMenuItem, fineButWhatAboutToolStripMenuItem });
             toolStripMenuItem6.Name = "toolStripMenuItem6";
-            toolStripMenuItem6.Size = new Size(501, 38);
+            toolStripMenuItem6.Size = new Size(378, 38);
             toolStripMenuItem6.Text = "Classic UIs? Think different!";
             // 
             // classicApproachToolStripMenuItem
@@ -214,83 +195,7 @@ namespace Chatty
             // toolStripSeparator5
             // 
             toolStripSeparator5.Name = "toolStripSeparator5";
-            toolStripSeparator5.Size = new Size(498, 6);
-            // 
-            // _tsmPersonalityBuilder
-            // 
-            _tsmPersonalityBuilder.Name = "_tsmPersonalityBuilder";
-            _tsmPersonalityBuilder.Size = new Size(501, 38);
-            _tsmPersonalityBuilder.Text = "Chat-Personality builder...";
-            _tsmPersonalityBuilder.Click += PersonalitiesMenuItem_Click;
-            // 
-            // toolStripSeparator7
-            // 
-            toolStripSeparator7.Name = "toolStripSeparator7";
-            toolStripSeparator7.Size = new Size(498, 6);
-            // 
-            // _tsmLastenHeftPflichtenHeftReengineering
-            // 
-            _tsmLastenHeftPflichtenHeftReengineering.Name = "_tsmLastenHeftPflichtenHeftReengineering";
-            _tsmLastenHeftPflichtenHeftReengineering.Size = new Size(501, 38);
-            _tsmLastenHeftPflichtenHeftReengineering.Text = "Lastenheft/Pflichtenheft reengineering...";
-            _tsmLastenHeftPflichtenHeftReengineering.ToolTipText = resources.GetString("_tsmLastenHeftPflichtenHeftReengineering.ToolTipText");
-            // 
-            // toolStripSeparator6
-            // 
-            toolStripSeparator6.Name = "toolStripSeparator6";
-            toolStripSeparator6.Size = new Size(498, 6);
-            // 
-            // _tsmPromptBuilder
-            // 
-            _tsmPromptBuilder.Name = "_tsmPromptBuilder";
-            _tsmPromptBuilder.Size = new Size(501, 38);
-            _tsmPromptBuilder.Text = "Prompt builder...";
-            // 
-            // toolStripMenuItem4
-            // 
-            toolStripMenuItem4.Name = "toolStripMenuItem4";
-            toolStripMenuItem4.Size = new Size(501, 38);
-            toolStripMenuItem4.Text = "Idea challenger...";
-            // 
-            // toolStripMenuItem3
-            // 
-            toolStripMenuItem3.Name = "toolStripMenuItem3";
-            toolStripMenuItem3.Size = new Size(498, 6);
-            // 
-            // _tsmLanguageConverter
-            // 
-            _tsmLanguageConverter.Name = "_tsmLanguageConverter";
-            _tsmLanguageConverter.Size = new Size(501, 38);
-            _tsmLanguageConverter.Text = "Language converter...";
-            // 
-            // _classDocumenter
-            // 
-            _classDocumenter.Name = "_classDocumenter";
-            _classDocumenter.Size = new Size(501, 38);
-            _classDocumenter.Text = "Class documenter...";
-            // 
-            // _vsProjectRampUpper
-            // 
-            _vsProjectRampUpper.Name = "_vsProjectRampUpper";
-            _vsProjectRampUpper.Size = new Size(501, 38);
-            _vsProjectRampUpper.Text = "VS Project Ramp-upper...";
-            // 
-            // toolStripMenuItem2
-            // 
-            toolStripMenuItem2.Name = "toolStripMenuItem2";
-            toolStripMenuItem2.Size = new Size(498, 6);
-            // 
-            // formLocalizerToolStripMenuItem
-            // 
-            formLocalizerToolStripMenuItem.Name = "formLocalizerToolStripMenuItem";
-            formLocalizerToolStripMenuItem.Size = new Size(501, 38);
-            formLocalizerToolStripMenuItem.Text = "Form localizer...";
-            // 
-            // winFormsBestPracticesQuizzerToolStripMenuItem
-            // 
-            winFormsBestPracticesQuizzerToolStripMenuItem.Name = "winFormsBestPracticesQuizzerToolStripMenuItem";
-            winFormsBestPracticesQuizzerToolStripMenuItem.Size = new Size(501, 38);
-            winFormsBestPracticesQuizzerToolStripMenuItem.Text = "WinForms best practice quizzer...";
+            toolStripSeparator5.Size = new Size(375, 6);
             // 
             // _tsmTools
             // 
@@ -302,7 +207,7 @@ namespace Chatty
             // _tsmOptions
             // 
             _tsmOptions.Name = "_tsmOptions";
-            _tsmOptions.Size = new Size(207, 38);
+            _tsmOptions.Size = new Size(270, 38);
             _tsmOptions.Text = "Options...";
             _tsmOptions.Click += TsmOptions_Click;
             // 
@@ -523,8 +428,6 @@ namespace Chatty
             // 
             _tlpNavigatorLayout.ColumnCount = 1;
             _tlpNavigatorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            _tlpNavigatorLayout.Controls.Add(fluentDecoratorPanel1, 0, 2);
-            _tlpNavigatorLayout.Controls.Add(_treeViewSearchDecorator, 0, 1);
             _tlpNavigatorLayout.Dock = DockStyle.Fill;
             _tlpNavigatorLayout.Location = new Point(10, 10);
             _tlpNavigatorLayout.Name = "_tlpNavigatorLayout";
@@ -535,86 +438,11 @@ namespace Chatty
             _tlpNavigatorLayout.Size = new Size(445, 829);
             _tlpNavigatorLayout.TabIndex = 1;
             // 
-            // fluentDecoratorPanel1
-            // 
-            fluentDecoratorPanel1.BorderThickness = 1;
-            fluentDecoratorPanel1.Controls.Add(_txtSummary);
-            fluentDecoratorPanel1.Dock = DockStyle.Fill;
-            fluentDecoratorPanel1.Location = new Point(3, 583);
-            fluentDecoratorPanel1.Name = "fluentDecoratorPanel1";
-            fluentDecoratorPanel1.Padding = new Padding(10);
-            fluentDecoratorPanel1.Size = new Size(439, 243);
-            fluentDecoratorPanel1.TabIndex = 3;
-            // 
-            // _txtSummary
-            // 
-            _txtSummary.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            _txtSummary.BorderStyle = BorderStyle.None;
-            _txtSummary.Location = new Point(11, 12);
-            _txtSummary.Margin = new Padding(5);
-            _txtSummary.Multiline = true;
-            _txtSummary.Name = "_txtSummary";
-            _txtSummary.Size = new Size(417, 219);
-            _txtSummary.TabIndex = 2;
-            // 
-            // _treeViewSearchDecorator
-            // 
-            _treeViewSearchDecorator.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            _treeViewSearchDecorator.BorderThickness = 1;
-            _treeViewSearchDecorator.Controls.Add(tableLayoutPanel1);
-            _treeViewSearchDecorator.Location = new Point(3, 3);
-            _treeViewSearchDecorator.Name = "_treeViewSearchDecorator";
-            _treeViewSearchDecorator.Orientation = Orientation.Vertical;
-            _treeViewSearchDecorator.Padding = new Padding(10);
-            _treeViewSearchDecorator.Size = new Size(439, 574);
-            _treeViewSearchDecorator.TabIndex = 4;
-            _treeViewSearchDecorator.VerticalContentAlignment = CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel.VerticalContentAlignments.Fill;
-            // 
-            // tableLayoutPanel1
-            // 
-            tableLayoutPanel1.ColumnCount = 1;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Controls.Add(_cmbNavigatorSearch, 0, 0);
-            tableLayoutPanel1.Controls.Add(_trvConversationHistory, 0, 1);
-            tableLayoutPanel1.Location = new Point(11, 11);
-            tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 2;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle());
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(417, 552);
-            tableLayoutPanel1.TabIndex = 0;
-            // 
-            // _cmbNavigatorSearch
-            // 
-            _cmbNavigatorSearch.Dock = DockStyle.Top;
-            _cmbNavigatorSearch.FormattingEnabled = true;
-            _cmbNavigatorSearch.Location = new Point(5, 5);
-            _cmbNavigatorSearch.Margin = new Padding(5);
-            _cmbNavigatorSearch.Name = "_cmbNavigatorSearch";
-            _cmbNavigatorSearch.Size = new Size(407, 38);
-            _cmbNavigatorSearch.TabIndex = 2;
-            // 
-            // _trvConversationHistory
-            // 
-            _trvConversationHistory.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            _trvConversationHistory.BorderStyle = BorderStyle.None;
-            _trvConversationHistory.FullRowSelect = true;
-            _trvConversationHistory.HotTracking = true;
-            _trvConversationHistory.Location = new Point(5, 53);
-            _trvConversationHistory.Margin = new Padding(5);
-            _trvConversationHistory.Name = "_trvConversationHistory";
-            _trvConversationHistory.ShowNodeToolTips = true;
-            _trvConversationHistory.Size = new Size(407, 494);
-            _trvConversationHistory.TabIndex = 3;
-            _trvConversationHistory.AfterSelect += TrvConversationHistory_AfterSelect;
-            _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
-            // 
             // _tlpHeader
             // 
             _tlpHeader.ColumnCount = 2;
             _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
             _tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
-            _tlpHeader.Controls.Add(_mainTabControl, 0, 1);
             _tlpHeader.Controls.Add(_lblConversationTitle, 0, 0);
             _tlpHeader.Controls.Add(_lblDate, 1, 0);
             _tlpHeader.Dock = DockStyle.Fill;
@@ -625,15 +453,6 @@ namespace Chatty
             _tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             _tlpHeader.Size = new Size(1153, 829);
             _tlpHeader.TabIndex = 0;
-            // 
-            // _mainTabControl
-            // 
-            _mainTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            _tlpHeader.SetColumnSpan(_mainTabControl, 2);
-            _mainTabControl.Location = new Point(3, 48);
-            _mainTabControl.Name = "_mainTabControl";
-            _mainTabControl.Size = new Size(1147, 778);
-            _mainTabControl.TabIndex = 0;
             // 
             // _lblConversationTitle
             // 
@@ -659,6 +478,57 @@ namespace Chatty
             _lblDate.Text = "#dateTime";
             _lblDate.TextAlign = ContentAlignment.MiddleRight;
             // 
+            // _txtSummary
+            // 
+            _txtSummary.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _txtSummary.BorderStyle = BorderStyle.None;
+            _txtSummary.Location = new Point(11, 12);
+            _txtSummary.Margin = new Padding(5);
+            _txtSummary.Multiline = true;
+            _txtSummary.Name = "_txtSummary";
+            _txtSummary.Size = new Size(417, 219);
+            _txtSummary.TabIndex = 2;
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 1;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Controls.Add(_cmbNavigatorSearch, 0, 0);
+            tableLayoutPanel1.Controls.Add(_trvConversationHistory, 0, 1);
+            tableLayoutPanel1.Location = new Point(11, 11);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 2;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle());
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Size = new Size(417, 552);
+            tableLayoutPanel1.TabIndex = 0;
+            // 
+            // _cmbNavigatorSearch
+            // 
+            _cmbNavigatorSearch.Dock = DockStyle.Top;
+            _cmbNavigatorSearch.FormattingEnabled = true;
+            _cmbNavigatorSearch.Location = new Point(5, 5);
+            _cmbNavigatorSearch.Margin = new Padding(5);
+            _cmbNavigatorSearch.Name = "_cmbNavigatorSearch";
+            _cmbNavigatorSearch.Size = new Size(407, 33);
+            _cmbNavigatorSearch.TabIndex = 2;
+            // 
+            // _trvConversationHistory
+            // 
+            _trvConversationHistory.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _trvConversationHistory.BorderStyle = BorderStyle.None;
+            _trvConversationHistory.FullRowSelect = true;
+            _trvConversationHistory.HotTracking = true;
+            _trvConversationHistory.LineColor = Color.Empty;
+            _trvConversationHistory.Location = new Point(5, 48);
+            _trvConversationHistory.Margin = new Padding(5);
+            _trvConversationHistory.Name = "_trvConversationHistory";
+            _trvConversationHistory.ShowNodeToolTips = true;
+            _trvConversationHistory.Size = new Size(407, 499);
+            _trvConversationHistory.TabIndex = 3;
+            _trvConversationHistory.AfterSelect += TrvConversationHistory_AfterSelect;
+            _trvConversationHistory.NodeMouseDoubleClick += ConversationHistory_NodeMouseDoubleClick;
+            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
@@ -683,13 +553,9 @@ namespace Chatty
             _splitMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)_splitMain).EndInit();
             _splitMain.ResumeLayout(false);
-            _tlpNavigatorLayout.ResumeLayout(false);
-            fluentDecoratorPanel1.ResumeLayout(false);
-            fluentDecoratorPanel1.PerformLayout();
-            _treeViewSearchDecorator.ResumeLayout(false);
-            tableLayoutPanel1.ResumeLayout(false);
             _tlpHeader.ResumeLayout(false);
             _tlpHeader.PerformLayout();
+            tableLayoutPanel1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -725,17 +591,7 @@ namespace Chatty
         private ToolStripSeparator toolStripSeparator4;
         private ToolStripLabel _tslModels;
         private ToolStripComboBox _tscModels;
-        private ToolStripMenuItem _tsmPromptBuilder;
-        private ToolStripSeparator toolStripMenuItem3;
-        private ToolStripMenuItem _tsmLanguageConverter;
-        private ToolStripMenuItem _classDocumenter;
-        private ToolStripMenuItem _tsmPersonalityBuilder;
-        private ToolStripMenuItem _vsProjectRampUpper;
-        private ToolStripSeparator toolStripMenuItem2;
-        private ToolStripMenuItem formLocalizerToolStripMenuItem;
         private ToolStripStatusLabel _tslItemDateInfo;
-        private ToolStripMenuItem toolStripMenuItem4;
-        private ToolStripMenuItem winFormsBestPracticesQuizzerToolStripMenuItem;
         private ToolStripStatusLabel _tslKeywordsCaption;
         private ToolStripDropDownButton _tsddKeywords;
         private ToolStripSplitButton _tsbInfo;
@@ -758,11 +614,8 @@ namespace Chatty
         private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel fluentDecoratorPanel1;
         private TextBox _txtSummary;
         private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _treeViewSearchDecorator;
-        private ToolStripMenuItem _tsmLastenHeftPflichtenHeftReengineering;
-        private ToolStripSeparator toolStripSeparator6;
         private TableLayoutPanel tableLayoutPanel1;
         private ComboBox _cmbNavigatorSearch;
         private TreeView _trvConversationHistory;
-        private ToolStripSeparator toolStripSeparator7;
     }
 }

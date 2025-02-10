@@ -6,13 +6,34 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
     /// <summary>
     ///  Extension methods for working with Roslyn Documents.
     /// </summary>
-    public static class DocumentExtensions
+    public static partial class DocumentExtensions
     {
-        // Private helper to extract all class declarations.
-        private static async Task<IEnumerable<ClassDeclarationSyntax>> GetClassesAsync(
+        public static async Task<IEnumerable<ClassDeclarationSyntax>> GetClassesAsync(
             this Document document)
         {
+            // Find the "level" with the first class:
             var root = await document.GetSyntaxRootAsync().ConfigureAwait(false);
+
+            var first = root?.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
+
+            if (first is not null)
+            {
+                // Get the parent and then all classes in that level:
+                var parent = first.Parent
+                    ?? throw new NullReferenceException(nameof(first));
+
+                return parent.ChildNodes().OfType<ClassDeclarationSyntax>();
+            }
+
+            return [];
+        }
+
+        public static async Task<IEnumerable<ClassDeclarationSyntax>> GetClassesAndNestedClassesAsync(
+            this Document document)
+        {
+            var root = await document
+                .GetSyntaxRootAsync()
+                .ConfigureAwait(false);
 
             return root?.DescendantNodes().OfType<ClassDeclarationSyntax>()
                 ?? [];
@@ -22,7 +43,7 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
         ///  Gets the count of class declarations in the document.
         /// </summary>
         public static async Task<int> GetClassCountAsync(this Document document)
-            => (await document.GetClassesAsync().ConfigureAwait(false)).Count();
+            => (await document.GetClassesAndNestedClassesAsync().ConfigureAwait(false)).Count();
 
         /// <summary>
         ///  Gets the first class declaration in the document.
@@ -31,7 +52,7 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
         public static async Task<ClassDeclarationSyntax> GetFirstClassAsync(
             this Document document)
         {
-            var classes = await document.GetClassesAsync().ConfigureAwait(false);
+            var classes = await document.GetClassesAndNestedClassesAsync().ConfigureAwait(false);
 
             return classes.FirstOrDefault()
                 ?? throw new InvalidOperationException(
@@ -43,21 +64,7 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
         /// </summary>
         public static async Task<ClassDeclarationSyntax?> GetFirstClassOrDefaultAsync(
             this Document document)
-            => (await document.GetClassesAsync().ConfigureAwait(false)).FirstOrDefault();
-
-        // Validates that the class is the only top-level class under its parent.
-        private static ClassDeclarationSyntax ValidateSingleClass(
-            ClassDeclarationSyntax classDeclaration)
-        {
-            if (classDeclaration.Parent is not { } parent ||
-                parent.ChildNodes().OfType<ClassDeclarationSyntax>().Count() != 1)
-            {
-                throw new InvalidOperationException(
-                    "The document contains more than one class declaration.");
-            }
-
-            return classDeclaration;
-        }
+            => (await document.GetClassesAndNestedClassesAsync().ConfigureAwait(false)).FirstOrDefault();
 
         /// <summary>
         ///  Gets the single top-level class declaration in the document.
@@ -66,12 +73,12 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
         public static async Task<ClassDeclarationSyntax> GetSingleClassAsync(
             this Document document)
         {
-            var classDeclaration = (await document.GetClassesAsync().ConfigureAwait(false))
+            var classDeclaration = (await document.GetClassesAndNestedClassesAsync().ConfigureAwait(false))
                 .FirstOrDefault()
                 ?? throw new InvalidOperationException(
                     "The document does not contain any class declarations.");
 
-            return ValidateSingleClass(classDeclaration);
+            return (ClassDeclarationSyntax)ValidateSingleTypeDeclaration(classDeclaration);
         }
 
         /// <summary>
@@ -81,12 +88,12 @@ namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions
         public static async Task<ClassDeclarationSyntax?> GetSingleClassOrDefaultAsync(
             this Document document)
         {
-            var classDeclaration = (await document.GetClassesAsync().ConfigureAwait(false))
+            var classDeclaration = (await document.GetClassesAndNestedClassesAsync().ConfigureAwait(false))
                 .FirstOrDefault();
 
             return classDeclaration is null
                 ? null
-                : ValidateSingleClass(classDeclaration);
+                : (ClassDeclarationSyntax)ValidateSingleTypeDeclaration(classDeclaration);
         }
     }
 }

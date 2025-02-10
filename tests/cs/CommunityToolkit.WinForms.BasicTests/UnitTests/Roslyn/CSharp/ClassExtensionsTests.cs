@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CommunityToolkit.WinForms.Roslyn.CSharp.Extensions;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace CommunityToolkit.WinForms.BasicTests.UnitTests.Roslyn.CSharp;
 
@@ -13,30 +14,13 @@ public class ClassExtensionsTests
     {
         List<string> files =
         [
-                "Class_with_every_member_type_relevant.cs"
+            "Class_with_every_member_type_relevant.cs"
         ];
 
-        string targetDirectory=TestDataDiscovery.GetTestDataDirectoryPath(
+        string targetDirectory = TestDataDiscovery.GetTestDataDirectoryPath(
             subDirectoryPath: SubDirectoryPath);
 
-        var data = new TheoryData<string>();
-
-        // Iterate through all the files in the directory and make sure
-        // that they exist. If they do, add them to the test data.
-        // If they don't, we fail fast.
-        foreach (string file in files)
-        {
-            string filePath = Path.Combine(targetDirectory, file);
-
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException($"We have been trying to find the file '{filePath}', but it does not exist.");
-            }
-
-            data.Add(filePath);
-        }
-
-        return data;
+        return TestDataDiscovery.GetTheoryDataFromFiles(files, targetDirectory);
     }
 
     [Theory]
@@ -52,12 +36,35 @@ public class ClassExtensionsTests
         // Get the class declaration
         ClassDeclarationSyntax classDeclaration = await document.GetSingleClassAsync();
 
+        // Get the member kinds of the class:
+        HashSet<SyntaxKind> memberKinds = classDeclaration.GetMemberKinds();
+
+        // Arrange
+        var expectedMemberKinds = new HashSet<SyntaxKind>
+        {
+            SyntaxKind.FieldDeclaration,
+            SyntaxKind.ConstructorDeclaration,
+            SyntaxKind.MethodDeclaration,
+            SyntaxKind.ClassDeclaration
+        };
+
+        // Assert
+        Assert.NotNull(memberKinds);
+
+        Assert.Equal(
+            expected: expectedMemberKinds.Count,
+            actual: memberKinds.Count);
+
+        Assert.True(
+            condition: expectedMemberKinds.SetEquals(memberKinds),
+            userMessage: "The member kinds do not match the expected kinds.");
+
         // Get the semantic model and the diagnostics:
         SemanticModel? semanticModel = await document.GetSemanticModelAsync();
         Assert.NotNull(semanticModel);
 
         // Get the class symbol
-        INamedTypeSymbol? classSymbol = (INamedTypeSymbol?) semanticModel.GetDeclaredSymbol(classDeclaration);
+        INamedTypeSymbol? classSymbol = (INamedTypeSymbol?)semanticModel.GetDeclaredSymbol(classDeclaration);
         Assert.NotNull(classSymbol);
     }
 }

@@ -14,10 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_solution items", "_solutio
 		Directory.build.props = Directory.build.props
 		global.json = global.json
 		NuGet.config = NuGet.config
-		Pitch Script.md = Pitch Script.md
 		README.md = README.md
-		UsefullPrompts.md = UsefullPrompts.md
-		WCT_Introduction_Prompt.md = WCT_Introduction_Prompt.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chatty", "samples\cs\Chatty\Chatty.csproj", "{ED5BF976-41F7-FFED-45D1-B29774A37889}"
