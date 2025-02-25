@@ -1,4 +1,4 @@
-name: Build WinForms App
+name: CI
 
 on:
   push:
@@ -9,36 +9,27 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-test:
     runs-on: windows-latest
 
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
     steps:
-      # Check out the code
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Set up .NET
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '9.x' # Adjust to the target .NET version of your WinForms app
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.0.x'
 
-      # Restore dependencies
-      - name: Restore dependencies
-        run: dotnet restore
+    - name: Restore dependencies
+      run: dotnet restore
 
-      # Build the solution (Release)
-      - name: Build solution (Release)
-        run: dotnet build --configuration Release --no-restore
+    - name: Build
+      run: dotnet build --configuration ${{ matrix.configuration }} --no-restore
 
-      # Build the solution (Debug)
-      - name: Build solution (Debug)
-        run: dotnet build --configuration Debug --no-restore
-
-      # Run unit tests (Release)
-      - name: Run unit tests (Release)
-        run: dotnet test --configuration Release --no-build --verbosity normal
-
-      # Run unit tests (Debug)
-      - name: Run unit tests (Debug)
-        run: dotnet test --configuration Debug --no-build --verbosity normal
+    - name: Run tests
+      run: dotnet test --configuration ${{ matrix.configuration }} --no-build --collect:"XPlat Code Coverage"

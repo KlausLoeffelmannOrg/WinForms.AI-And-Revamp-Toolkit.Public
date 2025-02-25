@@ -1,6 +1,7 @@
-﻿using Chatty.ViewModels;
+﻿using Chatty.Agents.Personalities;
 using Chatty.Views;
-using CommunityToolkit.WinForms.Controls.Blazor;
+
+using CommunityToolkit.WinForms.ChatUI;
 
 namespace Chatty;
 
@@ -20,7 +21,7 @@ public partial class FrmMain
 
             // Let's get all the directories in the base path, and from there let's
             // get the .cjson file in the folder:
-            var conversations = new List<Conversation>();
+            List<Conversation> conversations = [];
             foreach (string folder in Directory.EnumerateDirectories(_options.BasePath))
             {
                 string[] files = Directory.GetFiles(folder, "*.cjson");
@@ -35,10 +36,10 @@ public partial class FrmMain
             }
 
             // Sort conversations by DateLastEdited descending
-            var sortedConversations = conversations
+            IOrderedEnumerable<Conversation> sortedConversations = conversations
                 .OrderByDescending(c => c.DateLastEdited);
 
-            foreach (var conversation in sortedConversations)
+            foreach (Conversation? conversation in sortedConversations)
             {
                 DateTimeOffset date = conversation.DateLastEdited;
                 TreeNode parentNode;
@@ -93,7 +94,7 @@ public partial class FrmMain
 
     private void UpdateStatusBar(Conversation conversation)
     {
-        var idPersonality = conversation.IdPersonality;
+        Guid idPersonality = conversation.IdPersonality;
 
         _tslItemDateInfo.Text = $"{conversation.DateCreated:g}";
         _tslPersonality.Text = $"{GetPersonality(idPersonality)} with {conversation.Model}";

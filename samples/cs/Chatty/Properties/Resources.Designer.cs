@@ -61,6 +61,24 @@ namespace Chatty.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Important:
+        ///* If the response will include code-blocks (or even plain-text listings), we need to first send out a couple of meta-information data,
+        ///   like for example `{{[0]:c#}}` and `{{[1]:FrmSuperForm.cs}}`. 
+        ///   So, the general structure of code-blocks in that case is
+        ///
+        ///      {{[0]:c#}}{{[1]:FrmSuperForm.cs}}{{[2]:ViewModel class for managing Employees, implementing `INotifyPropertyChanged`}}
+        ///      ```codeBlockType
+        ///      // Here comes the actual code block
+        ///      ```
+        ///  It is important to keep the o [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CodeBlockAddendum {
+            get {
+                return ResourceManager.GetString("CodeBlockAddendum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please write a Summary of this conversation. The Summary should not have more than 4000 characters, but it can have (even much) less characters, if it makes sense. .
         /// </summary>
         internal static string Prompt_RequestChatSummary {

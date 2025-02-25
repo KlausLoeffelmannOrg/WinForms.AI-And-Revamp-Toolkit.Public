@@ -1,4 +1,6 @@
-﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
+﻿using CommunityToolkit.WinForms.Extensions;
+
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 /// <summary>
 /// A panel that captures the underlying content, applies a milk-glass effect,
@@ -7,6 +9,8 @@
 public class ContentFreezePanel : Panel
 {
     private Bitmap? _frozenContent;
+    private readonly SpinnerControl? _spinner;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ContentFreezePanel"/> class.
@@ -15,39 +19,72 @@ public class ContentFreezePanel : Panel
     {
         DoubleBuffered = true;
         Visible = false;
+
+        _spinner = new SpinnerControl
+        {
+            Visible = false,
+        };
+
+        Controls.Add(_spinner);
     }
 
     /// <summary>
-    /// Captures the content of the specified control and applies a milk-glass effect.
+    ///  Captures the content of the specified control and applies a milk-glass effect.
     /// </summary>
     /// <param name="source">
-    /// The control whose content should be captured. Typically your RichTextBox.
+    ///  The control whose content should be captured. Typically your RichTextBox.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> is null.</exception>
-    public void FreezeContent(Control source)
+    public async Task FreezeContent(Control source)
     {
-        if (source is null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(source);
 
         // Capture the source content.
-        using var tempBmp = new Bitmap(source.Width, source.Height);
+        using Bitmap tempBmp = new(source.Width, source.Height);
         source.DrawToBitmap(tempBmp, new Rectangle(Point.Empty, source.Size));
 
         // Create a new bitmap and apply the milk-glass effect.
-        var bmp = new Bitmap(source.Width, source.Height);
-        using (var g = Graphics.FromImage(bmp))
+        Bitmap bmp = new(source.Width, source.Height);
+
+        using (Graphics g = Graphics.FromImage(bmp))
         {
             g.DrawImage(tempBmp, 0, 0);
-            using var overlay = new SolidBrush(Color.FromArgb(100, Color.White));
+
+            using SolidBrush overlay = new(Color.FromArgb(100, Color.Gray));
             g.FillRectangle(overlay, new Rectangle(Point.Empty, bmp.Size));
         }
 
         // Dispose any previous frozen content.
         _frozenContent?.Dispose();
         _frozenContent = bmp;
-        Invalidate();
+
+        // Show the spinner. We need to add the Spinner to the panel.
+        // And also center it in the middle, but we cannot Dock it.
+        _ = _spinner.EnsureNotNull();
+        _spinner.BackColor = Color.Transparent;
+        _spinner.EnsureNotNull().FontSize = (int)(Font.Size * 2);
+        _spinner.EnsureNotNull().Visible = true;
+        _spinner.EnsureNotNull().Location = new Point((Width - _spinner.Width) / 2, (Height - _spinner.Height) / 2);
+
+        _cancellationTokenSource = new CancellationTokenSource();
+        Visible = true;
+
+        await _spinner.SpinAsync(_cancellationTokenSource.Token);
+    }
+
+    public void UnfreezeContent()
+    {
+        if (_cancellationTokenSource is null)
+        {
+            throw new InvalidOperationException("The content is not frozen.");
+        }
+
+        _cancellationTokenSource.Cancel();
+        _cancellationTokenSource.Dispose();
+        _cancellationTokenSource = null;
+        _spinner.EnsureNotNull();
+        _spinner.Visible = false;
+        Visible = false;
     }
 
     /// <summary>
@@ -62,17 +99,6 @@ public class ContentFreezePanel : Panel
         if (_frozenContent is not null)
         {
             e.Graphics.DrawImage(_frozenContent, 0, 0, Width, Height);
-        }
-
-        // Draw waiting text centered.
-        if (!string.IsNullOrEmpty(Text))
-        {
-            SizeF textSize = e.Graphics.MeasureString(Text, Font);
-            PointF location = new PointF(
-                (Width - textSize.Width) / 2,
-                (Height - textSize.Height) / 2);
-            using var textBrush = new SolidBrush(ForeColor);
-            e.Graphics.DrawString(Text, Font, textBrush, location);
         }
     }
 

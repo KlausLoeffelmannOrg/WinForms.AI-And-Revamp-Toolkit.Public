@@ -16,9 +16,9 @@ Welcome to this technical document. Below you will find in-depth explanations, c
 **Explanation:**  
 This VB.NET example demonstrates a simple module that includes a function to return a greeting. The code is annotated with XML comments and follows modern VB conventions.
 
-```[ListingType]
 {{codetype:vb}}
 {{filename:ExampleModule.vb}}
+```Visual Basic
 ''' <summary>
 ''' Provides a simple greeting functionality.
 ''' </summary>
@@ -32,10 +32,10 @@ Public Module ExampleModule
         Return $"Hello, {name}!"
     End Function
 End Module
-{{summary:VB module implementing GetGreeting functionality.}}
 ```
 
-{{md-description:#paragraph}}  
+{{summary:VB module implementing GetGreeting functionality.}}
+{{md-description:#paragraph}}
 **Post-Code Explanation:**  
 The above module encapsulates basic functionality, easily expandable and integrable with larger systems.
 
@@ -47,9 +47,9 @@ The above module encapsulates basic functionality, easily expandable and integra
 **Explanation:**  
 This C# example provides a static class with a method that returns a greeting string. It includes XML-style documentation comments and adheres to the modern C# syntax.
 
-```[ListingType]
 {{codetype:c#}}
 {{filename:ExampleModule.cs}}
+```CSharp
 /// <summary>
 /// Provides a simple greeting functionality.
 /// </summary>
@@ -62,10 +62,10 @@ public static class ExampleModule
     /// <returns>A formatted greeting message.</returns>
     public static string GetGreeting(string name) => $"Hello, {name}!";
 }
-{{summary:C# static class for greeting functionality.}}
 ```
 
-{{md-description:#paragraph}}  
+{{summary:C# static class for greeting functionality.}}
+{{md-description:#paragraph}}
 **Post-Code Explanation:**  
 This code sample is a modern, minimalistic approach to delivering similar functionality in C# compared to the VB.NET example above.
 
@@ -77,17 +77,17 @@ This code sample is a modern, minimalistic approach to delivering similar functi
 **Explanation:**  
 The following example is a plain text block. Notice that it includes embedded Markdown formatting. For example, you will see **bold** and *italic* text rendered as plain text with Markdown symbols.
 
-```[ListingType]
 {{codetype:plaintext}}
 {{filename:CascadedMarkdown.txt}}
+```Plain Text
 # This is a Plain Text Header
 Here is some **bold text** and some *italic text*.
 > This is a blockquote in plain text.
 - A list item in plain text.
-{{summary:Plain text sample containing cascaded markdown formatting.}}
 ```
 
-{{md-description:#paragraph}}  
+{{summary:Plain text sample containing cascaded markdown formatting.}}
+{{md-description:#paragraph}}
 **Post-Code Explanation:**  
 In this example, while the code block is tagged as plain text, it still demonstrates Markdown syntax that might be rendered accordingly if processed.
 
@@ -99,16 +99,16 @@ In this example, while the code block is tagged as plain text, it still demonstr
 **Explanation:**  
 Below is an example batch script that could be used to test command-line operations such as echoing output and pausing execution. This script is simple and meant for automation context testing.
 
-```[ListingType]
 {{codetype:batch}}
 {{filename:ScriptExample.bat}}
+```Batch File
 @echo off
 echo This is a batch script test.
 pause
-{{summary:Batch script to echo a message and pause.}}
 ```
 
-{{md-description:#paragraph}}  
+{{summary:Batch script to echo a message and pause.}}
+{{md-description:#paragraph}}
 **Post-Code Explanation:**  
 The script above is minimalistic, making it ideal for testing command sequence output in a Windows shell environment.
 
@@ -120,19 +120,19 @@ The script above is minimalistic, making it ideal for testing command sequence o
 **Explanation:**  
 Finally, here is a simple Python code snippet. This sample showcases a basic function using type annotations that returns a greeting message. The code is written with readability and Python best practices in mind.
 
-```[ListingType]
 {{codetype:python}}
 {{filename:PythonExample.py}}
+```Python
 def greet(name: str) -> str:
     """Return a greeting message for the given name."""
     return f"Hello, {name}!"
 
 if __name__ == '__main__':
     print(greet("World"))
-{{summary:Python function to greet a user by name.}}
 ```
 
-{{md-description:#paragraph}}  
+{{summary:Python function to greet a user by name.}}
+{{md-description:#paragraph}}
 **Post-Code Explanation:**  
 This Python script highlights concise coding practices and can serve as a foundation for more complex logic.
 

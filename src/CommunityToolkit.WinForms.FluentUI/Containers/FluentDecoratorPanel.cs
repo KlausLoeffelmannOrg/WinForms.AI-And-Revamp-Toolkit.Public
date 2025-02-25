@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace CommunityToolkit.WinForms.FluentUI;
+namespace CommunityToolkit.WinForms.FluentUI.Containers;
 
 public partial class FluentDecoratorPanel : Panel
 {
@@ -16,9 +16,10 @@ public partial class FluentDecoratorPanel : Panel
         _borderThickness = 1;
         _verticalContentAlignment = VerticalContentAlignments.Center;
         _orientation = Orientation.Horizontal;
+        _signalingTokenSource = new CancellationTokenSource();
 
         // Enable double buffering to reduce flickering
-        SetStyle(ControlStyles.OptimizedDoubleBuffer 
+        SetStyle(ControlStyles.OptimizedDoubleBuffer
             | ControlStyles.ResizeRedraw, true);
     }
 
@@ -54,6 +55,46 @@ public partial class FluentDecoratorPanel : Panel
         }
     }
 
+    [Category("Appearance")]
+    [Description("Specifies, if and in what item size there is a ToolStrip on the right side of the panel.")]
+    [DefaultValue(0)]
+    public int ProvideToolStripInSize
+    {
+        get => _provideToolStrip;
+
+        set
+        {
+            if (value == _provideToolStrip)
+                return;
+
+            _provideToolStrip = value;
+
+            if (value>0)
+            {
+                _toolStrip = new ToolStrip
+                {
+                    Dock = DockStyle.None,
+                    BackColor = BackColor,
+                    ImageScalingSize = new(value, value)
+                };
+
+                Controls.Add(_toolStrip);
+                LayoutToolStrip();
+            }
+            else
+            {
+                Controls.Remove(_toolStrip);
+                _toolStrip?.Dispose();
+                _toolStrip = null!;
+            }
+        }
+    }
+
+    /// <summary>
+    ///  Gets the ToolStrip.
+    /// </summary>
+    public ToolStrip? ToolStrip => _toolStrip;
+
     /// <summary>
     /// Gets or sets the thickness of the border.
     /// </summary>
@@ -74,6 +115,8 @@ public partial class FluentDecoratorPanel : Panel
     private VerticalContentAlignments _verticalContentAlignment;
     private CancellationTokenSource _signalingTokenSource;
     private Color _originalForeColor;
+    private int _provideToolStrip;
+    private ToolStrip? _toolStrip;
 
     /// <summary>
     /// Gets or sets the vertical alignment of the content.
@@ -137,8 +180,8 @@ public partial class FluentDecoratorPanel : Panel
     }
 
     private async Task Signaling(
-        Color blendStartColor, 
-        Color blendTargetColor, 
+        Color blendStartColor,
+        Color blendTargetColor,
         CancellationToken cancellation)
     {
         // We are repainting the control's frame starting with the
@@ -243,8 +286,8 @@ public partial class FluentDecoratorPanel : Panel
         }
 
         // Position additional controls
-        int currentPosition = _orientation == Orientation.Horizontal 
-            ? xPosition + firstControlSize + ControlPadding 
+        int currentPosition = _orientation == Orientation.Horizontal
+            ? xPosition + firstControlSize + ControlPadding
             : yPosition + firstControlSize + ControlPadding;
 
         for (int i = 1; i < Controls.Count; i++)
@@ -279,15 +322,43 @@ public partial class FluentDecoratorPanel : Panel
                 }
             }
         }
+
+        // Layout ToolStrip if provided
+        if (_provideToolStrip>0)
+        {
+            LayoutToolStrip();
+        }
     }
 
-    private int GetVerticalOffset(int contentHeight, int containerHeight) 
+    private void LayoutToolStrip()
+    {
+        if (_toolStrip == null)
+            return;
+
+        int toolStripWidth = _toolStrip.PreferredSize.Width;
+        int toolStripHeight = _toolStrip.PreferredSize.Height;
+
+        int xPosition = Width - toolStripWidth - BorderThickness - Padding.Right - 10; // Adjust for padding
+        int yPosition = BorderThickness + Padding.Top + 10; // Adjust for padding
+
+        _toolStrip.Location = new Point(xPosition, yPosition);
+        _toolStrip.BackColor = BackColor;
+        _toolStrip.Dock = DockStyle.None;
+        _toolStrip.LayoutStyle = ToolStripLayoutStyle.VerticalStackWithOverflow;
+
+        foreach (ToolStripItem item in _toolStrip.Items)
+        {
+            item.Alignment = ToolStripItemAlignment.Right;
+        }
+    }
+
+    private int GetVerticalOffset(int contentHeight, int containerHeight)
         => VerticalContentAlignment switch
-            {
-                VerticalContentAlignments.Center => (containerHeight - contentHeight) / 2,
-                VerticalContentAlignments.Bottom => containerHeight - contentHeight,
-                _ => 0, // Top and Fill don't require an offset.
-            };
+        {
+            VerticalContentAlignments.Center => (containerHeight - contentHeight) / 2,
+            VerticalContentAlignments.Bottom => containerHeight - contentHeight,
+            _ => 0, // Top and Fill don't require an offset.
+        };
 
     private int GetHorizontalOffset(int contentWidth, int containerWidth)
     {

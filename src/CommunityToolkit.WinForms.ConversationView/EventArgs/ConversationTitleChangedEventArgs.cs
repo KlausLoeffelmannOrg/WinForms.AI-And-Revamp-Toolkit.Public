@@ -1,4 +1,4 @@
-﻿namespace CommunityToolkit.WinForms.Controls.Blazor;
+﻿namespace CommunityToolkit.WinForms.ChatUI;
 
 public class ConversationTitleChangedEventArgs(string conversationTitle) : EventArgs
 {

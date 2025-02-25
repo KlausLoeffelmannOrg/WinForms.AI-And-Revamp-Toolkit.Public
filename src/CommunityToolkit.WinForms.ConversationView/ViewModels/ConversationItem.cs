@@ -1,9 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.WinForms.ConversationView.Extensions;
-using Markdig;
+using CommunityToolkit.WinForms.ChatUI.Extension;
 using System.Text.Json;
 
-namespace CommunityToolkit.WinForms.Controls.Blazor;
+namespace CommunityToolkit.WinForms.ChatUI;
 
 public partial class ConversationItem : ObservableObject
 {

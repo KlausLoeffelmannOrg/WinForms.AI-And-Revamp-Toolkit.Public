@@ -1,6 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 
-namespace CommunityToolkit.WinForms.FluentUI;
+namespace CommunityToolkit.WinForms.FluentUI.Containers;
 
 public partial class FluentTabControl
 {

@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.WinForms.FluentUI.Controls;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace CommunityToolkit.WinForms.FluentUI.Controls.TypedInputExtenders;
 
@@ -29,7 +28,14 @@ public abstract partial class TypedFormatterComponent<T> :
     /// </summary>
     public event ValueChangedEventHandler<T>? ValueChanged;
 
+    /// <summary>
+    /// Occurs when a value conversion is about to start.
+    /// </summary>
     public event EventHandler<ValueConvertEventArgs>? ValueConverting;
+
+    /// <summary>
+    /// Occurs when a value conversion has completed.
+    /// </summary>
     public event EventHandler<ValueConvertEventArgs>? ValueConverted;
 
     private readonly Dictionary<Control, ITypedFormatter<T>> _propertyStorage = [];
@@ -47,13 +53,14 @@ public abstract partial class TypedFormatterComponent<T> :
     public TypedFormatterComponent(IContainer container)
         => container.Add(this);
 
+    /// <inheritdoc/>
     bool IExtenderProvider.CanExtend(object extendee)
     {
         // Check if the extendee is a TextBox and if it is a child of a DataEntryPanel
         if (extendee is TextBox textBox
             && GetAncestorOf<TypedInputExtenderPanel>(textBox) is TypedInputExtenderPanel panel)
         {
-            var formatterComponent = panel.GetFormatterComponent(textBox);
+            ITypedFormatterComponent? formatterComponent = panel.GetFormatterComponent(textBox);
             bool canExtend = formatterComponent is not null && CanExtendProperties(formatterComponent);
             if (canExtend)
             {
@@ -182,6 +189,7 @@ public abstract partial class TypedFormatterComponent<T> :
     /// </summary>
     /// <param name="textBox">The <see cref="TextBox"/> to set the value for.</param>
     /// <param name="stringValue">The string to convert to a value.</param>
+    /// <param name="token">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>
     /// <see langword="true"/> if the conversion succeeded and the value was assigned; otherwise, <see langword="false"/>.
     /// </returns>
@@ -192,7 +200,6 @@ public abstract partial class TypedFormatterComponent<T> :
 
         try
         {
-
             OnValueConverting(valueConvertEventArgs);
             ITypedFormatter<T>? temp = GetFormatterSettings(textBox);
 
@@ -219,6 +226,10 @@ public abstract partial class TypedFormatterComponent<T> :
         return true;
     }
 
+    /// <summary>
+    /// Raises the <see cref="ValueConverting"/> event.
+    /// </summary>
+    /// <param name="eArgs">A <see cref="ValueConvertEventArgs"/> that contains the event data.</param>
     protected virtual void OnValueConverting(ValueConvertEventArgs eArgs)
     {
         ValueConverting?.Invoke(this, eArgs);
@@ -247,6 +258,10 @@ public abstract partial class TypedFormatterComponent<T> :
         }
     }
 
+    /// <summary>
+    /// Raises the <see cref="ValueConverted"/> event.
+    /// </summary>
+    /// <param name="eArgs">A <see cref="ValueConvertEventArgs"/> that contains the event data.</param>
     protected virtual async void OnValueConverted(ValueConvertEventArgs eArgs)
     {
         if (eArgs.PreventChangesWhileBusy)
@@ -277,10 +292,11 @@ public abstract partial class TypedFormatterComponent<T> :
     /// Converts the value associated with the specified <see cref="TextBox"/> to a displayable string.
     /// </summary>
     /// <param name="textBox">The <see cref="TextBox"/> to retrieve the value for.</param>
+    /// <param name="token">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A string representation of the value, or <see langword="null"/> if the conversion fails.</returns>
     public Task<string?> ConvertToDisplayAsync(TextBox textBox, CancellationToken token)
     {
-        var formatterSettings = GetFormatterSettings(textBox);
+        ITypedFormatter<T>? formatterSettings = GetFormatterSettings(textBox);
 
         return formatterSettings is null
             ? Task.FromResult<string?>(null)
@@ -291,12 +307,13 @@ public abstract partial class TypedFormatterComponent<T> :
     /// Initializes the value for editing in the specified <see cref="TextBox"/>.
     /// </summary>
     /// <param name="textBox">The <see cref="TextBox"/> to initialize the value for.</param>
+    /// <param name="token">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>
     /// A string representation of the initial value, or <see langword="null"/> if the initialization fails.
     /// </returns>
     public Task<string?> InitializeEditedValueAsync(TextBox textBox, CancellationToken token)
     {
-        var formatterSettings = GetFormatterSettings(textBox);
+        ITypedFormatter<T>? formatterSettings = GetFormatterSettings(textBox);
 
         return formatterSettings is null
             ? Task.FromResult<string?>(null)
@@ -331,9 +348,15 @@ public abstract partial class TypedFormatterComponent<T> :
         NotifyEndInit?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Attempts to convert a string to a value using the default formatter instance.
+    /// </summary>
+    /// <param name="text">The string to convert to a value.</param>
+    /// <param name="token">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>The converted value, or <see langword="null"/> if the conversion fails.</returns>
     public async Task<object?> TryGetValueAsync(string text, CancellationToken token)
     {
-        var formatter = GetDefaultFormatterInstance();
+        ITypedFormatter<T> formatter = GetDefaultFormatterInstance();
         object? value = await formatter.ConvertToValueAsync(text, token);
         return value;
     }

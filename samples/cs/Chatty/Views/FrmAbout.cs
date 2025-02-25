@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text;
+using System.Windows.Forms;
 
 namespace Chatty;
 
@@ -18,7 +19,38 @@ partial class FrmAbout : Form
         _lblCopyRight.Text = AssemblyCopyright;
         _lblCompany.Text = $"Company: {AssemblyCompany}";
         _lblAuthors.Text = $"Authors: {AssemblyAuthors}";
-        _txtDescription.Text = AssemblyDescription;
+    }
+
+    protected async override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        await InvokeAsync(() =>
+        {
+            string rtf= LoadRtfContent();
+            if (rtf != null)
+            {
+                _rtbChattyStory.Rtf = rtf;
+            }
+        });
+    }
+
+    private string LoadRtfContent()
+    {
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        string resourceName = "Chatty.Properties.ChattyBackground.rtf";
+
+        using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
+        {
+            if (stream == null)
+            {
+                throw new InvalidOperationException($"Resource '{resourceName}' not found.");
+            }
+
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
     }
 
     private static (int lines, string result) StairFormat(string assemblyProduct)

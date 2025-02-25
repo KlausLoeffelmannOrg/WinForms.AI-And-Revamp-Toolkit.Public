@@ -71,7 +71,7 @@ public partial class AIDateFormatterComponent
             _skComponent.ApiKeyGetter = () => Environment.GetEnvironmentVariable(OpenAiApiKeyLookupKey)
                 ?? throw new InvalidOperationException("The AI:OpenAI:ApiKey environment variable is not set.");
 
-            _skComponent.SystemPrompt = SystemPrompt;
+            _skComponent.DeveloperPrompt = SystemPrompt;
 
             _skComponent.JsonSchemaString =
                """

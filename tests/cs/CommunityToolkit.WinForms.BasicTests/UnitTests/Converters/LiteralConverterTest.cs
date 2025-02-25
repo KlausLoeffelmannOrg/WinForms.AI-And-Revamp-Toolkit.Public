@@ -1,3 +1,4 @@
+using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.BasicTests.TestSupport;
 using System.Text;
 
@@ -151,7 +152,7 @@ public class LiteralConverterTest
         // Now we parse them throw the FromCSharpLiteral method.
         for (int i = 0; i < testDataProvider.Literals.Length; i++)
         {
-            string? parsedToken = testDataProvider.Literals[i].FromCSharpLiteral();
+            string? parsedToken = testDataProvider.Literals[i].FromCSharpLiteral(ensureWindowsLineEndings: true);
 
             parsedTokens.Add(parsedToken);
             actualFileContentBuilder.Append(parsedToken);

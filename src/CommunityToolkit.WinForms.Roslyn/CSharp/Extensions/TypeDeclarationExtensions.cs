@@ -1,7 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions;
+namespace CommunityToolkit.Roslyn.CSharp.Extensions;
 
 /// <summary>
 ///  Provides extension methods for <see cref="TypeDeclarationSyntax"/>.
@@ -147,5 +147,63 @@ public static class TypeDeclarationExtensions
 
         // Fallback: use the kind name and the starting position.
         return $"{member.Kind()}_{member.SpanStart}";
+    }
+
+    /// <summary>
+    /// Splits a type declaration into two parts:
+    /// <list type="bullet">
+    ///   <item>
+    ///     <description>
+    ///     A new type declaration containing only field, event field, and delegate declarations
+    ///     (all trivia attached to these members is preserved).
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///     An array of the remaining members (those that may contain executable code).
+    ///     </description>
+    ///   </item>
+    /// </list>
+    /// </summary>
+    /// <param name="typeDeclaration">The original type declaration.</param>
+    /// <returns>
+    /// A tuple where the first element is the new type declaration with only non-code members,
+    /// and the second element is an array of members with executable code.
+    /// </returns>
+    public static (TypeDeclarationSyntax strippedType, MemberDeclarationSyntax[] codeMembers)
+        PartitionMembers(this TypeDeclarationSyntax typeDeclaration)
+    {
+        List<MemberDeclarationSyntax> nonCodeMembers = [];
+        List<MemberDeclarationSyntax> codeMembers = [];
+
+        foreach (MemberDeclarationSyntax member in typeDeclaration.Members)
+        {
+            // Only keep field, event field, and delegate declarations
+            // in the new type declaration.
+            if (member is FieldDeclarationSyntax ||
+                member is EventFieldDeclarationSyntax ||
+                member is DelegateDeclarationSyntax)
+            {
+                nonCodeMembers.Add(member);
+            }
+            else
+            {
+                codeMembers.Add(member);
+            }
+        }
+
+        // Create a new type declaration which just contains the type-definition,
+        // so, for a class, the class keyword, name, base type, etc. and the
+        // curly braces, but no members.
+        TypeDeclarationSyntax newTypeDeclaration = typeDeclaration
+            .WithMembers(SyntaxFactory.List<MemberDeclarationSyntax>());
+
+        // And if we have any non-code members, add them to the new type declaration.
+        if (nonCodeMembers.Any())
+        {
+            newTypeDeclaration = newTypeDeclaration.AddMembers(nonCodeMembers.ToArray());
+        }
+
+        return (newTypeDeclaration, codeMembers.ToArray());
     }
 }

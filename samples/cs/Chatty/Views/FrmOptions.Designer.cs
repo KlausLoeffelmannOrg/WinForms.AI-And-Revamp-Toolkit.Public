@@ -1,4 +1,6 @@
-﻿namespace Chatty.Views
+﻿using CommunityToolkit.WinForms.FluentUI.Containers;
+
+namespace Chatty.Views
 {
     partial class FrmOptions
     {
@@ -31,7 +33,7 @@
             _chkArchiveChats = new CheckBox();
             _grpChatSettings = new GroupBox();
             _chkCopyLastAnswerToClipboard = new CheckBox();
-            _fdpChatFolder = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+            _fdpChatFolder = new FluentDecoratorPanel();
             _txtAppDataPath = new TextBox();
             _btnPickPath = new Button();
             _btnOK = new Button();
@@ -244,7 +246,7 @@
 
         private CheckBox _chkArchiveChats;
         private GroupBox _grpChatSettings;
-        private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel _fdpChatFolder;
+        private FluentDecoratorPanel _fdpChatFolder;
         private TextBox _txtAppDataPath;
         private Button _btnPickPath;
         private Button _btnOK;

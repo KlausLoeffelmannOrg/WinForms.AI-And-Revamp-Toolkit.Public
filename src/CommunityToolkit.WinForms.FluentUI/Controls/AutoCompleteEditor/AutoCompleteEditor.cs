@@ -1,5 +1,8 @@
 ﻿using CommunityToolkit.WinForms.AsyncSupport;
+using CommunityToolkit.WinForms.Extensions;
+
 using System.ComponentModel;
+
 using Timer = System.Windows.Forms.Timer;
 
 namespace CommunityToolkit.WinForms.FluentUI.Controls;
@@ -16,6 +19,12 @@ namespace CommunityToolkit.WinForms.FluentUI.Controls;
 ///  <para>
 ///   The control uses a timer to manage the timing of suggestion requests and can display
 ///   an overlay panel to indicate waiting states.
+///  </para>
+///  <para>
+///   <b>Note:</b> The <see cref="AcceptsTab"/> property is set to true by default, so the user can
+///   use Tab and Enter to edit, but needs to use Ctrl+Tab to navigate out of the Editor, and
+///   a Form's Default-Button cannot be triggered with Enter if a <see cref="AutoCompleteEditor"/>
+///   has the focus.
 ///  </para>
 /// </remarks>
 public partial class AutoCompleteEditor : RichTextBox
@@ -43,6 +52,7 @@ public partial class AutoCompleteEditor : RichTextBox
     private Color _correctionCandidateColor;
 
     private readonly Timer _suggestionTimer;
+    private readonly Timer _clipboardCheckTimer;
     private TextSpan _currentSuggestion;
     private string _oldParagraph = string.Empty;
 
@@ -56,6 +66,19 @@ public partial class AutoCompleteEditor : RichTextBox
     private static readonly Color DefaultDarkModeCorrectionCandidateColor = Color.OrangeRed;
     private ContentFreezePanel _overlayPanel = null!;
 
+    private bool _requestPromptSendButton;
+    private bool _requestCopyToClipBoardButton;
+    private bool _requestPasteFromClipboardButton;
+    private bool _requestAddToLibraryButton;
+    private bool _requestOpenLibraryButton;
+    private ToolStrip? _commandStrip;
+
+    private ToolStripButton? _sendButton;
+    private ToolStripButton? _copyButton;
+    private ToolStripButton? _pasteButton;
+    private ToolStripButton? _addButton;
+    private ToolStripButton? _openButton;
+
     /// <summary>
     ///  Initializes a new instance of the <see cref="AutoCompleteEditor"/> class.
     /// </summary>
@@ -63,12 +86,19 @@ public partial class AutoCompleteEditor : RichTextBox
     {
         _semanticKernel = new()
         {
-            ModelId = "gpt-3.5-turbo",
+            ModelId = "gpt-4o-mini-2024-07-18",
             MaxTokens = 4096
         };
 
         _suggestionTimer = new Timer();
         _suggestionTimer.Tick += SuggestionTimer_Tick;
+
+        _clipboardCheckTimer = new Timer
+        {
+            Interval = 1000 // Check every second
+        };
+        _clipboardCheckTimer.Tick += ClipboardCheckTimer_Tick;
+        _clipboardCheckTimer.Start();
 
         if (Application.IsDarkModeEnabled)
         {
@@ -86,6 +116,7 @@ public partial class AutoCompleteEditor : RichTextBox
         }
 
         InitializeOverlay();
+        AcceptsTab = true;
     }
 
     /// <summary>
@@ -334,6 +365,103 @@ public partial class AutoCompleteEditor : RichTextBox
         set => _correctionCandidateColor = value;
     }
 
+    [Description("Show the Prompt Send button.")]
+    [DefaultValue(false)]
+    [Category("AI: Command Strip")]
+    public bool RequestPromptSendButton
+    {
+        get => _requestPromptSendButton;
+        set
+        {
+            _requestPromptSendButton = value;
+            if (_sendButton != null)
+            {
+                _sendButton.Visible = value;
+            }
+        }
+    }
+
+    [Description("Show the Copy to Clipboard button.")]
+    [DefaultValue(false)]
+    [Category("AI: Command Strip")]
+    public bool RequestCopyToClipBoardButton
+    {
+        get => _requestCopyToClipBoardButton;
+        set
+        {
+            _requestCopyToClipBoardButton = value;
+            if (_copyButton != null)
+            {
+                _copyButton.Visible = value;
+            }
+        }
+    }
+
+    [Description("Show the Paste from Clipboard button.")]
+    [DefaultValue(false)]
+    [Category("AI: Command Strip")]
+    public bool RequestPasteFromClipboardButton
+    {
+        get => _requestPasteFromClipboardButton;
+        set
+        {
+            _requestPasteFromClipboardButton = value;
+            if (_pasteButton != null)
+            {
+                _pasteButton.Visible = value && IsClipboardContentCompatible();
+            }
+        }
+    }
+
+    [Description("Show the Add to Library button.")]
+    [DefaultValue(false)]
+    [Category("AI: Command Strip")]
+    public bool RequestAddToLibraryButton
+    {
+        get => _requestAddToLibraryButton;
+        set
+        {
+            _requestAddToLibraryButton = value;
+            if (_addButton != null)
+            {
+                _addButton.Visible = value;
+            }
+        }
+    }
+
+    [Description("Show the Open Library button.")]
+    [DefaultValue(false)]
+    [Category("AI: Command Strip")]
+    public bool RequestOpenLibraryButton
+    {
+        get => _requestOpenLibraryButton;
+        set
+        {
+            _requestOpenLibraryButton = value;
+            if (_openButton != null)
+            {
+                _openButton.Visible = value;
+            }
+        }
+    }
+
+    [Description("Command strip for the editor. When you assign a ToolStrip here, " +
+        "the AutoCompleteEditor takes over and controls the context-depending ToolStrip buttons.")]
+    [Category("AI: Command Strip")]
+    public ToolStrip? CommandStrip
+    {
+        get => _commandStrip;
+        set
+        {
+            _commandStrip = value;
+            SetupCommandStrip();
+        }
+    }
+
+    private bool ShouldSerializeCommandStrip() => _commandStrip != null;
+
+    private void ResetCommandStrip() => _commandStrip = null;
+
     /// <summary>
     ///  Determines whether the standard edit color should be serialized.
     /// </summary>
@@ -390,21 +518,9 @@ public partial class AutoCompleteEditor : RichTextBox
     ///  Raises the <see cref="AsyncRequestAutoCompleteSuggestion"/> event.
     /// </summary>
     /// <param name="e">The event data.</param>
-    protected virtual void OnRequestAutoCompleteSuggestion(AsyncRequestAutoCompleteSuggestionEventArgs e)
-    {
-        AsyncRequestAutoCompleteSuggestion?.Invoke(this, e);
-    }
+    protected virtual Task OnAsyncRequestAutoCompleteSuggestionAsync(AsyncRequestAutoCompleteSuggestionEventArgs e)
+        => AsyncRequestAutoCompleteSuggestion?.Invoke(this, e) ?? Task.CompletedTask;
 
-    /// <summary>
-    ///  Raises the <see cref="Control.ReadOnlyChanged"/> event.
-    /// </summary>
-    /// <param name="e">The event data.</param>
-    /// <remarks>
-    ///  <para>
-    ///   This method updates the background and foreground colors of the control based on
-    ///   the read-only state and the application's dark mode setting.
-    ///  </para>
-    /// </remarks>
     protected override void OnReadOnlyChanged(EventArgs e)
     {
         base.OnReadOnlyChanged(e);
@@ -413,28 +529,38 @@ public partial class AutoCompleteEditor : RichTextBox
         {
             if (Application.IsDarkModeEnabled)
             {
-                this.BackColor = Color.FromArgb(30, 30, 30); // Dark mode background color for read-only
-                this.ForeColor = Color.LightGray; // Dark mode text color for read-only
+                BackColor = Color.FromArgb(30, 30, 30); // Dark mode background color for read-only
+                ForeColor = Color.LightGray; // Dark mode text color for read-only
             }
             else
             {
-                this.BackColor = Color.LightGray; // Light mode background color for read-only
-                this.ForeColor = Color.DarkGray; // Light mode text color for read-only
+                BackColor = Color.LightGray; // Light mode background color for read-only
+                ForeColor = Color.DarkGray; // Light mode text color for read-only
             }
         }
         else
         {
             if (Application.IsDarkModeEnabled)
             {
-                this.BackColor = Color.Black; // Dark mode background color for editable
-                this.ForeColor = Color.White; // Dark mode text color for editable
+                BackColor = Color.Black; // Dark mode background color for editable
+                ForeColor = Color.White; // Dark mode text color for editable
             }
             else
             {
-                this.BackColor = Color.White; // Light mode background color for editable
-                this.ForeColor = Color.Black; // Light mode text color for editable
+                BackColor = Color.White; // Light mode background color for editable
+                ForeColor = Color.Black; // Light mode text color for editable
             }
         }
+    }
+
+    // We need to shadow AcceptsTab to change the default value to true.
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [DefaultValue(true)]
+    public new bool AcceptsTab
+    {
+        get => base.AcceptsTab;
+        set => base.AcceptsTab = value;
     }
 
     /// <summary>
@@ -456,11 +582,11 @@ public partial class AutoCompleteEditor : RichTextBox
             Font = new Font(Font.FontFamily, Font.Size * 2, FontStyle.Bold),
             ForeColor = Color.White,
             // Resize the overlay panel to match the size of the RichTextBox
-            Size = this.Size
+            Size = Size
         };
 
         // Add event handler to resize the overlay panel when the RichTextBox is resized
-        this.SizeChanged += (sender, e) => _overlayPanel.Size = this.Size;
+        SizeChanged += (sender, e) => _overlayPanel.Size = Size;
 
         Controls.Add(_overlayPanel);
     }
@@ -490,11 +616,10 @@ public partial class AutoCompleteEditor : RichTextBox
     ///   RichTextBox.
     ///  </para>
     /// </remarks>
-    public void ShowOverlay()
+    public async Task ShowOverlayAsync()
     {
         EnsureOverlayInitialized();
-        _overlayPanel.FreezeContent(this);
-        _overlayPanel.Visible = true;
+        await _overlayPanel.FreezeContent(this);
     }
 
     /// <summary>
@@ -507,7 +632,119 @@ public partial class AutoCompleteEditor : RichTextBox
     /// </remarks>
     public void HideOverlay()
     {
-        EnsureOverlayInitialized();
-        _overlayPanel.Visible = false;
+        _overlayPanel.UnfreezeContent();
+    }
+
+    private void SetupCommandStrip()
+    {
+        if (_commandStrip == null) return;
+
+        _commandStrip.Items.Clear();
+
+        var buttons = new[]
+        {
+            new { Button = new ToolStripButton("Send"), Command = AutoCompleteEditorCommand.Send, Symbol = FluentSymbols.CommonToolStripSymbols.Send, ToolTip = "Send" },
+            new { Button = new ToolStripButton("Copy"), Command = AutoCompleteEditorCommand.Copy, Symbol = FluentSymbols.CommonToolStripSymbols.Copy, ToolTip = "Copy" },
+            new { Button = new ToolStripButton("Paste"), Command = AutoCompleteEditorCommand.Paste, Symbol = FluentSymbols.CommonToolStripSymbols.Paste, ToolTip = "Paste" },
+            new { Button = new ToolStripButton("Add to Library"), Command = AutoCompleteEditorCommand.Add, Symbol = FluentSymbols.CommonToolStripSymbols.AddBold, ToolTip = "Add to Library" },
+            new { Button = new ToolStripButton("Open Library"), Command = AutoCompleteEditorCommand.Open, Symbol = FluentSymbols.CommonToolStripSymbols.Open, ToolTip = "Open Library" }
+        };
+
+        _commandStrip.SuspendLayout();
+
+        foreach (var item in buttons)
+        {
+            item.Button.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            item.Button.ToolTipText = item.ToolTip;
+            item.Button.Margin = new Padding(10,3,0,3);
+            item.Button.Padding = new Padding(3);
+            _commandStrip.Items.Add(item.Button);
+
+            // Important: We need on owner for this not to blow!
+            item.Button.SetSymbolImage(item.Symbol);
+        }
+
+        _sendButton = buttons[0].Button;
+        _copyButton = buttons[1].Button;
+        _pasteButton = buttons[2].Button;
+        _addButton = buttons[3].Button;
+        _openButton = buttons[4].Button;
+
+        _sendButton.Click += async (s, e) => await SendCommandAsync();
+        _copyButton.Click += (s, e) => CopyToClipboard();
+        _pasteButton.Click += (s, e) => PasteFromClipboard();
+        _addButton.Click += (s, e) => OnAsyncSendCommandAsync(new(AutoCompleteEditorCommand.Add));
+        _openButton.Click += (s, e) => OnAsyncSendCommandAsync(new(AutoCompleteEditorCommand.Open));
+
+        UpdateCommandStrip();
+        _commandStrip.ResumeLayout();
+    }
+
+    private void CopyToClipboard()
+    {
+        if (!string.IsNullOrEmpty(SelectedText))
+        {
+            Clipboard.SetText(SelectedText);
+        }
+    }
+
+    private void PasteFromClipboard()
+    {
+        if (Clipboard.ContainsText(TextDataFormat.Text))
+        {
+            SelectedText = Clipboard.GetText(TextDataFormat.Text);
+        }
+        else if (Clipboard.ContainsText(TextDataFormat.Rtf))
+        {
+            SelectedRtf = Clipboard.GetText(TextDataFormat.Rtf);
+        }
+    }
+
+    private static bool IsClipboardContentCompatible()
+    {
+        if (Clipboard.ContainsText(TextDataFormat.Text) || Clipboard.ContainsText(TextDataFormat.Rtf))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ClipboardCheckTimer_Tick(object? sender, EventArgs e)
+    {
+        if (RequestPasteFromClipboardButton != IsClipboardContentCompatible())
+        {
+            RequestPasteFromClipboardButton = IsClipboardContentCompatible();
+            UpdateCommandStrip();
+        }
+    }
+
+    protected virtual Task OnAsyncSendCommandAsync(AsyncSendCommandEventArgs e)
+        => AsyncSendCommand?.Invoke(this, e) ?? Task.CompletedTask;
+
+    private void UpdateCommandStrip()
+    {
+        if (_commandStrip == null)
+            return;
+
+        _commandStrip.SuspendLayout();
+
+        _sendButton.EnsureNotNull().Visible = RequestPromptSendButton;
+        _copyButton.EnsureNotNull().Visible = RequestCopyToClipBoardButton;
+        _pasteButton.EnsureNotNull().Visible = RequestPasteFromClipboardButton;
+        _addButton.EnsureNotNull().Visible = RequestAddToLibraryButton;
+        _openButton.EnsureNotNull().Visible = RequestOpenLibraryButton;
+
+        _commandStrip.ResumeLayout();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _clipboardCheckTimer.Stop();
+            _clipboardCheckTimer.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }

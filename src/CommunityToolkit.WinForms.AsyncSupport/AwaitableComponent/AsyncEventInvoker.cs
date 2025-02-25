@@ -9,7 +9,7 @@ public readonly struct AsyncEventInvoker<TAsyncEventArgs>(
         object sender,
         TAsyncEventArgs e)
     {
-        var control = (Control)sender;
+        Control control = (Control)sender;
 
         if (asyncEventHandler is null)
             return;
@@ -28,7 +28,7 @@ public readonly struct AsyncEventInvoker<TAsyncEventArgs>(
         else
         {
             // Invoke each handler safely
-            foreach (var task in eventHandlerTasks)
+            foreach (Task task in eventHandlerTasks)
             {
                 await task.ConfigureAwait(false);
             }

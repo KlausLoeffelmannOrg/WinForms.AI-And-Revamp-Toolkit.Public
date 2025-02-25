@@ -1,10 +1,10 @@
 ﻿@page "/conversationview"
-@using CommunityToolkit.WinForms.ConversationView.Components
+@using CommunityToolkit.WinForms.ChatUI.Components
 
 <div class="canvas" style="background-color: @(BackColor);">
-    <div class="fullScreen-box" style="background-color: @(this.ViewModel.BackColor); color: @(this.ViewModel.ForeColor);">
-        <h1>@ViewModel.Headline</h1>
-        @foreach (var item in this.ViewModel.ConversationItems)
+    <div class="fullScreen-box" style="background-color: @(this.ConversationVm.BackColor); color: @(this.ConversationVm.ForeColor);">
+        <h1>@ConversationVm.Headline</h1>
+        @foreach (var item in this.ConversationVm.ConversationItems)
         {
             <div class="@(item.IsResponse ? "response-area" : "request-area")">
                 @if (item.IsResponse)
@@ -21,12 +21,12 @@
             </div>
         }
 
-        @if (!string.IsNullOrWhiteSpace(this.ViewModel.ResponseInProgress))
+        @if (!string.IsNullOrWhiteSpace(this.ConversationVm.ResponseInProgress))
         {
             <div class="item-label">Response:</div>
             <div class="response-area">
-                <div class="rounded-box" style="background-color: @(this.ViewModel.ResponseInProgressBackColor)">
-                    @((MarkupString)(this.ViewModel.ResponseInProgress))
+                <div class="rounded-box" style="background-color: @(this.ConversationVm.ResponseInProgressBackColor)">
+                    @((MarkupString)(this.ConversationVm.ResponseInProgress))
                 </div>
             </div>
         }

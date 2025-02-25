@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.WinForms.ConversationView.Extensions;
+using CommunityToolkit.WinForms.ChatUI.Extension;
 using Markdig;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
-namespace CommunityToolkit.WinForms.Controls.Blazor;
+namespace CommunityToolkit.WinForms.ChatUI;
 
 public partial class Conversation()
     : ObservableObject
@@ -76,6 +76,9 @@ public partial class Conversation()
     [ObservableProperty]
     private TimeSpan _completeProcessDuration;
 
+    [ObservableProperty]
+    private bool _viewUpdatesSuspended = false;
+
     public void WriteJSon(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream, nameof(stream));
@@ -141,7 +144,7 @@ public partial class Conversation()
     /// <param name="conversation">The conversation containing markdown items.</param>
     private static void ProcessMarkdownToHTML(Conversation conversation)
     {
-        foreach (var item in conversation.ConversationItems)
+        foreach (ConversationItem item in conversation.ConversationItems)
         {
             int index = 0;
 
@@ -274,7 +277,7 @@ public partial class Conversation()
 
         foreach (JsonElement itemElement in conversationItemsElement.EnumerateArray())
         {
-            var item = ConversationItem.FromJsonElement(itemElement);
+            ConversationItem item = ConversationItem.FromJsonElement(itemElement);
             conversation.ConversationItems.Add(item);
         }
 
@@ -321,7 +324,7 @@ public partial class Conversation()
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
 
-        var conversation = GetHeaderFromRoot(root);
+        Conversation conversation = GetHeaderFromRoot(root);
 
         return conversation;
     }
@@ -350,4 +353,24 @@ public partial class Conversation()
     /// </summary>
     /// <returns></returns>
     public static string GetDefaultTitle() => $"\u200B{DateTime.Now:MMM ddd dd, HH:mm}";
+
+    internal void SuspendUpdates()
+    {
+        if (ViewUpdatesSuspended)
+        {
+            throw new InvalidOperationException("Updates are already suspended.");
+        }
+
+        ViewUpdatesSuspended = true;
+    }
+
+    internal void ResumeUpdates()
+    {
+        if (!ViewUpdatesSuspended)
+        {
+            throw new InvalidOperationException("Updates are not suspended.");
+        }
+
+        ViewUpdatesSuspended = false;
+    }
 }

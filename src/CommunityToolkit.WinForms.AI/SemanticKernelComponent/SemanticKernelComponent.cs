@@ -1,30 +1,49 @@
 ﻿using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.AsyncSupport;
-using CommunityToolkit.WinForms.Controls;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+
 using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.Json;
 
+using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace CommunityToolkit.WinForms.AI;
 
 #pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 public partial class SemanticKernelComponent : BindableComponent
 {
-    // We're using the GPT-4o model from OpenAI directory for our Semantic Kernel scenario.
+    public static string CodeBlockFilenameMetaTag => ReturnTokenParser.CodeBlockFilename;
+    public static string CodeBlockTypeMetaTag => ReturnTokenParser.CodeBlockType;
+    public static string CodeBlockDescriptionMetaTag => ReturnTokenParser.CodeBlockDescription;
+
     private const string DefaultModelName = "gpt-4o-2024-11-20";
     private const string ApiEndpoint = "https://api.openai.com/v1/models";
+
+    private static readonly JsonSerializerOptions DefaultJsonSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
+
+    private static readonly JsonSerializerOptions TrailingCommasJsonSerializerOptions = new()
+    {
+        AllowTrailingCommas = true
+    };
 
     /// <summary>
     ///  Event triggered to request assistant instructions asynchronously.
@@ -87,20 +106,24 @@ public partial class SemanticKernelComponent : BindableComponent
     private double? _temperature;
     private double? _presencePenalty;
     private double? _frequencyPenalty;
-    private JsonSerializerOptions? _jsonSerializerOptions;
+
+    // Both lazy singletons.
+    private JsonSerializerOptions? _jsonDefaultSerializerOptions;
+    private JsonSerializerOptions? _jsonTrailingCommasSerializerOptions;
 
     private readonly SynchronizationContext? _syncContext = WindowsFormsSynchronizationContext.Current;
-    private string? _systemPrompt;
-    private bool _queueSystemPrompt;
+    private string? _developerPrompt;
+    private bool _queueDeveloperPrompt;
     private JsonElement? _jsonSchema;
 
     /// <summary>
-    ///  Requests a prompt response from the OpenAI API. Make sure, you set at least the <see cref="ApiKeyGetter"/> property,
-    ///  and the <see cref="SystemPrompt"/> property, which is the general description, what the Assistant is suppose to do.
+    ///  Requests a prompt response from the OpenAI API. Make sure you set at least the <see cref="ApiKeyGetter"/> property,
+    ///  and the <see cref="DeveloperPrompt"/> property, which is the general description of what the Assistant is supposed to do.
     /// </summary>
-    /// <param name="valueToProcess">The value as string which the model should process.</param>
-    /// <returns>The result from the LLM Model as plain text string or JSon string.</returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="valueToProcess">The value as a string which the model should process.</param>
+    /// <param name="keepChatHistory">Indicates whether to keep the chat history for the session.</param>
+    /// <returns>The result from the LLM Model as a plain text string or JSON string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the value to process is null or empty.</exception>
     public async Task<string?> RequestTextPromptResponseAsync(
         string valueToProcess,
         bool keepChatHistory)
@@ -110,7 +133,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
         (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) = await GetOrCreateChatServiceAsync();
 
-        var chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
+        ChatHistory chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
 
         IReadOnlyList<ChatMessageContent> responses = await chatService.GetChatMessageContentsAsync(
             chatHistory,
@@ -132,7 +155,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
     /// <summary>
     ///  Requests a prompt response from the OpenAI API as an async stream. Make sure, you set at least the <see cref="ApiKeyGetter"/> property,
-    ///  and the <see cref="SystemPrompt"/> property, which is the general description, what the Assistant is suppose to do.
+    ///  and the <see cref="DeveloperPrompt"/> property, which is the general description, what the Assistant is suppose to do.
     /// </summary>
     /// <param name="valueToProcess">The value as string which the model should process.</param>
     /// <param name="keepChatHistory">Indicates whether to keep the chat history for the session.</param>
@@ -164,7 +187,7 @@ public partial class SemanticKernelComponent : BindableComponent
         (OpenAIChatCompletionService chatService, OpenAIPromptExecutionSettings executionSettings) 
             = await GetOrCreateChatServiceAsync();
 
-        var chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
+        ChatHistory chatHistory = HandleChatHistory(valueToProcess, keepChatHistory);
 
         IAsyncEnumerable<StreamingChatMessageContent> responses = chatService.GetStreamingChatMessageContentsAsync(
             chatHistory,
@@ -174,7 +197,7 @@ public partial class SemanticKernelComponent : BindableComponent
         responses = chatHistory.AddStreamingMessageAsync(
             (IAsyncEnumerable<OpenAIStreamingChatMessageContent>)responses);
 
-        await foreach (var response in ReturnTokenParser.ProcessTokens(
+        await foreach (string response in ReturnTokenParser.ProcessTokens(
             asyncEnumerable: responses,
             onReceivedMetaDataAction: OnReceivedMetaData,
             onReceivedNextParagraphAction: OnReceivedNextParagraph,
@@ -199,21 +222,26 @@ public partial class SemanticKernelComponent : BindableComponent
             throw new InvalidOperationException("You requested to process a prompt, but the ChatHistory is not set.");
         }
 
+        // If we do not want to keep the chat history, clear it and queue the system prompt for the next request.
         if (!keepChatHistory)
         {
             ChatHistory.Clear();
-            _queueSystemPrompt = true;
+            _queueDeveloperPrompt = true;
         }
 
-        if (_queueSystemPrompt)
+        // If the system prompt is queued, add it to the chat history.
+        // The _queueDeveloperPrompt is for scenarios where we change the DeveloperPrompt on the fly.
+        // TODO: Since the introduction of DeveloperPrompts, this doesn't work reliably, anymore, and we should make sure, changing the Developer-Prompt erases the ChatHistory.
+        if (_queueDeveloperPrompt)
         {
             ChatHistory.AddMessage(
-                AuthorRole.Assistant,
-                EffectiveSystemPrompt ?? throw new InvalidOperationException("The effective system prompt is not set."));
+                AuthorRole.Developer,
+                EffectiveDeveloperPrompt ?? throw new InvalidOperationException("The effective developer prompt is not set."));
 
-            _queueSystemPrompt = false;
+            _queueDeveloperPrompt = false;
         }
 
+        // Add the user's message to the chat history.
         ChatHistory.AddUserMessage(valueToProcess);
 
         return ChatHistory;
@@ -254,7 +282,7 @@ public partial class SemanticKernelComponent : BindableComponent
                 JsonSchemaName,
                 JsonSchemaDescription);
 
-            EffectiveSystemPrompt = $"{eArgs.AssistantInstructions}\n\n{SystemPromptSchemaAmendment}" +
+            EffectiveDeveloperPrompt = $"{eArgs.AssistantInstructions}\n\n{DeveloperPromptSchemaAmendment}" +
                   $"\n\nThe Json Schema is as follows:\n{JsonSchemaString}";
         }
         else
@@ -263,13 +291,12 @@ public partial class SemanticKernelComponent : BindableComponent
                 + ResponseTextFormat switch
                 {
                     ResponseTextFormat.Markdown => "Markdown formatted.",
-                    ResponseTextFormat.PlainText => "as plain text without any additional formatting.",
                     ResponseTextFormat.Html => "as HTML.",
                     ResponseTextFormat.MicrosoftRichText => "as Microsoft Rich Text Format (RTF).",
-                    _ => "Plain text."
+                    _ => "as plain text without any additional formatting."
                 };
 
-            EffectiveSystemPrompt = $"{eArgs.AssistantInstructions}\n" + $"{formatRequestString}";
+            EffectiveDeveloperPrompt = $"{eArgs.AssistantInstructions}\n" + $"{formatRequestString}";
         }
 
         AsyncRequestExecutionSettingsEventArgs settingsEventArgs = new(executionSettings);
@@ -282,14 +309,12 @@ public partial class SemanticKernelComponent : BindableComponent
             .CreateBuilder()
             .AddOpenAIChatCompletion(ModelId, apiKey);
 
-        if (LogConsole is not null)
+        if (Logger is not null)
         {
             ILoggerFactory loggerFactory = CreateTelemetryLogger();
             kernelBuilder.Services.AddSingleton(loggerFactory);
 
-            Console.SetOut(LogConsole.ConsoleOut);
-            Console.WriteLine("Logging started.");
-            Console.WriteLine();
+            Logger.LogDebug("Telemetry logger created.");
         }
 
         _kernel = kernelBuilder.Build();
@@ -301,16 +326,28 @@ public partial class SemanticKernelComponent : BindableComponent
         return (chatService, settingsEventArgs.ExecutionSettings);
     }
 
+
+    /// <summary>
+    /// Asynchronously queries the OpenAI API for available model names.
+    /// </summary>
+    /// <returns>
+    /// A task representing the asynchronous operation. The task result contains a collection of model names if the request is successful; 
+    /// otherwise, <c>null</c>.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the API key for Open-AI access could not be retrieved.
+    /// </exception>
     public async Task<IEnumerable<string>?> QueryOpenAiModelNamesAsync()
     {
-        string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
+        string apiKey = (ApiKeyGetter?.Invoke())
+            ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
 
         using HttpClient client = new();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         try
         {
-            _jsonSerializerOptions ??= new JsonSerializerOptions
+            _jsonDefaultSerializerOptions ??= new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
                 WriteIndented = true
@@ -323,7 +360,7 @@ public partial class SemanticKernelComponent : BindableComponent
 
             OpenAiModelList? models = JsonSerializer.Deserialize<OpenAiModelList>(
                 responseBody,
-                options: _jsonSerializerOptions);
+                options: _jsonDefaultSerializerOptions);
 
             return models?.Data.Select(item => item.Id);
         }
@@ -332,18 +369,27 @@ public partial class SemanticKernelComponent : BindableComponent
             ExceptionDispatchInfo dispatchInfo = ExceptionDispatchInfo.Capture(ex);
 
             // Marshal to the UI thread
-            _syncContext?.Post(_ =>
-                {
-                    dispatchInfo.Throw();
-                }, null);
+            _syncContext?.Post(_ => { dispatchInfo.Throw(); }, null);
 
             return null;
         }
     }
 
+    /// <summary>
+    /// Asynchronously queries the OpenAI API for detailed information about a specified model.
+    /// </summary>
+    /// <param name="modelName">The name of the model to query.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The task result contains the model information if successful; 
+    /// otherwise, <c>null</c>.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the API key for Open-AI access could not be retrieved.
+    /// </exception>
     public async Task<ModelInfo?> QueryOpenAiModelInfoAsync(string modelName)
     {
-        string apiKey = (ApiKeyGetter?.Invoke()) ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
+        string apiKey = (ApiKeyGetter?.Invoke())
+            ?? throw new InvalidOperationException("API-Key for Open-AI access could not be retrieved.");
 
         using HttpClient client = new();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
@@ -363,62 +409,33 @@ public partial class SemanticKernelComponent : BindableComponent
             ExceptionDispatchInfo dispatchInfo = ExceptionDispatchInfo.Capture(ex);
 
             // Marshal to the UI thread
-            _syncContext?.Post(_ =>
-                {
-                    dispatchInfo.Throw();
-                }, null);
+            _syncContext?.Post(_ => { dispatchInfo.Throw(); }, null);
         }
 
         return null;
     }
 
-    public async Task<T> RequestStructuredResponseAsync<T>(string request, CancellationToken token)
+    /// <summary>
+    /// Sends a request with the specified prompt to obtain a structured response and deserializes it to the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to which the JSON response will be deserialized.</typeparam>
+    /// <param name="userRequestPrompt">The user prompt to send as a request.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The task result contains the deserialized object of type <typeparamref name="T"/>.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the type prompt is not available or when the text response is empty.
+    /// </exception>
+    /// <exception cref="FormatException">
+    /// Thrown if there is an error parsing or constructing the response object from the returned data.
+    /// </exception>
+    public async Task<T> RequestStructuredResponseAsync<T>(string userRequestPrompt)
     {
-        string? jsonSchema = PromptFromTypeSupport.GetJSonSchema<T>();
-        StructuredReturnDataAttribute promptInfo = PromptFromTypeSupport.GetTypePromptInfo<T>();
-        string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
+        string? jsonSchema = PromptFromTypeGenerator.GetJSonSchema<T>();
+        string prompt = PromptFromTypeGenerator.GetTypePrompt<T>();
 
-        StringBuilder stringBuilder = new();
-
-        if (promptInfo.ProvideDate)
-        {
-            stringBuilder.AppendLine($"Today is {DateTime.Now:d}.");
-        }
-
-        if (promptInfo.ProvideTime)
-        {
-            stringBuilder.AppendLine($"The current time is {DateTime.Now:T}.");
-        }
-
-        if (promptInfo.ProvideTimeZone)
-        {
-            stringBuilder.AppendLine($"The current time zone is {TimeZoneInfo.Local.DisplayName}.");
-        }
-
-        if (promptInfo.LanguageCulture is not null)
-        {
-            stringBuilder.AppendLine($"The user requested assistance for the following language: {promptInfo.LanguageCulture.DisplayName}.");
-        }
-
-        stringBuilder.AppendLine("Please provide the requested information and return Json according to the provided Json Schema.");
-        stringBuilder.AppendLine("Please provide the following information:");
-
-        IEnumerable<string> propertiesRequests = PromptFromTypeSupport.GetTypePropertyPrompts<T>();
-
-        foreach (string propertyRequest in propertiesRequests)
-        {
-            stringBuilder.AppendLine(propertyRequest);
-        }
-
-        stringBuilder.AppendLine();
-        stringBuilder.AppendLine("Please include Markdown formatting only for the inner json content " +
-            "where it applies, but not to the json envelope itself!");
-
-        stringBuilder.AppendLine("The Data to work with is as follow:");
-        stringBuilder.AppendLine();
-        stringBuilder.AppendLine(request);
-
-        string prompt = stringBuilder.ToString();
+        string developerPrompt = prompt
+            ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
 
         string? previousJSonSchema = JsonSchemaString;
 
@@ -427,25 +444,23 @@ public partial class SemanticKernelComponent : BindableComponent
             previousJSonSchema = null;
         }
 
-        string? previousSystemPrompt = SystemPrompt;
+        string? previousDeveloperPrompt = DeveloperPrompt;
 
         JsonSchemaString = jsonSchema;
-        SystemPrompt = systemPrompt;
+        DeveloperPrompt = developerPrompt;
 
         try
         {
-            string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
+            string? jsonReturnData = await RequestTextPromptResponseAsync(userRequestPrompt, false);
 
             if (string.IsNullOrEmpty(jsonReturnData))
             {
                 throw new InvalidOperationException("Trying to parse the text input failed for unknown reasons.");
             }
 
-            // Let's see, if we have to eliminate "```..." in the first line and
-            // "```" in the last line, as this is markdown formatting.
+            // Eliminate markdown formatting if present.
             if (jsonReturnData.StartsWith("```"))
             {
-                // The complete first line has to go:
                 int firstLineEnd = jsonReturnData.IndexOf('\n');
                 if (firstLineEnd > 0)
                 {
@@ -455,7 +470,6 @@ public partial class SemanticKernelComponent : BindableComponent
 
             if (jsonReturnData.EndsWith("```"))
             {
-                // The complete last line has to go:
                 int lastLineStart = jsonReturnData.LastIndexOf('\n');
                 if (lastLineStart > 0)
                 {
@@ -465,16 +479,15 @@ public partial class SemanticKernelComponent : BindableComponent
 
             try
             {
-                var options = new JsonSerializerOptions
+                _jsonTrailingCommasSerializerOptions ??= new()
                 {
                     AllowTrailingCommas = true
                 };
 
-                T typedReturnValue = JsonSerializer.Deserialize<T>(jsonReturnData, options)!;
+                T typedReturnValue = JsonSerializer.Deserialize<T>(jsonReturnData, _jsonTrailingCommasSerializerOptions)!;
 
                 return typedReturnValue;
             }
-
             catch (Exception innerException)
             {
                 if (innerException is FormatException)
@@ -482,138 +495,16 @@ public partial class SemanticKernelComponent : BindableComponent
                     throw;
                 }
 
-                throw new FormatException("There was a problem constructing the type from the response data.", innerException);
+                throw new FormatException(
+                    "There was a problem constructing the type from the response data.", innerException);
             }
         }
         finally
         {
             JsonSchemaString = previousJSonSchema;
-            SystemPrompt = previousSystemPrompt;
+            DeveloperPrompt = previousDeveloperPrompt;
         }
     }
-
-    public class ParentArray<T>
-    {
-        public T[]? Items { get; set; }
-    }
-
-    public async Task<string[]> RequestStructuredStringListResponseAsync(string request, CancellationToken token)
-    {
-        string prompt = $"{request}\n\nPlease provide the requested information and return Json as an Array of string.";
-        string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
-
-        return JsonSerializer.Deserialize<string[]>(jsonReturnData!)!;
-    }
-
-    public async Task<T[]> RequestStructuredListResponseAsync<T>(string request, CancellationToken token)
-    {
-        string? jsonSchema = PromptFromTypeSupport.GetJSonSchema<ParentArray<T>>();
-        StructuredReturnDataAttribute promptInfo = PromptFromTypeSupport.GetTypePromptInfo<T>();
-
-        string systemPrompt = promptInfo.Prompt ?? throw new InvalidOperationException("The type did not return a basic (system) prompt.");
-
-        StringBuilder stringBuilder = new();
-
-        if (promptInfo.ProvideDate)
-        {
-            stringBuilder.AppendLine($"Today is {DateTime.Now:d}.");
-        }
-
-        if (promptInfo.ProvideTime)
-        {
-            stringBuilder.AppendLine($"The current time is {DateTime.Now:T}.");
-        }
-
-        if (promptInfo.ProvideTimeZone)
-        {
-            stringBuilder.AppendLine($"The current time zone is {TimeZoneInfo.Local.DisplayName}.");
-        }
-
-        if (promptInfo.LanguageCulture is not null)
-        {
-            stringBuilder.AppendLine($"The user requested assistance for the following language: {promptInfo.LanguageCulture.DisplayName}.");
-        }
-
-        stringBuilder.AppendLine("Please provide the requested information and return Json as an Array according to the provided Json Schema.");
-        stringBuilder.AppendLine("Please provide the following information:");
-
-        IEnumerable<string> propertiesRequests = PromptFromTypeSupport.GetTypePropertyPrompts<T>();
-
-        foreach (string propertyRequest in propertiesRequests)
-        {
-            stringBuilder.AppendLine(propertyRequest);
-        }
-
-        stringBuilder.AppendLine();
-        stringBuilder.AppendLine("Please include Markdown formatting only for the inner json content " +
-            "where it applies, but not to the json envelope itself!");
-
-        stringBuilder.AppendLine("The Data to work with is as follow:");
-        stringBuilder.AppendLine();
-        stringBuilder.AppendLine(request);
-
-        string prompt = stringBuilder.ToString();
-
-        string? previousJSonSchema = JsonSchemaString;
-        string? previousSystemPrompt = SystemPrompt;
-
-        JsonSchemaString = jsonSchema;
-        SystemPrompt = systemPrompt;
-
-        try
-        {
-            string? jsonReturnData = await RequestTextPromptResponseAsync(prompt, false);
-
-            if (string.IsNullOrEmpty(jsonReturnData))
-            {
-                throw new InvalidOperationException("Trying to parse the text input failed for unknown reasons.");
-            }
-
-            // Let's see, if we have to eliminate "```..." in the first line and
-            // "```" in the last line, as this is markdown formatting.
-            if (jsonReturnData.StartsWith("```"))
-            {
-                // The complete first line has to go:
-                int firstLineEnd = jsonReturnData.IndexOf('\n');
-                if (firstLineEnd > 0)
-                {
-                    jsonReturnData = jsonReturnData[firstLineEnd..];
-                }
-            }
-
-            if (jsonReturnData.EndsWith("```"))
-            {
-                // The complete last line has to go:
-                int lastLineStart = jsonReturnData.LastIndexOf('\n');
-                if (lastLineStart > 0)
-                {
-                    jsonReturnData = jsonReturnData[..lastLineStart];
-                }
-            }
-
-            try
-            {
-                T[] typedReturnValue = JsonSerializer.Deserialize<T[]>(jsonReturnData)!;
-                return typedReturnValue;
-            }
-
-            catch (Exception innerException)
-            {
-                if (innerException is FormatException)
-                {
-                    throw;
-                }
-
-                throw new FormatException("There was a problem constructing the type from the response data.", innerException);
-            }
-        }
-        finally
-        {
-            JsonSchemaString = previousJSonSchema;
-            SystemPrompt = previousSystemPrompt;
-        }
-    }
-
 
     private static ILoggerFactory CreateTelemetryLogger()
     {
@@ -657,7 +548,7 @@ public partial class SemanticKernelComponent : BindableComponent
     }
 
     protected virtual string? GetAssistantInstructions()
-        => SystemPrompt;
+        => DeveloperPrompt;
 
     protected virtual Task OnRequestAssistantInstructionsAsync(AsyncRequestAssistantInstructionsEventArgs eArgs)
         => AsyncRequestAssistanceInstructions?.Invoke(this, eArgs) ?? Task.CompletedTask;
@@ -691,7 +582,7 @@ public partial class SemanticKernelComponent : BindableComponent
         _chatHistory ??= [];
 
         _chatHistory.AddMessage(
-            isResponse ? AuthorRole.Assistant : AuthorRole.User,
+            isResponse ? AuthorRole.Developer : AuthorRole.User,
             message);
     }
 
@@ -711,52 +602,52 @@ public partial class SemanticKernelComponent : BindableComponent
     [DefaultValue(ResponseTextFormat.Markdown)]
     public ResponseTextFormat ResponseTextFormat { get; set; } = ResponseTextFormat.Markdown;
 
-    /// <summary>
-    ///  Gets or sets the function to retrieve the API key for OpenAI.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   This property holds a delegate function that returns the API key required for accessing OpenAI services.
-    ///  </para>
-    ///  <para>
-    ///   To set, for example, the API key in the Environment Variables on Windows, follow these steps:
-    ///   <list type="number">
-    ///     <item>
-    ///       <description>Open the Start Menu and search for "Environment Variables".</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>Select "Edit the system environment variables".</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>In the System Properties window, click on the "Environment Variables" button.</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>In the Environment Variables window, click "New" under the "User variables" section.</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>Enter the variable name (e.g., "OPENAI_API_KEY") and the API key as the variable value.</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>Click "OK" to save the new environment variable.</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>Log off and log back on to ensure the environment variable is recognized by the system.</description>
-    ///     </item>
-    ///   </list>
-    ///  </para>
-    ///  <para>
-    ///   Here is an example of how to create an ApiKeyGetter Func in C#:
-    ///   <code language="csharp">
-    ///    public Func<string> ApiKeyGetter = () => Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-    ///   </code>
-    ///  </para>
-    ///  <para>
-    ///   Here is an example of how to create an ApiKeyGetter Func in VB:
-    ///   <code language="vb">
-    ///    Public ApiKeyGetter As Func(Of String) = Function() Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-    ///   </code>
-    ///  </para>
-    /// </remarks>
+    /// <summary>  
+    ///  Gets or sets the function to retrieve the API key for OpenAI.  
+    /// </summary>  
+    /// <remarks>  
+    ///  <para>  
+    ///   This property holds a delegate function that returns the API key required for accessing OpenAI services.  
+    ///  </para>  
+    ///  <para>  
+    ///   To set, for example, the API key in the Environment Variables on Windows, follow these steps:  
+    ///   <list type="number">  
+    ///     <item>  
+    ///       <description>Open the Start Menu and search for "Environment Variables".</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>Select "Edit the system environment variables".</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>In the System Properties window, click on the "Environment Variables" button.</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>In the Environment Variables window, click "New" under the "User variables" section.</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>Enter the variable name (e.g., "OPENAI_API_KEY") and the API key as the variable value.</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>Click "OK" to save the new environment variable.</description>  
+    ///     </item>  
+    ///     <item>  
+    ///       <description>Log off and log back on to ensure the environment variable is recognized by the system.</description>  
+    ///     </item>  
+    ///   </list>  
+    ///  </para>  
+    ///  <para>  
+    ///   Here is an example of how to create an ApiKeyGetter Func in C#:  
+    ///   <code language="csharp">  
+    ///    public Func&lt;string&gt; ApiKeyGetter = () =&gt; Environment.GetEnvironmentVariable("OPENAI_API_KEY");  
+    ///   </code>  
+    ///  </para>  
+    ///  <para>  
+    ///   Here is an example of how to create an ApiKeyGetter Func in VB:  
+    ///   <code language="vb">  
+    ///    Public ApiKeyGetter As Func(Of String) = Function() Environment.GetEnvironmentVariable("OPENAI_API_KEY")  
+    ///   </code>  
+    ///  </para>  
+    /// </remarks>  
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [Browsable(false)]
     public Func<string>? ApiKeyGetter { get; set; }
@@ -770,7 +661,7 @@ public partial class SemanticKernelComponent : BindableComponent
     ///  </para>
     /// </remarks>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ConsoleControl? LogConsole { get; set; }
+    public ILogger? Logger { get; set; }
 
     /// <summary>
     ///  Gets or sets the JSON schema for the return value.
@@ -788,7 +679,7 @@ public partial class SemanticKernelComponent : BindableComponent
     [Category("Model Parameter")]
     [Description($"Gets or sets JSon schema for the return value. If you are sure that the schema in your " +
         $"scenario never changes, you can put it here already at design-time. But " +
-        $"consider using the {nameof(PromptFromTypeSupport)} methods for flexible scenarios.")]
+        $"consider using the {nameof(PromptFromTypeGenerator)} methods for flexible scenarios.")]
     public string? JsonSchemaString
     {
         get => _jsonSchema is null ? null : $"{_jsonSchema}";
@@ -903,29 +794,29 @@ public partial class SemanticKernelComponent : BindableComponent
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public virtual string? SystemPrompt
+    public virtual string? DeveloperPrompt
     {
-        get => _systemPrompt;
+        get => _developerPrompt;
         set
         {
-            if (value == _systemPrompt)
+            if (value == _developerPrompt)
                 return;
 
-            _systemPrompt = value;
-            _queueSystemPrompt = true;
+            _developerPrompt = value;
+            _queueDeveloperPrompt = true;
         }
     }
 
     /// <summary>
     ///  The SystemPrompt, as it became constructed based on schema information, original SystemPrompt and SystemPrompt event.
     /// </summary>
-    private string? EffectiveSystemPrompt { get; set; }
+    private string? EffectiveDeveloperPrompt { get; set; }
 
     /// <summary>
     ///  Gets or sets an amendment to the system prompt in the case, a JSon schema had been provided, so 
     ///  we need to instruct the model to return the result in JSon according to the schema information.
     /// </summary>
-    protected virtual string SystemPromptSchemaAmendment { get; set; } =
+    protected virtual string DeveloperPromptSchemaAmendment { get; set; } =
         // Note: The "IMPORTANT" is actually not necessary anymore with more modern models, like GPT-4o.
         // Also read: https://cookbook.openai.com/examples/structured_outputs_intro
         $"""

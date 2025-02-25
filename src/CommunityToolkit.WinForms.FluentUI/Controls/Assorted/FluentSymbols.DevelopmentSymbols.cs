@@ -1,4 +1,6 @@
-﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
+﻿using CommunityToolkit.WinForms.Extensions;
+
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 public static partial class FluentSymbols
 {

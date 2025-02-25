@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.WinForms.BasicTests.TestSupport;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using CommunityToolkit.WinForms.Roslyn.CSharp.Extensions;
 using Microsoft.CodeAnalysis.CSharp;
+using CommunityToolkit.Roslyn.CSharp.Extensions;
 
 namespace CommunityToolkit.WinForms.BasicTests.UnitTests.Roslyn.CSharp;
 
@@ -31,7 +31,6 @@ public class ClassExtensionsTests
         workspace = workspace.CreateWorkspaceFromSourceFiles([filename]);
 
         Document document = workspace.GetFirstDocument();
-        Assert.NotNull(document);
 
         // Get the class declaration
         ClassDeclarationSyntax classDeclaration = await document.GetSingleClassAsync();
@@ -40,13 +39,16 @@ public class ClassExtensionsTests
         HashSet<SyntaxKind> memberKinds = classDeclaration.GetMemberKinds();
 
         // Arrange
-        var expectedMemberKinds = new HashSet<SyntaxKind>
-        {
+        HashSet<SyntaxKind> expectedMemberKinds =
+        [
             SyntaxKind.FieldDeclaration,
+            SyntaxKind.EventFieldDeclaration,
             SyntaxKind.ConstructorDeclaration,
+            SyntaxKind.PropertyDeclaration,
+            SyntaxKind.IndexerDeclaration,
             SyntaxKind.MethodDeclaration,
             SyntaxKind.ClassDeclaration
-        };
+        ];
 
         // Assert
         Assert.NotNull(memberKinds);

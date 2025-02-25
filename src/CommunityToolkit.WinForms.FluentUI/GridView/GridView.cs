@@ -44,16 +44,30 @@ public partial class GridView : DataGridView
         ColumnHeadersVisible = false;
         RowHeadersVisible = false;
         VirtualMode = true;
+
+        GridViewCell cellTemplate = new()
+        {
+            ItemTemplateGetter = new(() => GridViewItemTemplate)
+        };
+
+        DataGridViewColumn dataRowObjectColumn = new(cellTemplate)
+        {
+            Name = "DataColumn",
+            HeaderText = "DataColumn",
+            SortMode = DataGridViewColumnSortMode.NotSortable,
+        };
+
+        Columns.Add(dataRowObjectColumn);
     }
 
     [Bindable(false)]
     [Browsable(true)]
     [AttributeProvider(typeof(IListSource))]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public new object? DataContext 
-    { 
-        get => base.DataContext; 
-        set => base.DataContext = value; 
+    public new object? DataContext
+    {
+        get => base.DataContext;
+        set => base.DataContext = value;
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -169,32 +183,9 @@ public partial class GridView : DataGridView
     private void OnGridViewItemTemplateChanged()
         => GridViewItemTemplateChanged?.Invoke(this, EventArgs.Empty);
 
-    protected override void OnHandleCreated(EventArgs e)
+    protected override void OnRowHeightInfoNeeded(DataGridViewRowHeightInfoNeededEventArgs e)
     {
-        base.OnHandleCreated(e);
-
-        // Add custom column "DataRowObject"
-        var dataRowObjectColumn = new DataGridViewColumn(
-            new GridViewCell()
-            {
-                ItemTemplate = GridViewItemTemplate
-            })
-        {
-            Name = "DataColumn",
-            HeaderText = "DataColumn",
-            SortMode = DataGridViewColumnSortMode.NotSortable,
-        };
-
-        Columns.Clear();
-
-        // We do not want to add the column in design mode, because then the CodeDOMSerializer will add the 
-        // column to the code-behind file over and over again.
-        if (IsAncestorSiteInDesignMode)
-        {
-            return;
-        }
-
-        Columns.Add(dataRowObjectColumn);
+        base.OnRowHeightInfoNeeded(e);
     }
 
     protected override void OnRowPrePaint(DataGridViewRowPrePaintEventArgs e)
@@ -218,7 +209,7 @@ public partial class GridView : DataGridView
                 System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             // We need the bounds of the row to paint the selection rectangle:
-            var rowBounds = new Rectangle(
+            Rectangle rowBounds = new Rectangle(
                     x: e.RowBounds.Left,
                     y: e.RowBounds.Top,
                     width: e.RowBounds.Width,
@@ -241,13 +232,25 @@ public partial class GridView : DataGridView
     {
         base.OnCellValueNeeded(e);
 
+        if (_underlayingList is null)
+        {
+            return;
+        }
+
         if (_underlayingList is IList list)
         {
             e.Value = list[e.RowIndex];
         }
+        else if (_underlayingList is IEnumerable)
+        {
+            e.Value = _underlayingList
+                .Cast<object?>()
+                .ElementAt(e.RowIndex);
+        }
         else
         {
-            throw new InvalidOperationException("The collection must implement IList.");
+            throw new InvalidOperationException(
+                "DataContext is not a list or an enumerable.");
         }
     }
 }

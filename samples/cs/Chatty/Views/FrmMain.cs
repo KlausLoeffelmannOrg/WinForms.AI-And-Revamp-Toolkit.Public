@@ -1,15 +1,19 @@
+using Chatty.Agents.Personalities;
 using Chatty.ViewModels;
-using Chatty.Views;
+
+using CommunityToolkit.Roslyn.Tooling;
 using CommunityToolkit.WinForms.AI;
-using CommunityToolkit.WinForms.AI.ConverterLogic;
+using CommunityToolkit.WinForms.ChatUI;
 using CommunityToolkit.WinForms.ComponentModel;
-using CommunityToolkit.WinForms.Controls.Blazor;
+using CommunityToolkit.WinForms.Controls.Tooling.Roslyn;
 using CommunityToolkit.WinForms.Extensions;
 
 namespace Chatty;
 
 public partial class FrmMain : Form
 {
+    private static readonly string Key_OpenAI_Standard = "AI:OpenAI:ApiKey";
+
     private const string Key_MainView_Bounds = nameof(Key_MainView_Bounds);
     private const string Key_Options = nameof(Key_Options);
 
@@ -20,6 +24,7 @@ public partial class FrmMain : Form
     private PersonalityManager _personalities = null!;
     private IEnumerable<string>? _openAIModels;
     private TreeNode? _currentNode;
+    private Personality _currentPersonality = null!;
     private readonly CancellationTokenSource _shutDownCancellation = new();
 
     private readonly ChatView _chatView;
@@ -33,6 +38,11 @@ public partial class FrmMain : Form
         InitializeComponent();
         CreateKnownTreeViewNodes();
 
+        if (Application.IsDarkModeEnabled)
+        {
+            _statusStrip.BackColor = Color.Black;
+        }
+
         Application.ThreadException += (s, e) =>
         {
             ReportToStatusBarInfo(
@@ -42,7 +52,12 @@ public partial class FrmMain : Form
                 critical: true);
         };
 
-        _chatView = new();
+        _chatView = new()
+        {
+            ApiKeyGetter = () => Environment.GetEnvironmentVariable(Key_OpenAI_Standard)
+                ?? throw new NullReferenceException($"The environment variable '{Key_OpenAI_Standard}' is not set.")
+        };
+
         _chatView.AsyncNotifyRefreshedMetaData += ChatView_AsyncNotifyRefreshedMetaData;
         _chatView.AsyncCodeBlockInfoProvided += ChatView_AsyncCodeBlockInfoProvided;
         _chatView.AsyncRequestFileExtractingSettings += ChatView_AsyncRequestFileExtractingSettings;
@@ -59,10 +74,11 @@ public partial class FrmMain : Form
         _tscPersonalities.SelectedIndexChanged += (s, e) =>
         {
             // Lookup the selected personality:
-            Personality selectedPersonality = _tscPersonalities.SelectedItem as Personality
+            _currentPersonality = _tscPersonalities.SelectedItem as Personality
                 ?? throw new NullReferenceException("Personality disorder exception!");
 
-            _chatView.SystemPrompt = selectedPersonality.SystemPrompt;
+            _chatView.DeveloperPrompt = _currentPersonality.GetDeveloperPrompt();
+            _chatView.ClearChatHistory();
         };
 
         _tscModels.SelectedIndexChanged += (s, e) =>
@@ -92,29 +108,34 @@ public partial class FrmMain : Form
         // Iterate through any additional open tabs and save the respective listing files:
         foreach (Panel tabPage in _mainTabControl.Tabs)
         {
-            if (tabPage.Controls[0] is not RoslynSourceView sourceViewer)
+            if (tabPage.Controls[0] is not RoslynDocumentView sourceViewer)
             {
                 continue;
             }
 
-            await sourceViewer.SaveFileAsync(e.ConversationPath
-                ?? throw new NullReferenceException(nameof(e.ConversationPath)));
+            PersonalityFileExtractionSetting settings = _currentPersonality.FileExtractionSettings;
+
+            // Let's save the file according to the Personality-Setting.
+            if (settings.HasFlag(PersonalityFileExtractionSetting.ExtractAutomatically))
+            {
+                if (settings.HasFlag(PersonalityFileExtractionSetting.SaveToConversationFolder))
+                {
+                    await sourceViewer.SaveFileAsync(e.ConversationPath
+                        ?? throw new NullReferenceException(nameof(e.ConversationPath)));
+                }
+                else if (settings.HasFlag(PersonalityFileExtractionSetting.SaveToDedicatedPersonalityFolder))
+                {
+                    await sourceViewer.SaveFileAsync(_currentPersonality.DedicatedPersonalityFolder);                }
+                else
+                {
+                    throw new NotImplementedException("The Personality setting for automatic code-block saving is faulty.");
+                }
+            }
         }
     }
 
     private async Task ChatView_AsyncCodeBlockInfoProvided(object sender, AsyncCodeBlockInfoProvidedEventArgs e)
     {
-        string additionalResourceText = """
-            By default, no prompt asked for an extended format of the listing headers in Mark Down.
-            Listing Extraction is only possible, if the resulting Markdown formatted listing includes
-            ```csharp{{filename:myfilename.cs}}{{title:My Title}}.
-        
-            The resulting Markdown of the prompt did not include this information, which means
-            that the prompt did not ask for an extended format of the listing headers in Mark Down.
-        
-            Rewrite the prompt with regards to this and check, if the result satisfies the requirements.
-            """;
-
         // If we don't have a filename, it's likely the user picked a profile, which returned
         // a different format. In that case, the prompt is missing the ask to include
         // meta-information in the response like {{filename:myfilename.cs}} or {{title:My Title}}.
@@ -124,7 +145,7 @@ public partial class FrmMain : Form
             ReportToStatusBarInfo(
                 message: "The profile you selected does not support listing extraction.",
                 toolTipText: "The profile you selected does not support the meta-information.",
-                additionalResourceText,
+                "No filename was provided, please make sure your prompt request extraction!",
                 critical: true);
 
             return;
@@ -132,7 +153,7 @@ public partial class FrmMain : Form
 
         try
         {
-            RoslynSourceView sourceViewer = null!;
+            RoslynDocumentView sourceViewer = null!;
 
             CodeBlockInfo codeBlockInfo = e.CodeBlock;
 
@@ -163,7 +184,7 @@ public partial class FrmMain : Form
             {
                 _lblConversationTitle.Text = e.ChatTitle;
 
-                var conversation = _chatView.ConversationView.Conversation;
+                Conversation conversation = _chatView.ConversationView.Conversation;
                 _currentNode = UpdateTreeView(conversation.Id);
                 UpdateStatusBar(conversation);
             });
@@ -321,14 +342,5 @@ public partial class FrmMain : Form
 
         // We're updating the status bar:
         UpdateStatusBar(conversation);
-    }
-
-    private void PersonalitiesChanged(object? sender, EventArgs e)
-    {
-        // We're saving the changes:
-        _personalities.SavePersonalities(_options.BasePath);
-
-        // Rebuild the ComboBox:
-        RebuildPersonalitiesDropDown(_options.LastUsedIdPersonality);
     }
 }

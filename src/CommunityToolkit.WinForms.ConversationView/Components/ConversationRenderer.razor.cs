@@ -1,9 +1,8 @@
-﻿using CommunityToolkit.WinForms.Controls.Blazor;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Collections.ObjectModel;
 
-namespace CommunityToolkit.WinForms.ConversationView.Components;
+namespace CommunityToolkit.WinForms.ChatUI.Components;
 
 /// <summary>
 ///  MarkDown renderer component - based on Alexander Mutel's MarkDig, 
@@ -18,7 +17,7 @@ public partial class ConversationRenderer : ComponentBase
     private IJSRuntime? JSRuntime { get; set; }
 
     [Parameter]
-    public Conversation ViewModel
+    public Conversation ConversationVm
     {
         get => _viewModel;
         set
@@ -37,7 +36,7 @@ public partial class ConversationRenderer : ComponentBase
     {
         base.OnInitialized();
 
-        if (ViewModel is not null)
+        if (ConversationVm is not null)
         {
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             SetConversationItems(_viewModel.ConversationItems);
@@ -62,12 +61,20 @@ public partial class ConversationRenderer : ComponentBase
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Conversation.ConversationItems))
+        if (e.PropertyName == nameof(ChatUI.Conversation.ConversationItems))
         {
             SetConversationItems(_viewModel.ConversationItems);
         }
 
-        InvokeAsync(StateHasChanged);
+        // We need to make sure, that we can suspend the updates to avoid flickering.
+        // The property `ViewUpdatesSuspended` is itself an observable property.
+        // So, when we're changing it back to `false`, we need to call `StateHasChanged`.
+        // But since it fires PropertyChanged, when it becomes false, we end up here,
+        // and then invoke the changes.
+        if (!ConversationVm.ViewUpdatesSuspended)
+        {
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void SetConversationItems(ObservableCollection<ConversationItem>? conversationItems)

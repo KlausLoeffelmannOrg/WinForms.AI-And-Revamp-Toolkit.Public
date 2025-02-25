@@ -7,6 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Vsxmd" Version="1.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+    <PropertyGroup>
+	    <DocumentationMarkdown>$(MSBuildProjectDirectory)..\..\..\docs\CommunityToolkit.WinForms.FluentUI\reference.md</DocumentationMarkdown>
+	    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    </PropertyGroup>
+
+	<ItemGroup>
 	<ProjectReference Include="..\CommunityToolkit.WinForms.AI\CommunityToolkit.WinForms.AI.csproj" />
 	<ProjectReference Include="..\CommunityToolkit.WinForms.AsyncSupport\CommunityToolkit.WinForms.AsyncSupport.csproj" />
     <ProjectReference Include="..\CommunityToolkit.WinForms.FormAndControlExtensions\CommunityToolkit.WinForms.Extensions.FormAndControlExtensions.csproj" />
@@ -56,6 +69,12 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="AITypedInputExtenders\AITextFormatterComponent.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="AsyncGridView\AsyncDataGridView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="AsyncGridView\AsyncGridView.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="Controls\AsyncButton\AsyncButton.cs">

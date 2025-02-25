@@ -1,8 +1,11 @@
-﻿using CommunityToolkit.WinForms.AI;
+﻿using CommunityToolkit.Roslyn.Tooling;
+using CommunityToolkit.WinForms.AI;
 using CommunityToolkit.WinForms.AI.ConverterLogic;
 using CommunityToolkit.WinForms.BasicTests.TestSupport;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+
+using System.Diagnostics;
 using System.Text;
 
 namespace CommunityToolkit.WinForms.BasicTests.UnitTests.SemanticKernel;
@@ -23,16 +26,20 @@ public class SemanticKernelTest
         TestDataItemProvider testDataItemInfo = new(filename);
 
         IAsyncEnumerable<StreamingChatMessageContent> mockData
-            = testDataItemInfo.GetStreamingChatMessageContents(AuthorRole.Assistant);
+            = testDataItemInfo.GetStreamingChatMessageContents(AuthorRole.Developer);
 
         List<ReturnStreamMetaData> receivedMetaData = [];
         List<string> receivedParagraphs = [];
         List<CodeBlockInfo> codeBlocks = [];
 
-        // Act
         List<string> result = [];
         StringBuilder docFromWordTokenStreamBuilder = new();
         StringBuilder docFromParagraphEventBuilder = new();
+
+        if (filename.EndsWith("MarkDown_ComplexDoc_TestTokenReturnStream.csLiterals"))
+        {
+            Debug.Print(filename);
+        }
 
         await foreach (string token in ReturnTokenParser.ProcessTokens(
             asyncEnumerable: mockData,
@@ -51,7 +58,9 @@ public class SemanticKernelTest
         // but with the .parsed extension:
 
         // So let's create the filename first and see, if the file is there:
-        string parsedFilename = Path.Combine(testDataItemInfo.TestDataDirectoryPath, $"{testDataItemInfo.NakedFilename}.parsed");
+        string parsedFilename = Path.Combine(
+            testDataItemInfo.TestDataDirectoryPath,
+            $"{testDataItemInfo.NakedFilename}.parsed");
 
         // Now, let's see, if it's there:
         string expectedContent = File.Exists(parsedFilename)
@@ -67,7 +76,10 @@ public class SemanticKernelTest
         // If the results are different, let's save it under ".parsed.actual":
         if (fileContent != expectedContent)
         {
-            string actualFilename = Path.Combine(testDataItemInfo.TestDataDirectoryPath, $"{testDataItemInfo.NakedFilename}.parsed.actual");
+            string actualFilename = Path.Combine(
+                testDataItemInfo.TestDataDirectoryPath,
+                $"{testDataItemInfo.NakedFilename}.parsed.actual");
+
             File.WriteAllText(actualFilename, fileContent);
         }
 
@@ -80,6 +92,7 @@ public class SemanticKernelTest
         void OnReceivedMetaData(AsyncReceivedInlineMetaDataEventArgs args)
         {
             receivedMetaData.Add(args.MetaData);
+            Debug.Print(args.MetaData.ToString());
         }
 
         void OnReceivedNextParagraph(AsyncReceivedNextParagraphEventArgs args)
@@ -91,6 +104,11 @@ public class SemanticKernelTest
         void OnCodeBlockInfoProvided(AsyncCodeBlockInfoProvidedEventArgs args)
         {
             codeBlocks.Add(args.CodeBlock);
+            Debug.Print("==========================");
+            Debug.Print(args.CodeBlock.Code.ToString());
+            Debug.Print("==========================");
+            Debug.Print("");
+            Debug.Print("");
         }
     }
 }

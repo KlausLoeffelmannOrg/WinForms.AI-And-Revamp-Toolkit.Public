@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.DesktopGeneric.Mvvm;
-using CommunityToolkit.WinForms.ComponentModel;
-using System.ComponentModel;
-using System.Globalization;
+
+using System.Diagnostics.CodeAnalysis;
+
 using WinFormsDialogResult = System.Windows.Forms.DialogResult;
 
 namespace CommunityToolkit.WinForms.Extensions;
@@ -9,7 +9,7 @@ namespace CommunityToolkit.WinForms.Extensions;
 public static class FormExtensions
 {
     /// <summary>
-    ///  Centers the form on the specified screen or the screen containing the form.
+    /// Centers the form on the specified screen or the screen containing the form.
     /// </summary>
     /// <param name="form">The form to be centered.</param>
     /// <param name="screen">The screen on which to center the form. If null, the screen containing the form is used.</param>
@@ -30,7 +30,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Gets the bounds of the form that can be restored to.
+    /// Gets the bounds of the form that can be restored to.
     /// </summary>
     /// <param name="form">The form whose restorable bounds are to be retrieved.</param>
     /// <returns>A <see cref="Rectangle"/> representing the restorable bounds of the form.</returns>
@@ -45,16 +45,16 @@ public static class FormExtensions
         };
 
     /// <summary>
-    ///  Shows the form as a modal dialog box with a data context.
+    /// Shows the form as a modal dialog box with a data context.
     /// </summary>
     /// <typeparam name="T">The type of the data context.</typeparam>
     /// <param name="form">The form to be shown as a dialog.</param>
     /// <param name="dialogDataContext">
-    ///  The data context to be passed to the form. This parameter is passed by 
-    ///  reference and will be updated with the form's data context after the dialog is closed.</param>
+    /// The data context to be passed to the form. This parameter is passed by 
+    /// reference and will be updated with the form's data context after the dialog is closed.</param>
     /// <returns>
-    ///  A <see cref="DialogResult{T}"/> containing the result of the dialog and
-    ///  the updated data context.
+    /// A <see cref="IModalDialogResult{T}"/> containing the result of the dialog and
+    /// the updated data context.
     /// </returns>
     public async static Task<IModalDialogResult<T>> ShowDialogAsync<T>(this Form form, T? dialogDataContext)
         where T : class
@@ -67,7 +67,7 @@ public static class FormExtensions
         form.FormClosing += Form_FormClosing;
 
 #pragma warning disable WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        var dialogResult = await form.ShowDialogAsync();
+        WinFormsDialogResult dialogResult = await form.ShowDialogAsync();
 #pragma warning restore WFO5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
         dialogDataContext = (T?)form.DataContext;
 
@@ -106,54 +106,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Adds a value converter to an existing binding on a bindable component.
-    /// </summary>
-    /// <param name="bindableComponent">The bindable component to which the converter is added.</param>
-    /// <param name="propertyName">The name of the property that is bound.</param>
-    /// <param name="valueConverter">The value converter to be added to the binding.</param>
-    /// <returns>The binding with the added value converter.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="propertyName"/> or <paramref name="valueConverter"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when no binding is found for the specified property.</exception>
-    public static Binding AddBindingConverter(
-        this IBindableComponent bindableComponent,
-        string propertyName,
-        IValueConverter valueConverter)
-    {
-        ArgumentNullException.ThrowIfNull(propertyName, nameof(propertyName));
-        ArgumentNullException.ThrowIfNull(valueConverter, nameof(valueConverter));
-
-        if (bindableComponent.DataBindings[propertyName] is not Binding binding)
-        {
-            throw new InvalidOperationException($"No binding found for property '{propertyName}'.");
-        }
-
-        binding.Parse += Binding_Parse;
-        binding.Format += Binding_Format;
-
-        var managerBase = binding.BindingManagerBase;
-
-        bindableComponent.Disposed += Control_Disposed;
-        return binding;
-
-        void Binding_Format(object? sender, ConvertEventArgs e)
-        {
-            e.Value = valueConverter.Convert(e.Value, e.DesiredType!, null, CultureInfo.CurrentCulture);
-        }
-
-        void Binding_Parse(object? sender, ConvertEventArgs e)
-        {
-            e.Value = valueConverter.ConvertBack(e.Value, e.DesiredType!, null, CultureInfo.CurrentCulture);
-        }
-
-        void Control_Disposed(object? sender, EventArgs e)
-        {
-            binding.Parse -= Binding_Parse;
-            binding.Format -= Binding_Format;
-        }
-    }
-
-    /// <summary>
-    ///  Retrieves the direct child controls of the specified control.
+    /// Retrieves the direct child controls of the specified control.
     /// </summary>
     /// <param name="control">The control whose child controls are retrieved.</param>
     /// <returns>An enumerable of child controls.</returns>
@@ -161,7 +114,7 @@ public static class FormExtensions
         => control.Controls.Cast<Control>();
 
     /// <summary>
-    ///  Retrieves the direct child controls of the specified control that are of the specified type.
+    /// Retrieves the direct child controls of the specified control that are of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of the child controls to retrieve.</typeparam>
     /// <param name="control">The control whose child controls are retrieved.</param>
@@ -170,7 +123,7 @@ public static class FormExtensions
         => control.Controls.Cast<T>();
 
     /// <summary>
-    ///  Retrieves the first child control that matches the specified predicate.
+    /// Retrieves the first child control that matches the specified predicate.
     /// </summary>
     /// <param name="control">The control to search within.</param>
     /// <param name="predicate">The condition to match.</param>
@@ -180,7 +133,7 @@ public static class FormExtensions
         => control.FirstChild<Control>(predicate);
 
     /// <summary>
-    ///  Retrieves the first child control that matches the specified predicate.
+    /// Retrieves the first child control that matches the specified predicate.
     /// </summary>
     /// <typeparam name="T">The type of the child control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -192,7 +145,7 @@ public static class FormExtensions
         => control.FirstChildOrDefault(predicate) ?? throw new InvalidOperationException("No child control found.");
 
     /// <summary>
-    ///  Retrieves the first child control that matches the specified predicate, or null if none is found.
+    /// Retrieves the first child control that matches the specified predicate, or null if none is found.
     /// </summary>
     /// <typeparam name="T">The type of the child control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -219,7 +172,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Enumerates the control's ascendant controls, up to the root of the control tree.
+    /// Enumerates the control's ascendant controls, up to the root of the control tree.
     /// </summary>
     /// <param name="control">The control to retrieve ascendants from.</param>
     /// <returns>An enumerable of ascendant controls.</returns>
@@ -227,7 +180,7 @@ public static class FormExtensions
         => control.AscendantControls<Control>();
 
     /// <summary>
-    ///  Enumerates the control's ascendant controls of the specified type, up to the root of the control tree.
+    /// Enumerates the control's ascendant controls of the specified type, up to the root of the control tree.
     /// </summary>
     /// <typeparam name="T">The type of the ascendant controls to retrieve.</typeparam>
     /// <param name="control">The control to retrieve ascendants from.</param>
@@ -249,7 +202,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Retrieves the first ascendant control that matches the specified predicate.
+    /// Retrieves the first ascendant control that matches the specified predicate.
     /// </summary>
     /// <param name="control">The control to search within.</param>
     /// <param name="predicate">The condition to match.</param>
@@ -259,7 +212,7 @@ public static class FormExtensions
         => control.FirstAscendant<Control>(predicate);
 
     /// <summary>
-    ///  Retrieves the first ascendant control that matches the specified predicate, or null if none is found.
+    /// Retrieves the first ascendant control that matches the specified predicate, or null if none is found.
     /// </summary>
     /// <param name="control">The control to search within.</param>
     /// <param name="predicate">The condition to match.</param>
@@ -268,7 +221,7 @@ public static class FormExtensions
         => control.FirstAscendantOrDefault<Control>(predicate);
 
     /// <summary>
-    ///  Retrieves the first ascendant control of the specified type that matches the specified predicate.
+    /// Retrieves the first ascendant control of the specified type that matches the specified predicate.
     /// </summary>
     /// <typeparam name="T">The type of the ascendant control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -280,7 +233,7 @@ public static class FormExtensions
         => control.FirstAscendantOrDefault(predicate) ?? throw new InvalidOperationException("No ascendant control found.");
 
     /// <summary>
-    ///  Retrieves the first ascendant control of the specified type that matches the specified predicate, or null if none is found.
+    /// Retrieves the first ascendant control of the specified type that matches the specified predicate, or null if none is found.
     /// </summary>
     /// <typeparam name="T">The type of the ascendant control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -300,7 +253,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Retrieves the root control in the control tree.
+    /// Retrieves the root control in the control tree.
     /// </summary>
     /// <param name="control">The starting control.</param>
     /// <returns>The root control.</returns>
@@ -317,7 +270,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Enumerates all descendant controls of the specified control.
+    /// Enumerates all descendant controls of the specified control.
     /// </summary>
     /// <param name="control">The control to retrieve descendants from.</param>
     /// <returns>An enumerable of descendant controls.</returns>
@@ -325,7 +278,7 @@ public static class FormExtensions
         => control.DescendantControls<Control>();
 
     /// <summary>
-    ///  Enumerates all descendant controls of the specified control that are of the specified type.
+    /// Enumerates all descendant controls of the specified control that are of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of the descendant controls to retrieve.</typeparam>
     /// <param name="control">The control to retrieve descendants from.</param>
@@ -349,7 +302,7 @@ public static class FormExtensions
     }
 
     /// <summary>
-    ///  Retrieves the first descendant control that matches the specified predicate.
+    /// Retrieves the first descendant control that matches the specified predicate.
     /// </summary>
     /// <param name="control">The control to search within.</param>
     /// <param name="predicate">The condition to match.</param>
@@ -359,7 +312,7 @@ public static class FormExtensions
         => control.FirstDescendant<Control>(predicate);
 
     /// <summary>
-    ///  Retrieves the first descendant control of the specified type that matches the specified predicate.
+    /// Retrieves the first descendant control of the specified type that matches the specified predicate.
     /// </summary>
     /// <typeparam name="T">The type of the descendant control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -371,7 +324,7 @@ public static class FormExtensions
         => control.FirstDescendantOrDefault(predicate) ?? throw new InvalidOperationException("No descendant control found.");
 
     /// <summary>
-    ///  Retrieves the first descendant control that matches the specified predicate, or null if none is found.
+    /// Retrieves the first descendant control that matches the specified predicate, or null if none is found.
     /// </summary>
     /// <param name="control">The control to search within.</param>
     /// <param name="predicate">The condition to match.</param>
@@ -380,7 +333,7 @@ public static class FormExtensions
         => control.FirstDescendantOrDefault<Control>(predicate);
 
     /// <summary>
-    ///  Retrieves the first descendant control of the specified type that matches the specified predicate, or null if none is found.
+    /// Retrieves the first descendant control of the specified type that matches the specified predicate, or null if none is found.
     /// </summary>
     /// <typeparam name="T">The type of the descendant control to retrieve.</typeparam>
     /// <param name="control">The control to search within.</param>
@@ -406,4 +359,17 @@ public static class FormExtensions
 
         return null;
     }
+
+    /// <summary>
+    /// Ensures that the specified control is not null.
+    /// </summary>
+    /// <param name="control">The control to check for null.</param>
+    /// <returns>The original control if it is not null.</returns>
+    /// <exception cref="NullReferenceException">Thrown when the control is null.</exception>
+    [return: NotNullIfNotNull(nameof(control))]
+    public static T EnsureNotNull<T>([NotNull] this T? control) where T : Control
+        => control is null
+            ? throw new NullReferenceException(
+                nameof(control))
+            : control;
 }

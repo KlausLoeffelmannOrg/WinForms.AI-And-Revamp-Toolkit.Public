@@ -1,4 +1,4 @@
-﻿namespace CommunityToolkit.WinForms.Roslyn.Collections.Generic;
+﻿namespace CommunityToolkit.Collections.Generic;
 
 using System;
 using System.Collections.Generic;

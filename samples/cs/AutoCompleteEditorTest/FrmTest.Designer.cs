@@ -1,4 +1,7 @@
-﻿namespace AutoCompleteEditorTest
+﻿using CommunityToolkit.WinForms.Controls.Tooling.Console;
+using CommunityToolkit.WinForms.FluentUI.Controls;
+
+namespace AutoCompleteEditorTest
 {
     partial class FrmTest
     {
@@ -29,7 +32,7 @@
         private void InitializeComponent()
         {
             autoCompleteEditor1 = new CommunityToolkit.WinForms.FluentUI.Controls.AutoCompleteEditor();
-            _debugConsole = new CommunityToolkit.WinForms.Controls.ConsoleControl();
+            _debugConsole = new ConsoleControl();
             SuspendLayout();
             // 
             // autoCompleteEditor1
@@ -69,7 +72,7 @@
 
         #endregion
 
-        private CommunityToolkit.WinForms.FluentUI.Controls.AutoCompleteEditor autoCompleteEditor1;
-        private CommunityToolkit.WinForms.Controls.ConsoleControl _debugConsole;
+        private AutoCompleteEditor autoCompleteEditor1;
+        private ConsoleControl _debugConsole;
     }
 }

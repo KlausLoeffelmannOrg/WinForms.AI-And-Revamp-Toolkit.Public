@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics.CodeAnalysis;
 
-namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions;
+namespace CommunityToolkit.Roslyn.CSharp.Extensions;
 
 public static class WorkspaceExtensions
 {
@@ -46,6 +46,29 @@ public static class WorkspaceExtensions
                 text: SourceText.From(File.ReadAllText(sourceCodeFile))).Project;
         }
 
+        workspace.TryApplyChanges(project.Solution);
+
+        return workspace;
+    }
+
+    [return: NotNull]
+    public static AdhocWorkspace CreateWorkspaceFromString(
+        this AdhocWorkspace? workspace,
+        string sourceContent,
+        string? defaultName = null,
+        string? defaultProjectName = null)
+    {
+        workspace ??= new AdhocWorkspace();
+
+        defaultName ??= Path.GetFileNameWithoutExtension(
+            workspace.CurrentSolution.FilePath ?? $"Solution-{DateTime.Now:yy-MM-dd HH-mm-ss}.sln");
+
+        defaultProjectName ??= defaultName;
+        Project project = workspace.AddProject(defaultProjectName, LanguageNames.CSharp);
+
+        project = project.AddDocument(
+            name: "Source.cs",
+            text: SourceText.From(sourceContent)).Project;
         workspace.TryApplyChanges(project.Solution);
 
         return workspace;

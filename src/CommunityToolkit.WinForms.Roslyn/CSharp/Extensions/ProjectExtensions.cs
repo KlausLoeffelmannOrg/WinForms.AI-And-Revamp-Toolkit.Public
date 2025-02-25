@@ -1,4 +1,4 @@
-﻿namespace CommunityToolkit.WinForms.Roslyn.CSharp.Extensions;
+﻿namespace CommunityToolkit.Roslyn.CSharp.Extensions;
 
 public class ProjectExtensions
 {

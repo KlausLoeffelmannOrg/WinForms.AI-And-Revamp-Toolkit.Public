@@ -36,6 +36,12 @@ public static class OpenAIPromptExecutionSettingsExtensions
         return settings;
     }
 
+    /// <summary>
+    /// Configures the system prompt for the OpenAI model execution.
+    /// </summary>
+    /// <param name="settings">The settings object to configure.</param>
+    /// <param name="systemPrompt">The system prompt to use.</param>
+    /// <returns>The configured <see cref="OpenAIPromptExecutionSettings"/> object.</returns>
     public static OpenAIPromptExecutionSettings WithSystemPrompt(
         this OpenAIPromptExecutionSettings settings,
         string systemPrompt)
@@ -44,7 +50,31 @@ public static class OpenAIPromptExecutionSettingsExtensions
         return settings;
     }
 
+    /// <summary>
+    /// Configures the system prompt for the OpenAI model execution.
+    /// </summary>
+    /// <param name="settings">The settings object to configure.</param>
+    /// <param name="developerPrompt">The system prompt to use.</param>
+    /// <returns>The configured <see cref="OpenAIPromptExecutionSettings"/> object.</returns>
+    public static OpenAIPromptExecutionSettings WithDeveloperPrompt(
+        this OpenAIPromptExecutionSettings settings,
+        string developerPrompt)
+    {
 #pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        settings.ChatDeveloperPrompt = developerPrompt;
+#pragma warning restore SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        return settings;
+    }
+
+#pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    /// <summary>
+    /// Configures the JSON return schema for the OpenAI model execution.
+    /// </summary>
+    /// <param name="settings">The settings object to configure.</param>
+    /// <param name="returnSchema">The JSON schema to use for the response.</param>
+    /// <param name="schemaName">The name of the schema.</param>
+    /// <param name="schemaDescription">The description of the schema.</param>
+    /// <returns>The configured <see cref="OpenAIPromptExecutionSettings"/> object.</returns>
     public static OpenAIPromptExecutionSettings WithJsonReturnSchema(
         this OpenAIPromptExecutionSettings settings,
         JsonElement returnSchema,

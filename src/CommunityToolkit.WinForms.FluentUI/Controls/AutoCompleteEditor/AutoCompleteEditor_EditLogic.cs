@@ -1,11 +1,20 @@
 using CommunityToolkit.WinForms.AI.SemanticKernel;
 using CommunityToolkit.WinForms.AsyncSupport;
+using CommunityToolkit.WinForms.Extensions;
+
+using System.Diagnostics;
+using System.Threading;
 
 namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelComponent
 {
-    protected override void OnKeyDown(KeyEventArgs e)
+    private IButtonControl? _storedAcceptButton;
+
+    // We need a thread-safe interlock boolean flag for the KeyCode handling:
+    private int _isKeyDownAsynchronouslyProcessing;
+
+    protected override async void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
 
@@ -15,9 +24,23 @@ public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelCompon
         }
         else if (e.KeyCode == Keys.Enter && !e.Control && !e.Alt && !e.Shift)
         {
+            if (Interlocked.CompareExchange(ref _isKeyDownAsynchronouslyProcessing, 1, 0) == 1)
+            {
+                // We need to simply block the Enter key, if we are already processing it asynchronously:
+                e.SuppressKeyPress = true;
+                return;
+            }
+
             e.SuppressKeyPress = true; // Prevent the Enter key from being input as text
             RejectSuggestion();
-            SendCommand();
+            try
+            {
+                await SendCommandAsync();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isKeyDownAsynchronouslyProcessing, 0);
+            }
         }
         else if (e.KeyCode == Keys.Right && e.Control && IsCursorAtEnd)
         {
@@ -60,21 +83,57 @@ public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelCompon
         }
     }
 
-    private void SendCommand()
+    protected override void OnEnter(EventArgs e)
     {
-        var eArgs = new AsyncSendCommandEventArgs(
-            this.Text,
-            this.Rtf);
+        base.OnEnter(e);
 
-        _oldParagraph = CurrentParagraphSpan.ToString();
-        AsyncExtensions.RunAsync(this, OnSendCommandAsync, eArgs);
+        // Find out, if we have an Accept-Button anywhere in the Parent-Form, and if yes,
+        // we temporarily disable that.
+        // This is a workaround for the fact, that the AcceptButton of a Form is not
+        // disabled when a control is focused, but the Enter-Key is not handled by that
+        // control.
+
+        // We find the Parent Form first:
+        Form? parentForm=this.FirstAscendantOrDefault<Form>();
+
+        if (parentForm is null)
+        {
+            return;
+        }
+
+        // We find the AcceptButton:
+        if (parentForm.AcceptButton is not null)
+        {
+            _storedAcceptButton = parentForm.AcceptButton;
+            parentForm.AcceptButton = null;
+        }
+    }
+
+    protected override void OnLeave(EventArgs e)
+    {
+        base.OnLeave(e);
+        if (_storedAcceptButton is null)
+        {
+            return;
+        }
+
+        // Restore the AcceptButton of the Parent Form:
+        Form? parentForm = this.FirstAscendantOrDefault<Form>();
+
+        if (parentForm is null)
+        {
+            return;
+        }
+
+        parentForm.AcceptButton = _storedAcceptButton;
+        _storedAcceptButton = null;
     }
 
     public Task SendCommandAsync()
     {
-        var eArgs = new AsyncSendCommandEventArgs(
-            this.Text,
-            this.Rtf);
+        AsyncSendCommandEventArgs eArgs = new(
+            AutoCompleteEditorCommand.Send,
+            CurrentParagraphSpan.ToString());
 
         _oldParagraph = CurrentParagraphSpan.ToString();
         return OnSendCommandAsync(eArgs);
@@ -106,8 +165,14 @@ public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelCompon
             asyncEventHandler: AsyncSendCommand,
             parallelInvoke: false);
 
-        ShowOverlay();
-        await invoker.RaiseEventAsync(this, eArgs);
+        Task overlaySpinnerTask = ShowOverlayAsync();
+        Task sendCommandTask = invoker.RaiseEventAsync(this, eArgs);
+        Task firstReady = await Task.WhenAny(overlaySpinnerTask, sendCommandTask);
+
+        // The spinner needs to be deactivated, so we cannot expect him to ever be first.
+        Debug.Assert(firstReady == sendCommandTask);
+
+        // This cancels it.
         HideOverlay();
     }
 
@@ -137,16 +202,42 @@ public partial class AutoCompleteEditor : RichTextBox, IUsesSemanticKernelCompon
         if (PrecedingParagraphSpan.Length >= MinPrecedingCharsSuggestionRequestSensitivity 
             && RemainingParagraphSpan.Length <= MaxRemainingCharsSuggestionRequestSensitivity)
         {
-            var args = new AsyncRequestAutoCompleteSuggestionEventArgs(
+            AsyncRequestAutoCompleteSuggestionEventArgs args = new(
                 currentParagraph: CurrentParagraphSpan.ToString(),
                 oldParagraph: OldParagraph,
                 isCursorAtEnd: IsCursorAtEnd,
                 cursorLocation: CursorLocation,
                 suggestionText: string.Empty);
 
-            OnRequestAutoCompleteSuggestion(args);
+            OnAsyncRequestAutoCompleteSuggestionAsync(args);
             ShowSuggestion(args.SuggestionText);
         }
+    }
+
+    protected override void OnSelectionChanged(EventArgs e)
+    {
+        base.OnSelectionChanged(e);
+
+        if (SelectionLength == 0)
+        {
+            if (RequestCopyToClipBoardButton==false)
+            {
+                return;
+            }
+
+            RequestCopyToClipBoardButton = false;
+        }
+        else
+        {
+            if (RequestCopyToClipBoardButton == true)
+            {
+                return;
+            }
+
+            RequestCopyToClipBoardButton = true;
+        }
+
+        UpdateCommandStrip();
     }
 
     /// <summary>

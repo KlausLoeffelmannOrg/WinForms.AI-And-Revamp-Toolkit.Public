@@ -1,4 +1,6 @@
 ﻿using Chatty.Views;
+using CommunityToolkit.WinForms.ChatUI;
+using CommunityToolkit.WinForms.FluentUI.Containers;
 using CommunityToolkit.WinForms.FluentUI.Controls;
 
 namespace Chatty.Agents.AboutChatty;
@@ -35,16 +37,17 @@ partial class FrmAboutChatty
         aiFollowUpControl1 = new FluentFollowUpControl();
         _mainLayoutPanel = new TableLayoutPanel();
         button1 = new Button();
-        fluentDecoratorPanel1 = new CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel();
+        fluentDecoratorPanel1 = new FluentDecoratorPanel();
         _mainLayoutPanel.SuspendLayout();
         fluentDecoratorPanel1.SuspendLayout();
         SuspendLayout();
         // 
-        // chatView1
+        // _mainChatView
         // 
         _mainChatView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         _mainChatView.Location = new Point(3, 3);
-        _mainChatView.Name = "chatView1";
+        _mainChatView.Name = "_mainChatView";
+        _mainChatView.ReturnStringsFormat = CommunityToolkit.WinForms.AI.ResponseTextFormat.Markdown;
         _mainLayoutPanel.SetRowSpan(_mainChatView, 2);
         _mainChatView.Size = new Size(775, 732);
         _mainChatView.TabIndex = 0;
@@ -115,5 +118,5 @@ partial class FrmAboutChatty
     private FluentFollowUpControl aiFollowUpControl1;
     private TableLayoutPanel _mainLayoutPanel;
     private Button button1;
-    private CommunityToolkit.WinForms.FluentUI.FluentDecoratorPanel fluentDecoratorPanel1;
+    private FluentDecoratorPanel fluentDecoratorPanel1;
 }

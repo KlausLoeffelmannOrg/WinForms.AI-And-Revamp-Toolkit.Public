@@ -25,7 +25,10 @@ public class WinFormsUserSettingsService : IUserSettingsService
     private static FileInfo GetUserApplicationPath()
     {
         string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var assembly = Assembly.GetEntryAssembly() ?? throw new InvalidOperationException("The entry assembly is null.");
+
+        Assembly assembly = Assembly.GetEntryAssembly()
+            ?? throw new InvalidOperationException("The entry assembly is null.");
+
         string assemblyName = assembly.GetName().Name!;
         string version = assembly.GetName().Version!.ToString();
         string appFolder = Path.Combine(appDataPath, assemblyName, version);

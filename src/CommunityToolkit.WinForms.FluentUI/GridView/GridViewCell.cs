@@ -2,12 +2,26 @@
 
 namespace CommunityToolkit.WinForms.FluentUI;
 
+internal class GridViewColumn : DataGridViewColumn
+{
+    public GridViewColumn() : base(new GridViewCell())
+    {
+    }
+
+    public override int GetPreferredWidth(DataGridViewAutoSizeColumnMode autoSizeColumnMode, bool fixedHeight)
+        => base.GetPreferredWidth(autoSizeColumnMode, fixedHeight);
+
+}
 internal class GridViewCell : DataGridViewCell
 {
     private static readonly Padding s_defaultPadding = new(5, 5, 5, 0);
 
-    private GridViewItemTemplate? _itemTemplate;
+    private Func<GridViewItemTemplate?>? _itemTemplateGetter;
     private bool _isMouseOver;
+
+    public GridViewCell()
+    {
+    }
 
     protected override void OnMouseEnter(int rowIndex)
     {
@@ -25,25 +39,25 @@ internal class GridViewCell : DataGridViewCell
         DataGridView?.InvalidateCell(this);
     }
 
-    internal GridViewItemTemplate? ItemTemplate
+    internal Func<GridViewItemTemplate?>? ItemTemplateGetter
     {
-        get => _itemTemplate;
+        get => _itemTemplateGetter;
 
         set
         {
-            if (_itemTemplate == value)
+            if (_itemTemplateGetter == value)
             {
                 return;
             }
 
-            _itemTemplate = value;
+            _itemTemplateGetter = value;
         }
     }
 
     public override object Clone()
     {
-        var clone = (GridViewCell)base.Clone();
-        clone.ItemTemplate = ItemTemplate;
+        GridViewCell clone = (GridViewCell)base.Clone();
+        clone.ItemTemplateGetter = ItemTemplateGetter;
         return clone;
     }
 
@@ -64,20 +78,22 @@ internal class GridViewCell : DataGridViewCell
         int rowIndex,
         Size constraintSize)
     {
-        if (ItemTemplate is null)
+        if (ItemTemplate is not GridViewItemTemplate itemTemplate)
         {
             return base.GetPreferredSize(graphics, cellStyle, rowIndex, constraintSize);
         }
 
         if (rowIndex < 0)
         {
-            return ItemTemplate.GetPreferredSize(constraintSize, null, rowIndex);
+            return itemTemplate.GetPreferredSize(constraintSize, null, rowIndex);
         }
         else
         {
-            return ItemTemplate.GetPreferredSize(constraintSize, GetValue(rowIndex), rowIndex);
+            return itemTemplate.GetPreferredSize(constraintSize, GetValue(rowIndex), rowIndex);
         }
     }
+
+    private GridViewItemTemplate? ItemTemplate => ItemTemplateGetter?.Invoke();
 
     protected override void Paint(
         Graphics graphics,
@@ -92,18 +108,16 @@ internal class GridViewCell : DataGridViewCell
         DataGridViewAdvancedBorderStyle advancedBorderStyle,
         DataGridViewPaintParts paintParts)
     {
-        if (_itemTemplate is null || value is null)
+        if (ItemTemplate is null || value is null)
         {
             return;
         }
 
-        var padding = ItemTemplate is null
-            ? s_defaultPadding
-            : ItemTemplate.Padding;
+        Padding padding = ItemTemplate.Padding;
 
-        var paddedBounds = cellBounds.Pad(padding);
+        Rectangle paddedBounds = cellBounds.Pad(padding);
 
-        ItemTemplate?.OnPaintContent(
+        ItemTemplate.OnPaintContent(
             value,
             this,
             new PaintEventArgs(graphics, clipBounds),
@@ -118,20 +132,18 @@ internal class GridViewCell : DataGridViewCell
         string? errorText)
     {
 
-        if (_itemTemplate is null)
+        if (ItemTemplate is null)
         {
             base.PaintErrorIcon(graphics, clipBounds, cellBounds, errorText);
             return;
         }
 
-        var padding = ItemTemplate is null
-            ? s_defaultPadding
-            : ItemTemplate.Padding;
+        Padding padding = ItemTemplate.Padding;
 
         // Set the padding for the cell:
         cellBounds.Inflate(-padding.Right, -padding.Bottom);
         cellBounds.Offset(padding.Left, padding.Top);
 
-        _itemTemplate.PaintErrorIcon(graphics, clipBounds, cellBounds, errorText);
+        ItemTemplate.PaintErrorIcon(graphics, clipBounds, cellBounds, errorText);
     }
 }

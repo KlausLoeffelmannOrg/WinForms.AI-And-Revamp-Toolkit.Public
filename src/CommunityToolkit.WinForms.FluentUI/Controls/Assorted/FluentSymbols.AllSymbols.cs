@@ -1,4 +1,6 @@
-﻿namespace CommunityToolkit.WinForms.FluentUI.Controls;
+﻿using CommunityToolkit.WinForms.Extensions;
+
+namespace CommunityToolkit.WinForms.FluentUI.Controls;
 
 public static partial class FluentSymbols
 {
@@ -8851,6 +8853,5 @@ public static partial class FluentSymbols
         /// Hex: F8CC, Decimal: 63692
         /// </summary>
         EthernetVPN = 0xF8CC,
-
     }
 }

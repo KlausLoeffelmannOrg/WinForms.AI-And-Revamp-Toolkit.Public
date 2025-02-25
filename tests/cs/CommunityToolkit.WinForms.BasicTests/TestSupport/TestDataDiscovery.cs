@@ -45,19 +45,19 @@ internal static class TestDataDiscovery
     {
         ArgumentNullException.ThrowIfNull(baseFilePath);
 
-        var data = new TheoryData<string>();
-        var currentDirectory = Path.GetDirectoryName(baseFilePath);
+        TheoryData<string> data = new TheoryData<string>();
+        string? currentDirectory = Path.GetDirectoryName(baseFilePath);
 
         while (currentDirectory != null)
         {
             if (Path.GetFileName(currentDirectory) == UnitTestsDirectoryName)
             {
-                var testDataDirectory = Path.Combine(
+                string testDataDirectory = Path.Combine(
                     Path.GetDirectoryName(currentDirectory)!,
                     TestDataDirectoryName,
                     subFolder);
 
-                foreach (var file in Directory.GetFiles(testDataDirectory, filePattern))
+                foreach (string file in Directory.GetFiles(testDataDirectory, filePattern))
                 {
                     data.Add(file);
                 }

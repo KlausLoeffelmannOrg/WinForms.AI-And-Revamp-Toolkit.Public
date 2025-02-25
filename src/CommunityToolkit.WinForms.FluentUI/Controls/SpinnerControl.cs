@@ -163,6 +163,22 @@ public class SpinnerControl : Label
         set => base.Text = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    [AllowNull]
+    public override Font Font
+    {
+        get => base.Font;
+        set => base.Font = value;
+    }
+
+    public int FontSize
+    {
+        get => (int)Font.Size;
+        set => Font = new Font(Font.FontFamily, value);
+    }
+
+    private bool ShouldSerializeFontSize() => FontSize != 12;
+
     protected override void OnCreateControl()
     {
         base.OnCreateControl();
@@ -172,6 +188,7 @@ public class SpinnerControl : Label
         Text = s_pausingCharPart;
         AutoSize = true;
     }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
@@ -182,5 +199,10 @@ public class SpinnerControl : Label
     {
         IsSpinning = false;
         base.Dispose(disposing);
+    }
+
+    internal object EnsureNull()
+    {
+        throw new NotImplementedException();
     }
 }

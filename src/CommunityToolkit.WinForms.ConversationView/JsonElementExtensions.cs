@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CommunityToolkit.WinForms.ConversationView.Extensions;
+namespace CommunityToolkit.WinForms.ChatUI.Extension;
 
 /// <summary>
 ///  Provides extension methods for <see cref="JsonElement"/>.

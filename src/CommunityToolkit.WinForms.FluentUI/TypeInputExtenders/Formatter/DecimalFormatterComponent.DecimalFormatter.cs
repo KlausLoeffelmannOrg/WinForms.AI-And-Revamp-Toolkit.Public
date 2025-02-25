@@ -45,9 +45,6 @@ public partial class DecimalFormatterComponent
             set => SetProperty(ref _decimalPlaces, value);
         }
 
-        /// <summary>
-        /// Sets or sets whether the thousands separator should be displayed for numbers above 999 (<-999).
-        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible),
         Description("Sets or sets whether the thousands separator should be displayed for numbers above 999 (<-999)."),
         Category("Behavior"),

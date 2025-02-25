@@ -2,10 +2,10 @@
 
 namespace CommunityToolkit.WinForms.FluentUI;
 
-[ToolboxItem(false)] // Prevents the component from showing up in the toolbox
 /// <summary>
-/// Represents a base class for the GridView item template.
+///  Represents a base class for the GridView item template.
 /// </summary>
+[ToolboxItem(false)] // Prevents the component from showing up in the toolbox
 public abstract partial class GridViewItemTemplate : INotifyPropertyChanged
 {
     private static readonly Padding DefaultPadding = new(5, 5, 5, 0);
@@ -50,15 +50,24 @@ public abstract partial class GridViewItemTemplate : INotifyPropertyChanged
     private bool ShouldSerializePadding() => Padding != DefaultPadding;
     private void ResetPadding() => Padding = DefaultPadding;
 
+    /// <summary>
+    /// Gets or sets the content padding for the GridView item template.
+    /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public virtual Padding ContentPadding { get; set; } = DefaultContentPadding;
     private bool ShouldSerializeContentPadding() => ContentPadding != DefaultContentPadding;
     private void ResetContentPadding() => ContentPadding = DefaultContentPadding;
 
+    /// <summary>
+    /// Gets or sets the line spacing for the GridView item template.
+    /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     [DefaultValue(DefaultLineSpacing)]
     public virtual int LineSpacing { get; set; } = DefaultLineSpacing;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether dark mode is enabled.
+    /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal protected bool IsDarkMode { get; set; }
 
@@ -70,7 +79,7 @@ public abstract partial class GridViewItemTemplate : INotifyPropertyChanged
     /// <summary>
     /// Gets the foreground color of the GridView item.
     /// </summary>
-    public Color ItemForegroundColor => IsDarkMode ? DarkModeItemBackgroundColor : LightModeItemBackgroundColor;
+    public Color ItemForegroundColor => IsDarkMode ? DarkModeItemForegroundColor : LightModeItemForegroundColor;
 
     /// <summary>
     /// Gets the font color for highlighted GridView items.
@@ -146,12 +155,16 @@ public abstract partial class GridViewItemTemplate : INotifyPropertyChanged
     /// Gets the preferred size of the GridView item template.
     /// </summary>
     /// <param name="restrictedSize">The proposed size for the control.</param>
+    /// <param name="value">The value associated with the GridView item.</param>
+    /// <param name="rowIndex">The index of the row containing the GridView item.</param>
     /// <returns>The preferred size of the GridView item template.</returns>
     internal protected abstract Size GetPreferredSize(Size restrictedSize, object? value, int rowIndex);
 
     /// <summary>
     /// Paints the content of the GridView item template.
     /// </summary>
+    /// <param name="content">The content to be painted.</param>
+    /// <param name="gridViewCell">The GridView cell containing the content.</param>
     /// <param name="e">A <see cref="PaintEventArgs"/> that contains the event data.</param>
     /// <param name="clipBounds">The bounds of the clipping area.</param>
     /// <param name="isMouseOver">Indicates whether the mouse is over the GridView item.</param>

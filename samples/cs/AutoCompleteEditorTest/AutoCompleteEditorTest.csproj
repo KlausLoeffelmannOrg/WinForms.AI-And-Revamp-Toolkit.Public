@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.ConsoleControl\CommunityToolkit.WinForms.Controls.ConsoleControl.csproj" />
+    <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.Controls.Tooling\CommunityToolkit.WinForms.Controls.Tooling.csproj" />
     <ProjectReference Include="..\..\..\src\CommunityToolkit.WinForms.FluentUI\CommunityToolkit.WinForms.FluentUI.csproj" />
   </ItemGroup>
 

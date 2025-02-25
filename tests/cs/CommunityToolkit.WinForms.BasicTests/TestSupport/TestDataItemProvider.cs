@@ -1,3 +1,5 @@
+using CommunityToolkit.WinForms.AI.ConverterLogic;
+
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -39,7 +41,9 @@ public class TestDataItemProvider
 
         // Now, get the file which holds the file we need to test against, which is the .txt file:
         ExpectedFilePath = Path.Combine(TestDataDirectoryPath, $"{NakedFilename}.txt");
-        ExpectedContent = File.Exists(ExpectedFilePath) ? File.ReadAllText(ExpectedFilePath) : string.Empty;
+        ExpectedContent = File.Exists(ExpectedFilePath)
+            ? File.ReadAllText(ExpectedFilePath)
+            : string.Empty;
 
         LiteralContent = File.ReadAllText(filename);
         Literals = LiteralContent.Split(['\n'], StringSplitOptions.TrimEntries);
@@ -47,9 +51,9 @@ public class TestDataItemProvider
 
     public IAsyncEnumerable<StreamingChatMessageContent> GetStreamingChatMessageContents(AuthorRole role)
     {
-        var streamingChatMessageContents = new List<StreamingChatMessageContent>();
+        List<StreamingChatMessageContent> streamingChatMessageContents = [];
 
-        foreach (var literal in Literals)
+        foreach (string literal in Literals)
         {
             // This is a CSharp Literal, which we need to convert:
             string? token = literal.FromCSharpLiteral();
