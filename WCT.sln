@@ -45,9 +45,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WinForms.CommunityToolKit",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.BasicTests", "tests\cs\CommunityToolkit.WinForms.BasicTests\CommunityToolkit.WinForms.BasicTests.csproj", "{63890AF8-EFFF-4782-97C3-5D9F1EA2346D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflow", "Workflow", "{FA775DF7-945F-4DC6-87D4-D99DAD5499C0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{FA775DF7-945F-4DC6-87D4-D99DAD5499C0}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\copilot-instructions.md = .github\copilot-instructions.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{C9750290-CC76-437A-8D3B-9E1F3ADE1990}"
@@ -58,13 +59,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit", "Communi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms", "CommunityToolkit.WinForms", "{34A79486-BE96-4BE6-9386-A47FC801A3C9}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms", "CommunityToolkit.WinForms", "{8B95ADA2-52DF-4754-B7B5-E22B64933F1E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms (2)", "CommunityToolkit.WinForms (2)", "{8B95ADA2-52DF-4754-B7B5-E22B64933F1E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms.Controls", "CommunityToolkit.WinForms.Controls", "{2C2A5390-5927-4A00-BAC1-B663EE5B565C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms.Extensions", "CommunityToolkit.WinForms.Extensions", "{78783E37-4847-48DF-BBDB-763004743968}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms", "CommunityToolkit.WinForms", "{1D657E5D-DDF5-4412-8D5F-C1725063616A}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommunityToolkit.WinForms (3)", "CommunityToolkit.WinForms (3)", "{1D657E5D-DDF5-4412-8D5F-C1725063616A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommunityToolkit.WinForms.Controls.Tooling", "src\CommunityToolkit.WinForms.Controls.Tooling\CommunityToolkit.WinForms.Controls.Tooling.csproj", "{1274ACF4-5248-B20E-A3F7-FEC3877F349F}"
 EndProject
