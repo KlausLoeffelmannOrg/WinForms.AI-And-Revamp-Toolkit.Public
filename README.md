@@ -1,58 +1,105 @@
-# CommunityToolkit.WinForms
-**WinForms specific Toolkit and Component collection for Modernizing and Enhancing 
-WinForms Development and introduce AI and LLM features into WinForms LOB-Apps.**
+![Intro Title](docs\Images\ReadMeTitle.png)
 
-## API areas with their Key Objectives
+# Welcome to the WinForms AI-and-Revamp-Toolkit!
 
-### 1. `CommunityToolkit.WinForms.AI`: Simplifying AI and LLM Integration into WinForms
-* Provide easy-to-use, WinForms-typical components for AI and LLMs:
-  - Offer customers a platform to rapidly develop tools for learning, exploring, and prototyping technologies based on AI and LLMs.
-  - Enable customers to iteratively implement AI, LLMs, and agents into their existing, large-scale Line-of-Business (LOB) WinForms applications, providing a feasible adoption path for both their applications and teams.
-  - Give developers an easy way to quickly create custom tools that enhance and simplify workflows, similar to how macros improved Word and Excel workflows in the early 1990s.
+**Bringing the simplicity of WinForms to AI development - what VBA was for Office in the 90s, this toolkit aspires to be for AI applications based on WinForms Design-simplicity today.**
 
-### 2. `CommunityToolkit.WinForms.AsyncSupport`: Ensuring Compatibility with Existing Stacks
-* Support modern architecture and development approaches:
-  - Incorporate XAML-based architecture patterns like MVVM.
-  - Provide alternatives to legacy WinForms technologies that prevent Ahead-of-Time (AOT) compilation.
-  - Integrate Blazor-based UI components to extend and modernize existing WinForms applications.
+## The three pillars of the WinForms AI-and-Revamp-Toolkit
 
-### 3. `CommunityToolkit.WinForms.ComponentModel`: Facilitating AI-Powered Auto-Migration
-* Develop infrastructure to support automatic or semi-automatic modernization:
-  - Build tools and frameworks needed for auto-migration processes, such as the Upgrade Assistant.
-  - Lower risks associated with modernizing applications using AI- or agent-driven tools.
+### 1. The Prerequisites for Vibe Coding
 
-### 4. `CommunityToolkit.WinForms.Controls.ConsoleControl`: Improving Rendering Performance and Accessibility
-* Modernize rendering pipelines for better performance and compatibility:
-  - Address serious rendering issues caused by GDI/GDI+ on newer graphics cards.
-  - Introduce performant and accessible rendering solutions using Direct2D/DirectWrite.
-  - Leverage AI-assisted approaches to create role-model projects demonstrating these modernized techniques.
+Embrace the future of development with a toolkit designed for the Microsoft
+"Vibe Coding" vision. The included "Chatty" application serves as both a
+learning platform for effective prompting and a template for your own AI tools.
 
-### 5. `CommunityToolkit.WinForms.ConversationView`: Enhancing Communication Interfaces
-* Provide conversation view control for chat and interactive communication:
-  - Facilitate the creation of chatbots and interactive communication features.
-  - Integrate seamlessly with AI and chatbot services.
+![Screenshot, showing how to activate Copilot Edits via the icon](docs/Images/WACT 0-3 Chatty.gif)
 
-### 6. `CommunityToolkit.WinForms.DesktopGeneric.Mvvm`: Implementing MVVM Pattern
-* Offer MVVM support for WinForms applications:
-  - Promote a clean separation of concerns.
-  - Improve maintainability and testability of applications.
+Developers need to develop a feel for prompting and understand what different
+models can achieve. "Chatty" enables exactly this by:
 
-### 7. `CommunityToolkit.WinForms.Extensions.FormAndControlExtensions`: Extending Form and Control Functionality
-* Provide various extensions for WinForms forms and controls:
-  - Enhance the functionality and usability of standard WinForms components.
-  - Simplify development with extended features.
+- Allowing quick reconfiguration to use different AI models
+- Supporting the creation of "Personalities" and small Agents for experimentation
+- Providing an open system where you can see how everything works together
+- Serving as a practical playground to build prompting skills
 
-### 8. `CommunityToolkit.WinForms.FluentUI`: Modernizing UI Design
-* Introduce Fluent UI design elements to WinForms applications:
-  - Modernize the look and feel of applications.
-  - Ensure consistent and visually appealing UI.
+Experiment, learn, and build production-ready applications all in the familiar WinForms environment.
 
-### 9. `CommunityToolkit.WinForms.Mvvm`: Additional MVVM Support
-* Provide additional MVVM utilities and components:
-  - Tailored specifically for WinForms applications.
-  - Simplify the implementation of the MVVM pattern.
+### 2. Rapid AI Application Development
 
-### 10. `CommunityToolkit.WinForms.Roslyn`: Advanced Code Analysis and Refactoring
-* Leverage the Roslyn compiler platform for code analysis:
-  - Provide advanced code analysis and refactoring tools.
-  - Improve code quality and maintainability.
+Transform how you build AI-powered applications with our drag-and-drop
+components. The toolkit provides a simplified architecture with the central
+AIServicesComponent and AIAdapter layer, allowing you to switch between
+Anthropic, OpenAI, and other providers effortlessly. No more wrestling with
+changing abstraction layers or complex setups - just drag, drop, and connect to
+your preferred AI model.
+
+### 3. Rich Interactive Components
+
+Build sophisticated AI interactions without complex coding:
+
+- **BlazorHybrid Chat Control**: Fully-featured dialog renderer with support for structured data via Meta-Tags
+- **AI-Aware Controls**: From intelligent text completion to natural language date input
+- **Template-Based Prompting**: Define structured prompts even with minimal prompting experience
+- **Automatic Code Extraction**: Receive parsed code blocks as events without additional processing
+
+## Why This Toolkit?
+
+The AI ecosystem has become increasingly complex and confusing - even for
+experienced developers. This toolkit addresses that challenge by returning to
+what WinForms does best: Rapid Application Development with visual tools.
+
+- **Complete Application Infrastructure**: Full WinFormsApplication/IHost infrastructure that enables BlazorHybrid components, dependency injection, and modern service configuration
+- **Beyond App.Config**: Replace traditional configuration with AppSettings.json for more flexibility
+- **Modern Fluent API**: WinForms-specialized Use... Fluent-methods for easy setup
+- **Project Templates**: Custom .NET project templates for an effortless start
+- **Simplified Architecture**: One consistent approach for interacting with AI services
+- **Real-Time Structured Data**: Receive typed data from LLMs as it streams in
+- **Modern UI Components**: FluentControls for contemporary interfaces
+- **Batch Processing**: Handle large workloads with cascaded templates (coming soon)
+- **Function Calling**: Seamless AI function integration (in development)
+
+## Using the NuGets out-of-the-box or Building from Source
+
+The WinForms AI-and-Revamp-Toolkit is designed for:
+
+- **.NET 9+** compatibility
+- **Windows 22000+** systems
+
+Our NuGet packages are available on NuGet.org with the prefix "CToolkit..." for easy integration.
+
+Getting started is simple with our included project templates.
+
+```
+// Installation instructions will go here
+```
+
+Build the toolkit easily from the command line:
+
+- `build` - Standard build
+- `build -clean` - Clean and rebuild
+- `build -pack` - Create NuGet packages
+
+## API Reference
+
+(coming new soon.)
+
+## Showcase
+
+The toolkit includes a fully-functional chat application that demonstrates the
+components in action. Use it as a learning tool for effective prompting or as a
+template for your own applications.
+
+## Continuous Integration Status
+
+(coming soon.)
+
+GitHub Actions handle building, testing, SemVer versioning, and NuGet package
+publishing.
+
+## Community
+
+This toolkit has been under development for 10 months with the goal of
+democratizing AI application development for the WinForms community. Join us in
+building the next generation of desktop AI tools!
+
+[Community links will go here]
